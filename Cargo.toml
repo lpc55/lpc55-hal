@@ -1,0 +1,24 @@
+[package]
+version = "0.0.0"
+authors = [
+  "nickray <n@stalder.io>",
+]
+description   = "Hardware Abstraction Layer (HAL) for the NXP LPC55S6x ARM Cortex-33 microcontrollers"
+documentation = "https://docs.rs/lpc55s6x-hal"
+keywords = ["no-std", "cortex-m", "nxp", "lpc", "embedded-hal-impl"]
+license = "MIT OR Apache-2.0"
+name = "lpc55s6x-hal"
+repository = "https://github.com/nickray/lpc55s6x-hal"
+edition = "2018"
+
+[dependencies]
+bare-metal = "0.2.4"
+vcell = "0.1"
+
+cortex-m = ">= 0.5.8, < 0.7"
+embedded-hal = { version = "0.2", features = ["unproven"] }
+lpc55s6x-pac = "0.0.1"
+nb = "0.1.1"
+
+[features]
+rt = ["lpc55s6x-pac/rt"]
