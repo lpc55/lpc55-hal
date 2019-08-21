@@ -18,6 +18,8 @@ fetch-docs:
 		-o ref/genericuserguide-cortexm33.pdf
 	curl -s https://www.segger.com/downloads/jlink/UM08001 \
 		-o ref/userguide-jlink.pdf
+	curl -s https://www.segger.com/downloads/jlink/UM08036 \
+		-o ref/gdbextensions-jlink.pdf
 
 #
 # Maintenance
@@ -44,6 +46,17 @@ EXAMPLE := semihosting
 build-example:
 	cargo build --example $(EXAMPLE)
 
+build-example-release:
+	cargo build --example $(EXAMPLE) --release
+
 run-example:
 	cargo run --example $(EXAMPLE)
+
+run-example-release:
+	cargo run --example $(EXAMPLE) --release
+
+sizes-example:
+	cargo size --example $(EXAMPLE)
+	cargo size --example $(EXAMPLE) --release
+
 
