@@ -28,7 +28,7 @@ panic-semihosting = "0.5.2"
 
 [dev-dependencies.cortex-m-semihosting]
 git = "https://github.com/rust-embedded/cortex-m-semihosting"
-rev = "25cb5534bf59ead415c23f37f88d986209c698e3"
+rev = "3a944acbab1da657e52f79916e2ab76f1b5997d6"
 features = ["jlink-quirks"]
 
 [features]
