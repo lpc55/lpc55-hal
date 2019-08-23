@@ -5,6 +5,7 @@ use embedded_hal as hal;
 
 pub extern crate lpc55s6x_pac as raw;
 
+pub mod rng;
 pub mod syscon;
 
 pub mod prelude {
