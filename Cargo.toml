@@ -17,7 +17,8 @@ vcell = "0.1"
 
 cortex-m = ">= 0.5.8, < 0.7"
 embedded-hal = { version = "0.2", features = ["unproven"] }
-lpc55s6x-pac = "0.0.1"
+lpc55s6x-pac = "0.0.2"
+# lpc55s6x-pac = { path = "../lpc55s6x-pac" }
 nb = "0.1.1"
 
 [dev-dependencies]
@@ -30,7 +31,8 @@ panic-semihosting = "0.5.2"
 # serde = { version = "1.0", default-features = false, features = ["derive"] }
 # serde_cbor = { version = "0.10", default-features = false }
 
-[dev-dependencies.cortex-m-semihosting]
+# [dev-dependencies.cortex-m-semihosting]
+[dependencies.cortex-m-semihosting]
 git = "https://github.com/rust-embedded/cortex-m-semihosting"
 rev = "3a944acbab1da657e52f79916e2ab76f1b5997d6"
 features = ["jlink-quirks"]
