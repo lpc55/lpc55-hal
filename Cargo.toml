@@ -21,10 +21,14 @@ lpc55s6x-pac = "0.0.1"
 nb = "0.1.1"
 
 [dev-dependencies]
-cortex-m-rt = "0.6.10"
+# cortex-m-rt = "0.6.10"
+cortex-m-rt = { git = "https://github.com/rust-embedded/cortex-m-rt" }
 panic-halt  = "0.2.0"
 panic-semihosting = "0.5.2"
 # cortex-m-semihosting = "0.3.3"
+
+# serde = { version = "1.0", default-features = false, features = ["derive"] }
+# serde_cbor = { version = "0.10", default-features = false }
 
 [dev-dependencies.cortex-m-semihosting]
 git = "https://github.com/rust-embedded/cortex-m-semihosting"
