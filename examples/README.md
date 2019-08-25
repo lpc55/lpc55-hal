@@ -1,5 +1,7 @@
 # lpc55s6x-hal examples
 
-We use the lpcxpresso55s69 dev board for testing.
+We use the LPCXpresso55S69 dev board for testing.
 These would be split out to a board support crate later.
 
+The user manual is available at: <https://www.nxp.com/webapp/Download?colCode=UM11158>,
+behind a registration wall.

@@ -41,7 +41,7 @@ tag:
 jlink:
 	JLinkGDBServer -device LPC55S69 -if SWD
 
-EXAMPLE := semihosting
+EXAMPLE := led
 
 build-example:
 	cargo build --example $(EXAMPLE)
