@@ -29,11 +29,11 @@ fn main() -> ! {
     dbg!(hal::get_cycle_count());
 
     // TODO: make this method generic over i (in this case, 2)
-    dbg!(syscon.handle.is_clock_enabled2(&peripherals.RNG));  // seems default is: yes!
-    syscon.handle.disable_clock2(&mut peripherals.RNG);
-    dbg!(syscon.handle.is_clock_enabled2(&peripherals.RNG));
-    syscon.handle.enable_clock2(&mut peripherals.RNG);
-    dbg!(syscon.handle.is_clock_enabled2(&peripherals.RNG));
+    dbg!(syscon.handle.is_clock_enabled(&peripherals.RNG));  // seems default is: yes!
+    syscon.handle.disable_clock(&mut peripherals.RNG);
+    dbg!(syscon.handle.is_clock_enabled(&peripherals.RNG));
+    syscon.handle.enable_clock(&mut peripherals.RNG);
+    dbg!(syscon.handle.is_clock_enabled(&peripherals.RNG));
 
     // NB: if RNG clock were disabled, reads below would get stuck
 

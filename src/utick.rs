@@ -3,6 +3,7 @@
 //! The entry point to this API is [`UTICK`].
 //!
 //! The UTICK peripheral is described in the user manual, chapter 26.
+//! It is driven by the FRO 1Mhz clock and has a microsecond resolution.
 //!
 //! # Examples
 //!
@@ -68,7 +69,8 @@ impl UTICK<init_state::Disabled> {
     pub fn enable(mut self, syscon: &mut syscon::Handle)
         -> UTICK<init_state::Enabled>
     {
-        syscon.enable_clock1(&mut self.utick);
+        syscon.enable_clock(&mut self.utick);
+
         // TODO: require passing in an enabled FRO1MHZ instead,
         //       so we don't silently enable it.
         // NB: UM says bit 4 (FRO_HF_FREQM_ENA), which is incorrect
@@ -96,7 +98,7 @@ impl UTICK<init_state::Enabled> {
         -> UTICK<init_state::Disabled>
     {
         unsafe { &*crate::raw::SYSCON::ptr() }.clock_ctrl.modify(|_, w| w.fro1mhz_utick_ena().disable());
-        syscon.disable_clock1(&mut self.utick);
+        syscon.disable_clock(&mut self.utick);
 
         UTICK {
             utick: self.utick,
@@ -111,7 +113,11 @@ impl timer::CountDown for UTICK<init_state::Enabled> {
     fn start<T>(&mut self, timeout: T) where T: Into<Self::Time> {
         // The delay will be equal to DELAYVAL + 1 periods of the timer clock.
         // The minimum usable value is 1, for a delay of 2 timer clocks. A value of 0 stops the timer.
-        self.utick.ctrl.write(|w| unsafe { w.delayval().bits(timeout.into()) });
+        let time = timeout.into();
+        // Maybe remove again? Empirically, nothing much happens when
+        // writing 1 to `delayval`.
+        assert!(time >= 2);
+        self.utick.ctrl.write(|w| unsafe { w.delayval().bits(time - 1) });
     }
 
     fn wait(&mut self) -> nb::Result<(), Void> {
@@ -139,6 +145,13 @@ impl<State> UTICK<State> {
     pub fn free(self) -> raw::UTICK {
         self.utick
     }
+
+    // not part of `timer::Countdown`
+    pub fn stop<T>(&mut self) {
+        // A value of 0 stops the timer.
+        self.utick.ctrl.write(|w| unsafe { w.delayval().bits(0) });
+    }
+
 }
 
 

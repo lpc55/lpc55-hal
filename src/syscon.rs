@@ -20,10 +20,11 @@
 // use cortex_m_semihosting::dbg;
 
 use crate::raw::syscon::{
-    ahbclkctrl0, ahbclkctrl1, ahbclkctrl2, // clock_ctrl,
-    AHBCLKCTRL0, AHBCLKCTRL1, AHBCLKCTRL2, CLOCK_CTRL,
+    // ahbclkctrl0, ahbclkctrl1, ahbclkctrl2, // clock_ctrl,
+    AHBCLKCTRL0, AHBCLKCTRL1, AHBCLKCTRL2,
+    CLOCK_CTRL,
     // presetctrl0, presetctrl1, presetctrl2,  // clock_ctrl,
-    // PRESETCTRL0, PRESETCTRL1, PRESETCTRL2,  // CLOCK_CTRL,
+    PRESETCTRL0, PRESETCTRL1, PRESETCTRL2,
 };
 
 use crate::reg;
@@ -65,6 +66,9 @@ impl SYSCON {
                 ahbclkctrl1: RegProxy::new(),
                 ahbclkctrl2: RegProxy::new(),
                 clock_ctrl: RegProxy::new(),
+                presetctrl0: RegProxy::new(),
+                presetctrl1: RegProxy::new(),
+                presetctrl2: RegProxy::new(),
             },
 			fro_1mhz_utick_clock: Fro1MhzUtickClock::new(),
         }
@@ -101,68 +105,88 @@ pub struct Parts {
 /// [module documentation]: index.html
 pub struct Handle {
     ahbclkctrl0: RegProxy<AHBCLKCTRL0>,
-    #[allow(dead_code)]
     ahbclkctrl1: RegProxy<AHBCLKCTRL1>,
     ahbclkctrl2: RegProxy<AHBCLKCTRL2>,
     clock_ctrl: RegProxy<CLOCK_CTRL>,
+    presetctrl0: RegProxy<PRESETCTRL0>,
+    presetctrl1: RegProxy<PRESETCTRL1>,
+    presetctrl2: RegProxy<PRESETCTRL2>,
 }
 
 reg!(AHBCLKCTRL0, AHBCLKCTRL0, raw::SYSCON, ahbclkctrl0);
 reg!(AHBCLKCTRL1, AHBCLKCTRL1, raw::SYSCON, ahbclkctrl1);
 reg!(AHBCLKCTRL2, AHBCLKCTRL2, raw::SYSCON, ahbclkctrl2);
 reg!(CLOCK_CTRL, CLOCK_CTRL, raw::SYSCON, clock_ctrl);
+reg!(PRESETCTRL0, PRESETCTRL0, raw::SYSCON, presetctrl0);
+reg!(PRESETCTRL1, PRESETCTRL1, raw::SYSCON, presetctrl1);
+reg!(PRESETCTRL2, PRESETCTRL2, raw::SYSCON, presetctrl2);
 
 impl Handle {
     /// Enable peripheral clock
 
-    /// Enables the clock for a peripheral or other hardware component. HAL
-    /// users usually won't have to call this method directly, as other
-    /// peripheral APIs will do this for them.
-    pub fn enable_clock0<P: ClockControl0>(&mut self, peripheral: &P) {
-        self.ahbclkctrl0.modify(|_, w| peripheral.enable_clock(w));
-    }
+    // /// Enables the clock for a peripheral or other hardware component. HAL
+    // /// users usually won't have to call this method directly, as other
+    // /// peripheral APIs will do this for them.
+    // pub fn enable_clock0<P: ClockControl0>(&mut self, peripheral: &P) {
+    //     self.ahbclkctrl0.modify(|_, w| peripheral.enable_clock(w));
+    // }
 
-    /// Disable peripheral clock
-    pub fn disable_clock0<P: ClockControl0>(&mut self, peripheral: &P) {
-        self.ahbclkctrl0
-            .modify(|_, w| peripheral.disable_clock(w));
-    }
+    // /// Disable peripheral clock
+    // pub fn disable_clock0<P: ClockControl0>(&mut self, peripheral: &P) {
+    //     self.ahbclkctrl0
+    //         .modify(|_, w| peripheral.disable_clock(w));
+    // }
 
-    /// Check if peripheral clock is enabled
-    pub fn is_clock_enabled0<P: ClockControl0>(&self, peripheral: &P) -> bool {
-        peripheral.is_clock_enabled(&self.ahbclkctrl0.read())
-    }
+    // /// Check if peripheral clock is enabled
+    // pub fn is_clock_enabled0<P: ClockControl0>(&self, peripheral: &P) -> bool {
+    //     peripheral.is_clock_enabled(&self.ahbclkctrl0.read())
+    // }
+
+    // /// Enables the clock for a peripheral or other hardware component
+    // pub fn enable_clock1<P: ClockControl1>(&mut self, peripheral: &P) {
+    //     self.ahbclkctrl1.modify(|_, w| peripheral.enable_clock(w));
+    // }
+
+    // /// Disable peripheral clock
+    // pub fn disable_clock1<P: ClockControl1>(&mut self, peripheral: &P) {
+    //     self.ahbclkctrl1
+    //         .modify(|_, w| peripheral.disable_clock(w));
+    // }
+
+    // /// Check if peripheral clock is enabled
+    // pub fn is_clock_enabled1<P: ClockControl1>(&self, peripheral: &P) -> bool {
+    //     peripheral.is_clock_enabled(&self.ahbclkctrl1.read())
+    // }
+
+    // /// Enables the clock for a peripheral or other hardware component
+    // pub fn enable_clock2<P: ClockControl2>(&mut self, peripheral: &P) {
+    //     self.ahbclkctrl2.modify(|_, w| peripheral.enable_clock(w));
+    // }
+
+    // /// Disable peripheral clock
+    // pub fn disable_clock2<P: ClockControl2>(&mut self, peripheral: &P) {
+    //     self.ahbclkctrl2
+    //         .modify(|_, w| peripheral.disable_clock(w));
+    // }
+
+    // /// Check if peripheral clock is enabled
+    // pub fn is_clock_enabled2<P: ClockControl2>(&self, peripheral: &P) -> bool {
+    //     peripheral.is_clock_enabled(&self.ahbclkctrl2.read())
+    // }
 
     /// Enables the clock for a peripheral or other hardware component
-    pub fn enable_clock1<P: ClockControl1>(&mut self, peripheral: &P) {
-        self.ahbclkctrl1.modify(|_, w| peripheral.enable_clock(w));
+    pub fn enable_clock<P: ClockControl>(&mut self, peripheral: &P) {
+        peripheral.enable_clock(self);
     }
 
     /// Disable peripheral clock
-    pub fn disable_clock1<P: ClockControl1>(&mut self, peripheral: &P) {
-        self.ahbclkctrl1
-            .modify(|_, w| peripheral.disable_clock(w));
+    pub fn disable_clock<P: ClockControl>(&mut self, peripheral: &P) {
+        peripheral.disable_clock(self);
     }
 
     /// Check if peripheral clock is enabled
-    pub fn is_clock_enabled1<P: ClockControl1>(&self, peripheral: &P) -> bool {
-        peripheral.is_clock_enabled(&self.ahbclkctrl1.read())
-    }
-
-    /// Enables the clock for a peripheral or other hardware component
-    pub fn enable_clock2<P: ClockControl2>(&mut self, peripheral: &P) {
-        self.ahbclkctrl2.modify(|_, w| peripheral.enable_clock(w));
-    }
-
-    /// Disable peripheral clock
-    pub fn disable_clock2<P: ClockControl2>(&mut self, peripheral: &P) {
-        self.ahbclkctrl2
-            .modify(|_, w| peripheral.disable_clock(w));
-    }
-
-    /// Check if peripheral clock is enabled
-    pub fn is_clock_enabled2<P: ClockControl2>(&self, peripheral: &P) -> bool {
-        peripheral.is_clock_enabled(&self.ahbclkctrl2.read())
+    pub fn is_clock_enabled<P: ClockControl>(&self, peripheral: &P) -> bool {
+        peripheral.is_clock_enabled(&self)
     }
 
 }
@@ -173,136 +197,142 @@ impl Handle {
 /// implemented nor used outside of LPC82x HAL. Any changes to this trait won't
 /// be considered breaking changes.
 ///
-///// Please refer to [`syscon::Handle::enable_clock`] and
-///// [`syscon::Handle::disable_clock`] for the public API that uses this trait.
-/////
-///// [`syscon::Handle::enable_clock`]: struct.Handle.html#method.enable_clock
-///// [`syscon::Handle::disable_clock`]: struct.Handle.html#method.disable_clock
-pub trait ClockControl0 {
+/// Compared to https://git.io/fjpf9 (in lpc-rs/lpc8xx-hal/lpc8xx-hal-common)
+/// we use a less minimal API in order to hide the fact that there are three
+/// different AHLBCKLCTRL?, which a HAL user shouldn't really need to know about.
+pub trait ClockControl {
     /// Internal method to enable a peripheral clock
-    fn enable_clock<'w>(&self, w: &'w mut ahbclkctrl0::W) -> &'w mut ahbclkctrl0::W;
+    fn enable_clock<'h>(&self, h: &'h mut Handle) -> &'h mut Handle;
 
     /// Internal method to disable a peripheral clock
-    fn disable_clock<'w>(&self, w: &'w mut ahbclkctrl0::W) -> &'w mut ahbclkctrl0::W;
+    fn disable_clock<'h>(&self, h: &'h mut Handle) -> &'h mut Handle;
 
     /// Check if peripheral clock is enabled
-    fn is_clock_enabled(&self, r: &ahbclkctrl0::R) -> bool;
-
+    fn is_clock_enabled(&self, r: &Handle) -> bool;
 }
 
-pub trait ClockControl1 {
-    /// Internal method to enable a peripheral clock
-    fn enable_clock<'w>(&self, w: &'w mut ahbclkctrl1::W) -> &'w mut ahbclkctrl1::W;
+//
+// Unwrapped implementation for easier understanding
+//
+// impl ClockControl for raw::UTICK {
+//     fn enable_clock<'h>(&self, h: &'h mut Handle) -> &'h mut Handle {
+//         h.ahbclkctrl1.modify(|_, w| w.utick0().enable());
+//         h
+//     }
 
-    /// Internal method to disable a peripheral clock
-    fn disable_clock<'w>(&self, w: &'w mut ahbclkctrl1::W) -> &'w mut ahbclkctrl1::W;
+//     fn disable_clock<'h>(&self, h: &'h mut Handle) -> &'h mut Handle {
+//         h.ahbclkctrl1.modify(|_, w| w.utick0().disable());
+//         h
+//     }
 
-    /// Check if peripheral clock is enabled
-    fn is_clock_enabled(&self, r: &ahbclkctrl1::R) -> bool;
-}
-
-pub trait ClockControl2 {
-    /// Internal method to enable a peripheral clock
-    fn enable_clock<'w>(&self, w: &'w mut ahbclkctrl2::W) -> &'w mut ahbclkctrl2::W;
-
-    /// Internal method to disable a peripheral clock
-    fn disable_clock<'w>(&self, w: &'w mut ahbclkctrl2::W) -> &'w mut ahbclkctrl2::W;
-
-    /// Check if peripheral clock is enabled
-    fn is_clock_enabled(&self, r: &ahbclkctrl2::R) -> bool;
-}
-
-// pub trait GenericClockControl {
-//     type ahbclkctrl;
-
-//     /// Internal method to enable a peripheral clock
-//     fn enable_clock<'w>(&self, w: &'w mut Self::ahbclkctrl::W) -> &'w mut Self::ahbclkctrl::W;
-
-//     /// Internal method to disable a peripheral clock
-//     fn disable_clock<'w>(&self, w: &'w mut Self::ahbclkctrl::W) -> &'w mut Self::ahbclkctrl::W;
-
-//     /// Check if peripheral clock is enabled
-//     fn is_clock_enabled(&self, r: &Self::ahbclkctrl::R) -> bool;
+//     fn is_clock_enabled(&self, h: &Handle) -> bool {
+//         h.ahbclkctrl1.read().utick0().is_enable()
+//     }
 // }
-
-// macro_rules! impl_generic_clock_control {
-//     ($clock_control:ty, $clock:ident, $register_type:ty, $register:ident) => {
-//         impl GenericClockControl for $clock_control {
-//             type ahbclkctrl = $register_type;
-
-//             fn is_clock_enabled(&self, r: &$register::R) -> bool {
-//                 r.$clock().is_enable()
-//             }
-//         }
-//     };
-// }
-
-// impl_generic_clock_control!(raw::ADC0, adc, AHBCLKCTRL0, ahbclkctrl0);
 
 macro_rules! impl_clock_control {
-    ($clock_control:ty, $clock:ident, $register:ident, $trait:ident) => {
-        impl $trait for $clock_control {
-            fn enable_clock<'w>(&self, w: &'w mut $register::W) -> &'w mut $register::W {
-                w.$clock().enable()
+    ($clock_control:ty, $clock:ident, $register:ident) => {
+        impl ClockControl for $clock_control {
+            fn enable_clock<'h>(&self, h: &'h mut Handle) -> &'h mut Handle {
+                h.$register.modify(|_, w| w.$clock().enable());
+                h
             }
 
-            fn disable_clock<'w>(&self, w: &'w mut $register::W) -> &'w mut $register::W {
-                w.$clock().disable()
+            fn disable_clock<'h>(&self, h: &'h mut Handle) -> &'h mut Handle {
+                h.$register.modify(|_, w| w.$clock().disable());
+                h
             }
 
-            fn is_clock_enabled(&self, r: &$register::R) -> bool {
-                r.$clock().is_enable()
+            fn is_clock_enabled(&self, h: &Handle) -> bool {
+                h.$register.read().$clock().is_enable()
+            }
+        }
+    }
+}
+
+impl_clock_control!(raw::ADC0, adc, ahbclkctrl0);
+impl_clock_control!(raw::FLASH, flash, ahbclkctrl0);
+impl_clock_control!(raw::IOCON, iocon, ahbclkctrl0);
+impl_clock_control!(raw::GINT0, gint, ahbclkctrl0);
+impl_clock_control!(raw::PINT, pint, ahbclkctrl0);
+
+impl_clock_control!(raw::USB0, usb0_dev, ahbclkctrl1);
+impl_clock_control!(raw::UTICK, utick0, ahbclkctrl1);
+
+impl_clock_control!(raw::ANACTRL, analog_ctrl, ahbclkctrl2);
+impl_clock_control!(raw::CASPER, casper, ahbclkctrl2);
+// there is no GPIO_SEC. what to do? create a PhantomData one?
+// impl_clock_control!(raw::GPIO_SEC, gpio_sec, ahbclkctrl2);
+impl_clock_control!(raw::PUF, puf, ahbclkctrl2);
+impl_clock_control!(raw::RNG, rng, ahbclkctrl2);
+
+// GPIO needs a separate implementation
+impl ClockControl for raw::GPIO {
+    // There are all these GPIO? registers, but only GPIO0 and GPIO1
+    // actually exist according to UM
+    fn enable_clock<'h>(&self, h: &'h mut Handle) -> &'h mut Handle {
+        h.ahbclkctrl0.modify(|_, w| w.gpio0().enable());
+        h.ahbclkctrl0.modify(|_, w| w.gpio1().enable());
+        // h.ahbclkctrl0.modify(|_, w| w.gpio2().enable());
+        // h.ahbclkctrl0.modify(|_, w| w.gpio3().enable());
+        // h.ahbclkctrl2.modify(|_, w| w.gpio4().enable());
+        // h.ahbclkctrl2.modify(|_, w| w.gpio5().enable());
+        h
+    }
+
+    fn disable_clock<'h>(&self, h: &'h mut Handle) -> &'h mut Handle {
+        h.ahbclkctrl0.modify(|_, w| w.gpio0().disable());
+        h.ahbclkctrl0.modify(|_, w| w.gpio1().disable());
+        // h.ahbclkctrl0.modify(|_, w| w.gpio2().disable());
+        // h.ahbclkctrl0.modify(|_, w| w.gpio3().disable());
+        // h.ahbclkctrl2.modify(|_, w| w.gpio4().disable());
+        // h.ahbclkctrl2.modify(|_, w| w.gpio5().disable());
+        h
+    }
+
+    fn is_clock_enabled(&self, h: &Handle) -> bool {
+        h.ahbclkctrl0.read().gpio0().is_enable() &&
+        h.ahbclkctrl0.read().gpio1().is_enable() &&
+        // h.ahbclkctrl0.read().gpio2().is_enable() &&
+        // h.ahbclkctrl0.read().gpio3().is_enable() &&
+        // h.ahbclkctrl2.read().gpio4().is_enable() &&
+        // h.ahbclkctrl2.read().gpio5().is_enable() &&
+        true
+    }
+}
+
+
+pub trait ResetControl {
+    /// Internal method to assert peripheral reset
+    fn assert_reset<'h>(&self, h: &'h mut Handle) -> &'h mut Handle;
+
+    /// Internal method to clear peripheral reset
+    fn clear_reset<'h>(&self, h: &'h mut Handle) -> &'h mut Handle;
+}
+
+// TODO: check whether we're calling asserted/released is correct
+macro_rules! impl_reset_control {
+    ($reset_control:ty, $field:ident, $register:ident) => {
+        impl<'a> ResetControl for $reset_control {
+            fn assert_reset<'h>(&self, h: &'h mut Handle) -> &'h mut Handle {
+                h.$register.modify(|_, w| w.$field().asserted());
+                h
+            }
+
+            fn clear_reset<'h>(&self, h: &'h mut Handle) -> &'h mut Handle {
+                h.$register.modify(|_, w| w.$field().released());
+                h
             }
         }
     };
 }
 
-// TODO: be able to just pass 0 here instead of both ahbclkctrl0 and ClockControl0
-impl_clock_control!(raw::ADC0, adc, ahbclkctrl0, ClockControl0);
-impl_clock_control!(raw::FLASH, flash, ahbclkctrl0, ClockControl0);
-impl_clock_control!(raw::IOCON, iocon, ahbclkctrl0, ClockControl0);
-impl_clock_control!(raw::GINT0, gint, ahbclkctrl0, ClockControl0);
-impl_clock_control!(raw::PINT, pint, ahbclkctrl0, ClockControl0);
+// to be completed
+impl_reset_control!(raw::IOCON, iocon_rst, presetctrl0);
+impl_reset_control!(raw::CASPER, casper_rst, presetctrl2);
+impl_reset_control!(raw::UTICK, utick0_rst, presetctrl1);
+impl_reset_control!(raw::USB0, usb0_dev_rst, presetctrl1);
 
-impl_clock_control!(raw::USB0, usb0_dev, ahbclkctrl1, ClockControl1);
-impl_clock_control!(raw::UTICK, utick0, ahbclkctrl1, ClockControl1);
-
-impl_clock_control!(raw::ANACTRL, analog_ctrl, ahbclkctrl2, ClockControl2);
-impl_clock_control!(raw::CASPER, casper, ahbclkctrl2, ClockControl2);
-// there is no GPIO_SEC. what to do? create a PhantomData one?
-// impl_clock_control!(raw::GPIO_SEC, gpio_sec, ahbclkctrl2, ClockControl2);
-impl_clock_control!(raw::PUF, puf, ahbclkctrl2, ClockControl2);
-impl_clock_control!(raw::RNG, rng, ahbclkctrl2, ClockControl2);
-
-// there are so many PIOs, need special casing
-impl ClockControl0 for raw::GPIO {
-    fn enable_clock<'w>(&self, w: &'w mut ahbclkctrl0::W) -> &'w mut ahbclkctrl0::W {
-        w.gpio0().enable().gpio1().enable().gpio2().enable().gpio3().enable()
-    }
-
-    fn disable_clock<'w>(&self, w: &'w mut ahbclkctrl0::W) -> &'w mut ahbclkctrl0::W {
-        w.gpio0().disable().gpio1().disable().gpio2().disable().gpio3().disable()
-    }
-
-    fn is_clock_enabled(&self, r: &ahbclkctrl0::R) -> bool {
-        r.gpio0().is_enable() && r.gpio1().is_enable() &&
-        r.gpio2().is_enable() && r.gpio3().is_enable()
-    }
-}
-
-impl ClockControl2 for raw::GPIO {
-    fn enable_clock<'w>(&self, w: &'w mut ahbclkctrl2::W) -> &'w mut ahbclkctrl2::W {
-        w.gpio4().enable().gpio5().enable()
-    }
-
-    fn disable_clock<'w>(&self, w: &'w mut ahbclkctrl2::W) -> &'w mut ahbclkctrl2::W {
-        w.gpio4().disable().gpio5().disable()
-    }
-
-    fn is_clock_enabled(&self, r: &ahbclkctrl2::R) -> bool {
-        r.gpio4().is_enable() && r.gpio5().is_enable()
-    }
-}
 
 pub struct Fro1MhzUtickClock<State = init_state::Disabled> {
     _state: State,

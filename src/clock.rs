@@ -14,15 +14,9 @@ pub struct Ticks<'clock, C: 'clock> {
 
     /// Reference to the clock
     ///
-    /// For many clocks, it's possible to change their frequency. If this were
-    /// to be done after an instance of `Ticks` had been created, that would
-    /// invalidate the `Ticks` instance, as the same number of ticks would
-    /// suddenly represent a different duration of time.
-    ///
-    /// This reference exists to prevent this. Any change to the configuration
-    /// of a clock would presumably require a mutable reference, which means as
-    /// long as this shared reference to the clock exists, the compiler will
-    /// prevent the clock frequency from being changed.
+    /// Kept to prevent changes of the clock configuration, which would likely
+    /// change its frequency and invalidate the `Ticks` instance by representing
+    /// a different duration of time.
     pub clock: &'clock C,
 }
 
@@ -62,46 +56,6 @@ pub trait Frequency {
 /// HAL users will typically use this trait to ensure that a clock that is
 /// passed as a parameter is enabled.
 ///
-/// # Examples
-///
-/// This is a function that takes a clock. The function uses this trait to
-/// ensure the passed clock is enabled.
-///
-/// ``` rust
-/// use lpc82x_hal::clock;
-///
-/// fn use_clock<C>(clock: C) where C: clock::Frequency + clock::Enabled {
-///     // do something with the clock
-/// }
-/// ```
-///
-/// The following example shows how to use a type parameter to track whether a
-/// clock is enabled, and implement the `Enabled` trait conditionally.
-///
-/// ``` rust
-/// use lpc82x_hal::{
-///     clock,
-///     init_state,
-/// };
-///
-///
-/// struct MyClock<State> {
-///     _state: State,
-/// }
-///
-/// impl MyClock<init_state::Disabled> {
-///     /// Consume the instance with disabled state, return one with enabled
-///     /// state.
-///     pub fn enable(self) -> MyClock<init_state::Enabled> {
-///         // Enable the clock
-///         // ...
-///
-///         MyClock {
-///             _state: init_state::Enabled(()),
-///         }
-///     }
-/// }
-///
-/// impl clock::Enabled for MyClock<init_state::Enabled> {}
-/// ```
+/// As an example, see `utick::`syscon::Fro1MhzUtickClock` and
+/// `clock::Sleep`.
 pub trait Enabled {}

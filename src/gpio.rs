@@ -169,6 +169,14 @@ where
             },
         }
     }
+
+    // used for instance for LEDs where off = high
+    pub fn into_output_high(self) -> Pin<T, pin_state::Gpio<'gpio, direction::Output>> {
+        let mut pin = self.into_output();
+        #[allow(deprecated)]
+        pin.set_high();
+        pin
+    }
 }
 
 /// These methods are only available if
@@ -307,9 +315,9 @@ impl GPIO<init_state::Disabled> {
         }
     }
     pub fn enable(mut self, syscon: &mut syscon::Handle) -> GPIO<init_state::Enabled> {
-        dbg!(syscon.is_clock_enabled0(&self.gpio));
-        syscon.enable_clock0(&mut self.gpio);
-        dbg!(syscon.is_clock_enabled0(&self.gpio));
+        dbg!(syscon.is_clock_enabled(&self.gpio));
+        syscon.enable_clock(&mut self.gpio);
+        dbg!(syscon.is_clock_enabled(&self.gpio));
 
         GPIO {
             gpio: self.gpio,
@@ -320,7 +328,7 @@ impl GPIO<init_state::Disabled> {
 
 impl GPIO<init_state::Enabled> {
     pub fn disable(mut self, syscon: &mut syscon::Handle) -> GPIO<init_state::Disabled> {
-        syscon.disable_clock0(&mut self.gpio);
+        syscon.disable_clock(&mut self.gpio);
 
         GPIO {
             gpio: self.gpio,

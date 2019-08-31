@@ -8,9 +8,6 @@ use lpc55s6x_hal::prelude::*;
 
 use lpc55s6x_hal as hal;
 
-#[allow(deprecated)]
-use embedded_hal::digital::v1::OutputPin;
-
 #[entry]
 fn main() -> ! {
 
@@ -23,27 +20,29 @@ fn main() -> ! {
     // R = pio1_6
     // G = pio1_7
     // B = pio1_4
+    //
+    // on = low, off = high
 
     let mut red = gpio.pins.pio1_6
         .into_gpio_pin(&gpio.handle)
-        .into_output();
-    #[allow(deprecated)]
-    red.set_high();  // on = low
+        .into_output_high();
+
+	let clock = syscon.fro_1mhz_utick_clock.enable(&mut syscon.handle);
+	let delay = hal::clock::Ticks { value: 1_000_000, clock: &clock }; // 1e6 us = 1 s
 
     let mut utick = peripherals.UTICK.enable(&mut syscon.handle);
-	let clock = syscon.fro_1mhz_utick_clock.enable(&mut syscon.handle);
 	let mut sleep = hal::sleep::Busy::prepare(&mut utick);
-	let delay = hal::clock::Ticks { value: 1_000_000, clock: &clock }; // 1000 ms
 
+    // use this order to check whether LED initially flashes up
     loop {
         #![allow(deprecated)]
         // this is to workaround the v1/v2 digital pin
         // situation, until Vadim's v3 lands
 
+		sleep.sleep(delay);
         red.set_low();
-		sleep.sleep(delay);
 
-        red.set_high();
 		sleep.sleep(delay);
+        red.set_high();
     }
 }
