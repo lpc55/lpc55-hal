@@ -1,4 +1,4 @@
-[target.thumbv8m.main-none-eabihf]
+[target.thumbv8m.main-none-eabi]
 #runner = "arm-none-eabi-gdb -q -x jlink.gdb"
 runner = "gdb-multiarch -q -x jlink.gdb"
 rustflags = [
@@ -6,4 +6,4 @@ rustflags = [
 ]
 
 [build]
-target = "thumbv8m.main-none-eabihf"
+target = "thumbv8m.main-none-eabi"

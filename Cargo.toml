@@ -21,23 +21,21 @@ lpc55s6x-pac = "0.0.4"
 # lpc55s6x-pac = { path = "../lpc55s6x-pac" }
 nb = "0.1.1"
 void = { version = "1", default-features = false }
+cortex-m-semihosting = "0.3"
 
 [dev-dependencies]
-# cortex-m-rt = "0.6.10"
-cortex-m-rt = { git = "https://github.com/rust-embedded/cortex-m-rt" }
-panic-halt  = "0.2.0"
+cortex-m-rt = "0.6.10"
+# cortex-m-rt = { git = "https://github.com/rust-embedded/cortex-m-rt" }
+# panic-halt  = "0.2.0"
 # Use new release with the JLink patch once it's released
 # panic-semihosting = "0.5.2"
-panic-semihosting = { path = "../panic-semihosting" }
-# cortex-m-semihosting = "0.3.3"
+# panic-semihosting = { path = "../panic-semihosting", features = ["jlink-quirks"] }
+# cortex-m-rtfm = "0.4.3"
+cortex-m-rtfm = { git = "https://github.com/nickray/cortex-m-rtfm", branch = "bump-cortex-m-and-rt" }
 
-# serde = { version = "1.0", default-features = false, features = ["derive"] }
-# serde_cbor = { version = "0.10", default-features = false }
-
-# [dev-dependencies.cortex-m-semihosting]
-[dependencies.cortex-m-semihosting]
-git = "https://github.com/rust-embedded/cortex-m-semihosting"
-rev = "3a944acbab1da657e52f79916e2ab76f1b5997d6"
+[dev-dependencies.panic-semihosting]
+git = "https://github.com/nickray/panic-semihosting"
+branch = "jlink-quirks"
 features = ["jlink-quirks"]
 
 [features]
