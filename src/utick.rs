@@ -105,8 +105,21 @@ impl UTICK<init_state::Enabled> {
             _state: init_state::Disabled,
         }
     }
+
 }
 
+impl timer::Cancel for UTICK<init_state::Enabled> {
+    type Error = Void;
+
+    fn cancel(&mut self) -> Result<(), Self::Error> {
+        // A value of 0 stops the timer.
+        self.utick.ctrl.write(|w| unsafe { w.delayval().bits(0) });
+        Ok(())
+    }
+
+}
+
+// TODO: also implement Periodic for UTICK
 impl timer::CountDown for UTICK<init_state::Enabled> {
     type Time = u32;
 
@@ -145,20 +158,14 @@ impl<State> UTICK<State> {
     pub fn free(self) -> raw::UTICK {
         self.utick
     }
-
-    // not part of `timer::Countdown`
-    pub fn stop<T>(&mut self) {
-        // A value of 0 stops the timer.
-        self.utick.ctrl.write(|w| unsafe { w.delayval().bits(0) });
-    }
-
 }
 
 
-/// A clock that is usable by the self-wake-up timer (WKT)
+/// A clock that is usable by the micro-tick timer (UTICK)
 ///
-/// This trait is implemented for all clocks that are supported by the WKT. The
-/// user shouldn't need to implement this trait themselves.
+/// This trait is implemented for all clocks that are supported by the UTICK,
+/// which is just FRO1MHZ.
+/// The user shouldn't need to implement this trait themselves.
 pub trait Clock {}
 
 impl<State> Clock for Fro1MhzUtickClock<State> {}

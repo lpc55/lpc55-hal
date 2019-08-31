@@ -7,6 +7,7 @@ pub extern crate lpc55s6x_pac as raw;
 
 pub mod clock;
 pub mod gpio;
+pub mod iocon;
 pub mod rng;
 pub mod sleep;
 pub mod syscon;
@@ -76,6 +77,9 @@ pub struct Peripherals {
     /// TODO: do *not* rely on this
     pub GPIO: gpio::GPIO<init_state::Disabled>,
 
+    /// I/O configuration
+    pub IOCON: iocon::IOCON,
+
     /// System configuration
     pub SYSCON: syscon::SYSCON,
 
@@ -109,14 +113,6 @@ pub struct Peripherals {
     /// meantime, this field provides you with the raw register mappings, which
     /// allow you full, unprotected access to the peripheral.
     pub FLASH: raw::FLASH,
-
-    /// I/O configuration
-    ///
-    /// A HAL API for this peripheral has not been implemented yet. In the
-    /// meantime, this field provides you with the raw register mappings, which
-    /// allow you full, unprotected access to the peripheral.
-
-    pub IOCON: raw::IOCON,
 
     /// CPUID
     ///
@@ -241,6 +237,7 @@ impl Peripherals {
             // NOTE(unsafe) The init state of the gpio peripheral is enabled,
             // thus it's safe to create an already initialized gpio port
             GPIO: gpio::GPIO::new(p.GPIO),
+            IOCON: iocon::IOCON::new(p.IOCON),
             SYSCON: syscon::SYSCON::new(p.SYSCON),
             UTICK: utick::UTICK::new(p.UTICK),
 
@@ -249,7 +246,6 @@ impl Peripherals {
             CRC_ENGINE: p.CRC_ENGINE,
             CTIMER0: p.CTIMER0,
             FLASH: p.FLASH,
-            IOCON: p.IOCON,
 
             // Core peripherals
             CPUID: cp.CPUID,
