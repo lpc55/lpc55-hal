@@ -109,8 +109,8 @@ pub trait PinId {
 ///   output
 ///
 /// To use a pin, that we previously configured for GPIO (see example above),
-/// for digital output, we need to set the pin direction using
-/// [`Pin::into_output`].
+/// for digital output, we need to set the pin direction and initial low/high
+/// state using [`Pin::into_output_low`] or [`Pin::into_output_high`].
 ///
 /// Using pins for digital input is currently not supported by the API.
 ///
@@ -153,7 +153,7 @@ where
     T: PinId,
     D: direction::NotOutput,
 {
-    pub fn into_output(self) -> Pin<T, pin_state::Gpio<'gpio, direction::Output>> {
+    fn into_output(self) -> Pin<T, pin_state::Gpio<'gpio, direction::Output>> {
         self.state.dirset[T::PORT].write(|w| unsafe { w.dirsetp().bits(T::MASK) });
 
         Pin {
@@ -170,9 +170,22 @@ where
         }
     }
 
+    pub fn into_output_low(self) -> Pin<T, pin_state::Gpio<'gpio, direction::Output>> {
+        let mut pin = self.into_output();
+
+        // usually redundant
+
+        #[allow(deprecated)]
+        pin.set_low();
+        pin
+    }
+
     // used for instance for LEDs where off = high
     pub fn into_output_high(self) -> Pin<T, pin_state::Gpio<'gpio, direction::Output>> {
+        // TODO: the LED still flicks on briefly with this method
+        // Ensure it's high before setting the dirsetp bits
         let mut pin = self.into_output();
+
         #[allow(deprecated)]
         pin.set_high();
         pin
