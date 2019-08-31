@@ -13,8 +13,20 @@ use embedded_hal::blocking::rng::Read;
 fn main() -> ! {
     // TODO: use hal::Peripherals
     let mut peripherals = hal::raw::Peripherals::take().unwrap();
+    let mut cp = hal::raw::CorePeripherals::take().unwrap();
+
+    cp.DWT.enable_cycle_counter();
+
+    let before = hal::get_cycle_count();
+    asm::nop();
+    asm::nop();
+    asm::nop();
+    let after = hal::get_cycle_count();
+    dbg!(after - before);
+    // idbg!(after);
 
     let mut syscon = hal::syscon::SYSCON::new(peripherals.SYSCON).split();
+    dbg!(hal::get_cycle_count());
 
     // TODO: make this method generic over i (in this case, 2)
     dbg!(syscon.handle.is_clock_enabled2(&peripherals.RNG));  // seems default is: yes!

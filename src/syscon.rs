@@ -17,16 +17,17 @@
 //     // UARTCLKDIV, UARTFRGDIV, UARTFRGMULT,
 // };
 
-use cortex_m_semihosting::dbg;
+// use cortex_m_semihosting::dbg;
 
 use crate::raw::syscon::{
-    ahbclkctrl0, ahbclkctrl1, ahbclkctrl2,  // clock_ctrl,
-    AHBCLKCTRL0, AHBCLKCTRL1, AHBCLKCTRL2,  // CLOCK_CTRL,
+    ahbclkctrl0, ahbclkctrl1, ahbclkctrl2, // clock_ctrl,
+    AHBCLKCTRL0, AHBCLKCTRL1, AHBCLKCTRL2, CLOCK_CTRL,
     // presetctrl0, presetctrl1, presetctrl2,  // clock_ctrl,
     // PRESETCTRL0, PRESETCTRL1, PRESETCTRL2,  // CLOCK_CTRL,
 };
 
 use crate::reg;
+use crate::{clock, init_state};
 
 // Let's see if this is overengineered or not, maybe remove
 use crate::reg_proxy::RegProxy;
@@ -60,11 +61,12 @@ impl SYSCON {
     pub fn split(self) -> Parts {
         Parts {
             handle: Handle {
-                // clock_ctrl: RegProxy::new(),
                 ahbclkctrl0: RegProxy::new(),
                 ahbclkctrl1: RegProxy::new(),
                 ahbclkctrl2: RegProxy::new(),
+                clock_ctrl: RegProxy::new(),
             },
+			fro_1mhz_utick_clock: Fro1MhzUtickClock::new(),
         }
     }
 
@@ -82,6 +84,7 @@ impl SYSCON {
 /// [module documentation]: index.html
 pub struct Parts {
     pub handle: Handle,
+	pub fro_1mhz_utick_clock: Fro1MhzUtickClock<init_state::Disabled>,
 
     // more to come obviously
 }
@@ -97,17 +100,17 @@ pub struct Parts {
 ///
 /// [module documentation]: index.html
 pub struct Handle {
-    // clock_ctrl: RegProxy<CLOCK_CTRL>,
     ahbclkctrl0: RegProxy<AHBCLKCTRL0>,
     #[allow(dead_code)]
     ahbclkctrl1: RegProxy<AHBCLKCTRL1>,
     ahbclkctrl2: RegProxy<AHBCLKCTRL2>,
+    clock_ctrl: RegProxy<CLOCK_CTRL>,
 }
 
-// reg!(CLOCK_CTRL, CLOCK_CTRL, raw::SYSCON, clock_ctrl);
 reg!(AHBCLKCTRL0, AHBCLKCTRL0, raw::SYSCON, ahbclkctrl0);
 reg!(AHBCLKCTRL1, AHBCLKCTRL1, raw::SYSCON, ahbclkctrl1);
 reg!(AHBCLKCTRL2, AHBCLKCTRL2, raw::SYSCON, ahbclkctrl2);
+reg!(CLOCK_CTRL, CLOCK_CTRL, raw::SYSCON, clock_ctrl);
 
 impl Handle {
     /// Enable peripheral clock
@@ -262,7 +265,7 @@ impl_clock_control!(raw::GINT0, gint, ahbclkctrl0, ClockControl0);
 impl_clock_control!(raw::PINT, pint, ahbclkctrl0, ClockControl0);
 
 impl_clock_control!(raw::USB0, usb0_dev, ahbclkctrl1, ClockControl1);
-impl_clock_control!(raw::UTICK0, utick0, ahbclkctrl1, ClockControl1);
+impl_clock_control!(raw::UTICK, utick0, ahbclkctrl1, ClockControl1);
 
 impl_clock_control!(raw::ANACTRL, analog_ctrl, ahbclkctrl2, ClockControl2);
 impl_clock_control!(raw::CASPER, casper, ahbclkctrl2, ClockControl2);
@@ -300,3 +303,50 @@ impl ClockControl2 for raw::GPIO {
         r.gpio4().is_enable() && r.gpio5().is_enable()
     }
 }
+
+pub struct Fro1MhzUtickClock<State = init_state::Disabled> {
+    _state: State,
+}
+
+impl Fro1MhzUtickClock<init_state::Disabled> {
+    pub(crate) fn new() -> Self {
+        Fro1MhzUtickClock {
+            _state: init_state::Disabled,
+        }
+    }
+
+    /// Enable the FRO1MHZ UTICK clock
+    pub fn enable(
+        self,
+        syscon: &mut Handle,
+    ) -> Fro1MhzUtickClock<init_state::Enabled> {
+        syscon.clock_ctrl.modify(|_, w| w.fro1mhz_utick_ena().enable());
+
+        Fro1MhzUtickClock {
+            _state: init_state::Enabled(()),
+        }
+    }
+
+}
+
+impl Fro1MhzUtickClock<init_state::Enabled> {
+    /// Disable the FRO1MHZ UTICK clock
+    pub fn disable(
+        self,
+        syscon: &mut Handle,
+    ) -> Fro1MhzUtickClock<init_state::Disabled> {
+        syscon.clock_ctrl.modify(|_, w| w.fro1mhz_utick_ena().disable());
+
+        Fro1MhzUtickClock {
+            _state: init_state::Disabled,
+        }
+    }
+}
+
+impl<State> clock::Frequency for Fro1MhzUtickClock<State> {
+    fn hz(&self) -> u32 {
+        1_000_000
+    }
+}
+
+impl clock::Enabled for Fro1MhzUtickClock<init_state::Enabled> {}

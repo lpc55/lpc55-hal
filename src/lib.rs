@@ -5,14 +5,21 @@ use embedded_hal as hal;
 
 pub extern crate lpc55s6x_pac as raw;
 
+pub mod clock;
 pub mod gpio;
 pub mod rng;
+pub mod sleep;
 pub mod syscon;
+pub mod utick;
+
 #[macro_use]
 pub(crate) mod reg_proxy;
 
 pub mod prelude {
     pub use crate::hal::prelude::*;
+    pub use crate::{
+        sleep::Sleep as _lpc82x_hal_sleep_Sleep,
+    };
 }
 
 /// Contains types that encode the state of hardware initialization
@@ -72,6 +79,9 @@ pub struct Peripherals {
     /// System configuration
     pub SYSCON: syscon::SYSCON,
 
+    /// Micro-Tick Timer
+    pub UTICK: utick::UTICK<init_state::Disabled>,
+
     /// Analog-to-Digital Converter (ADC)
     ///
     /// A HAL API for this peripheral has not been implemented yet. In the
@@ -105,6 +115,7 @@ pub struct Peripherals {
     /// A HAL API for this peripheral has not been implemented yet. In the
     /// meantime, this field provides you with the raw register mappings, which
     /// allow you full, unprotected access to the peripheral.
+
     pub IOCON: raw::IOCON,
 
     /// CPUID
@@ -231,6 +242,7 @@ impl Peripherals {
             // thus it's safe to create an already initialized gpio port
             GPIO: gpio::GPIO::new(p.GPIO),
             SYSCON: syscon::SYSCON::new(p.SYSCON),
+            UTICK: utick::UTICK::new(p.UTICK),
 
             // Raw peripherals
             ADC0: p.ADC0,

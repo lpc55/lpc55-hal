@@ -2,11 +2,9 @@
 #![no_std]
 
 extern crate panic_semihosting;
-// use cortex_m_semihosting::dbg;
-use cortex_m::asm;
 use cortex_m_rt::entry;
 
-// use lpc55s6x_hal::prelude::*;
+use lpc55s6x_hal::prelude::*;
 
 use lpc55s6x_hal as hal;
 
@@ -32,27 +30,20 @@ fn main() -> ! {
     #[allow(deprecated)]
     red.set_high();  // on = low
 
-    // TODO: there is some bug where uncommenting these two
-    //       but for these LEDs, low = on.
-
-    let mut green = gpio.pins.pio1_7
-        .into_gpio_pin(&gpio.handle)
-        .into_output();
-    #[allow(deprecated)]
-    green.set_high();  // on = low
-
-    let mut blue = gpio.pins.pio1_4
-        .into_gpio_pin(&gpio.handle)
-        .into_output();
-    #[allow(deprecated)]
-    blue.set_high();  // on = low
-
-    #[allow(deprecated)]
-    red.set_low();  // on = low
-
-    // TODO: switch to v2 digital pins and remove the deprecation allowances
+    let mut utick = peripherals.UTICK.enable(&mut syscon.handle);
+	let clock = syscon.fro_1mhz_utick_clock.enable(&mut syscon.handle);
+	let mut sleep = hal::sleep::Busy::prepare(&mut utick);
+	let delay = hal::clock::Ticks { value: 1_000_000, clock: &clock }; // 1000 ms
 
     loop {
-        asm::wfi();
+        #![allow(deprecated)]
+        // this is to workaround the v1/v2 digital pin
+        // situation, until Vadim's v3 lands
+
+        red.set_low();
+		sleep.sleep(delay);
+
+        red.set_high();
+		sleep.sleep(delay);
     }
 }

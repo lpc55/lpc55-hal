@@ -9,5 +9,5 @@ monitor reset
 monitor semihosting enable
 # monitor semihosting breakOnError <digit>
 # by default (1) output goes to Telnet client, 2 sends to GDB client, 3 would send to both
-monitor semihosting IOClient 2
+monitor semihosting IOClient 3
 # stepi

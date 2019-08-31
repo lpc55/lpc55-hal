@@ -3,7 +3,7 @@
 
 // extern crate lpc55s6x_hal;
 extern crate panic_semihosting;
-use cortex_m_semihosting::{dbg, hprintln};
+use cortex_m_semihosting::{dbg, hprint, hprintln};
 use cortex_m::asm;
 use cortex_m_rt::entry;
 
@@ -23,6 +23,11 @@ use lpc55s6x_hal as hal;
 
 #[entry]
 fn main() -> ! {
+    // hprint!("ab").unwrap();
+    // hprint!("b").unwrap();
+    // hprintln!("c").unwrap();
+    // panic!("o.O");
+
     const UUID: *mut u32 = 0x0009_FC70 as *mut u32;
     // dbg!(UUID);
     let mut uuid: [u32; 4] = [0; 4];

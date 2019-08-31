@@ -15,17 +15,19 @@ edition = "2018"
 bare-metal = "0.2.4"
 vcell = "0.1"
 
-cortex-m = ">= 0.5.8, < 0.7"
+cortex-m = ">= 0.6.1, < 0.7"
 embedded-hal = { version = "0.2", features = ["unproven"] }
-lpc55s6x-pac = "0.0.2"
+lpc55s6x-pac = "0.0.3"
 # lpc55s6x-pac = { path = "../lpc55s6x-pac" }
 nb = "0.1.1"
+void = { version = "1", default-features = false }
 
 [dev-dependencies]
 # cortex-m-rt = "0.6.10"
 cortex-m-rt = { git = "https://github.com/rust-embedded/cortex-m-rt" }
 panic-halt  = "0.2.0"
-panic-semihosting = "0.5.2"
+# panic-semihosting = "0.5.2"
+panic-semihosting = { path = "../panic-semihosting" }
 # cortex-m-semihosting = "0.3.3"
 
 # serde = { version = "1.0", default-features = false, features = ["derive"] }
