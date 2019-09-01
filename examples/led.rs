@@ -28,7 +28,7 @@ fn main() -> ! {
 
     let mut red = iocon.pins.pio1_6
         .into_gpio_pin(&gpio)
-        .into_output_high();  // start turned off
+        .into_output(hal::gpio::Level::High);  // start turned off
 
 	let clock = syscon.fro_1mhz_utick_clock.enable(&mut syscon.handle);
 	let delay = hal::clock::Ticks { value: 500_000, clock: &clock }; // 500 ms = 0.5 s

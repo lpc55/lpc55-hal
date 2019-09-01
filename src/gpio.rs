@@ -29,12 +29,23 @@ pub mod direction {
     impl NotOutput for Input {}
 }
 
+pub enum Level {
+    Low,
+    High,
+}
+
 impl<'gpio, T, D> Pin<T, pin_state::Gpio<'gpio, D>>
 where
     T: PinId,
     D: direction::NotOutput,
 {
-    fn into_output(self) -> Pin<T, pin_state::Gpio<'gpio, direction::Output>> {
+    pub fn into_output(self, initial: Level) -> Pin<T, pin_state::Gpio<'gpio, direction::Output>> {
+
+        match initial {
+            Level::High => self.state.set[T::PORT].write(|w| unsafe { w.setp().bits(T::MASK) }),
+            Level::Low => self.state.clr[T::PORT].write(|w| unsafe { w.clrp().bits(T::MASK) }),
+        }
+
         self.state.dirset[T::PORT].write(|w| unsafe { w.dirsetp().bits(T::MASK) });
 
         Pin {
@@ -51,26 +62,13 @@ where
         }
     }
 
-    pub fn into_output_low(self) -> Pin<T, pin_state::Gpio<'gpio, direction::Output>> {
-        let mut pin = self.into_output();
-
-        // usually redundant
-
-        #[allow(deprecated)]
-        pin.set_low();
-        pin
-    }
-
-    // used for instance for LEDs where off = high
-    pub fn into_output_high(self) -> Pin<T, pin_state::Gpio<'gpio, direction::Output>> {
-        // TODO: the LED still flicks on briefly with this method
-        // Ensure it's high before setting the dirsetp bits
-        let mut pin = self.into_output();
-
-        #[allow(deprecated)]
-        pin.set_high();
-        pin
-    }
+    // Alternatively, remove level parameter, where `into_output` has unspecified level,
+    // and add methods `into_output_{low,high}` like so
+    //
+    // pub fn into_output_high(self) -> Pin<T, pin_state::Gpio<'gpio, direction::Output>> {
+    //     self.state.set[T::PORT].write(|w| unsafe { w.setp().bits(T::MASK) });
+    //     self.into_output()
+    // }
 }
 /// These methods are only available if
 /// - pin is in GPIO state.

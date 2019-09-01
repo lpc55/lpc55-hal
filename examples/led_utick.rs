@@ -30,15 +30,15 @@ fn main() -> ! {
 
     let mut red = iocon.pins.pio1_6
         .into_gpio_pin(&gpio)
-        .into_output_high();
+        .into_output(hal::gpio::Level::High);
 
     let mut green = iocon.pins.pio1_7
         .into_gpio_pin(&gpio)
-        .into_output_high();
+        .into_output(hal::gpio::Level::High);
 
     let mut blue = iocon.pins.pio1_4
         .into_gpio_pin(&gpio)
-        .into_output_high();
+        .into_output(hal::gpio::Level::High);
 
     // loop {
     //     for _ in 0..50_000 {
@@ -61,10 +61,6 @@ fn main() -> ! {
             asm::nop();
         }
         red.set_high();
-        utick.start(1_000_000u32);
-        while let Err(nb::Error::WouldBlock) = utick.wait() {
-            asm::nop();
-        }
 
         green.set_low();
         utick.start(1_000_000u32);
@@ -72,10 +68,6 @@ fn main() -> ! {
             asm::nop();
         }
         green.set_high();
-        utick.start(1_000_000u32);
-        while let Err(nb::Error::WouldBlock) = utick.wait() {
-            asm::nop();
-        }
 
         blue.set_low();
         utick.start(1_000_000u32);
@@ -83,9 +75,5 @@ fn main() -> ! {
             asm::nop();
         }
         blue.set_high();
-        utick.start(1_000_000u32);
-        while let Err(nb::Error::WouldBlock) = utick.wait() {
-            asm::nop();
-        }
     }
 }

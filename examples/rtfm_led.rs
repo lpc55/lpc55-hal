@@ -14,7 +14,8 @@ use embedded_hal::digital::v1::OutputPin;
 #[app(device = crate::hal::raw)]
 const APP: () = {
     // Late resources
-    static mut LED: iocon::Pin<iocon::PIO1_6, iocon::pin_state::Gpio<'_, gpio::direction::Output>> = ();
+    static mut GPIO: gpio::GPIO = ();
+    static mut LED: iocon::Pin<iocon::PIO1_6, iocon::pin_state::Gpio<'GPIO, gpio::direction::Output>> = ();
 
     #[init]
     fn init(c: init::Context) -> init::LateResources {
@@ -27,9 +28,10 @@ const APP: () = {
 
         let red_led = iocon.pins.pio1_6
             .into_gpio_pin(&gpio)
-            .into_output_high();
+            .into_output(hal::gpio::Level::High);
 
         init::LateResources {
+            GPIO: gpio,
             LED: red_led,
         }
     }
