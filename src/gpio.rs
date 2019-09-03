@@ -1,7 +1,5 @@
 use crate::hal::digital::v2::{OutputPin, StatefulOutputPin};
 
-// use cortex_m_semihosting::dbg;
-
 use crate::{
     init_state, raw,
     iocon::{pin_state, Pin, PinId},
@@ -40,7 +38,6 @@ pub enum Level {
 }
 
 use crate::reg_cluster;
-// use raw::gpio::{DIRSET, PIN, SET, CLR};
 reg_cluster!(DIRSET, DIRSET, raw::GPIO, dirset);
 reg_cluster!(PIN, PIN, raw::GPIO, pin);
 reg_cluster!(SET, SET, raw::GPIO, set);
@@ -92,13 +89,12 @@ where
     type Error = void::Void;
 
     /// Set the pin output to HIGH
-    ///
-    ///
     fn set_high(&mut self) -> Result<(), Self::Error> {
         self.state.set[T::PORT].write(|w| unsafe { w.setp().bits(T::MASK) });
         Ok(())
     }
 
+    /// Set the pin output to LOW
     fn set_low(&mut self) -> Result<(), Self::Error> {
         self.state.clr[T::PORT].write(|w| unsafe { w.clrp().bits(T::MASK) });
         Ok(())
@@ -110,12 +106,12 @@ where
 	T: PinId,
 {
     fn is_set_high(&self) -> Result<bool, Self::Error> {
-		Ok(unsafe { (*raw::GPIO::ptr()).pin[T::PORT].read().port().bits() & T::MASK == T::MASK })
+		Ok(self.state.pin[T::PORT].read().port().bits() & T::MASK == T::MASK)
 
 	}
 
     fn is_set_low(&self) -> Result<bool, Self::Error> {
-		Ok(!unsafe { (*raw::GPIO::ptr()).pin[T::PORT].read().port().bits() & T::MASK == T::MASK })
+		Ok(! self.state.pin[T::PORT].read().port().bits() & T::MASK == T::MASK)
     }
 }
 

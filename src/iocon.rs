@@ -60,7 +60,6 @@ pub mod pin_state {
     /// Marks a [`Pin`]  as being assigned to general-purpose I/O
     pub struct Gpio<D: Direction> {
         pub(crate) dirset: crate::reg_proxy::RegClusterProxy<raw::gpio::DIRSET>,
-        #[allow(dead_code)]
         pub(crate) pin: crate::reg_proxy::RegClusterProxy<raw::gpio::PIN>,
         pub(crate) set: crate::reg_proxy::RegClusterProxy<raw::gpio::SET>,
         pub(crate) clr: crate::reg_proxy::RegClusterProxy<raw::gpio::CLR>,
