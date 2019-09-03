@@ -1,6 +1,3 @@
-use cortex_m_semihosting::dbg;
-// use core::mem::transmute;
-
 use crate::{
     gpio::{self, GPIO},
     init_state, raw, syscon,
@@ -52,7 +49,6 @@ impl IOCON {
 /// Contains types that indicate pin states
 pub mod pin_state {
     use crate::gpio::direction::Direction;
-    // use crate::raw::gpio::{CLR, DIRSET, PIN, SET};
 
     /// Implemented by types that indicate pin state
     pub trait PinState {}
@@ -63,10 +59,12 @@ pub mod pin_state {
 
     /// Marks a [`Pin`]  as being assigned to general-purpose I/O
     pub struct Gpio<D: Direction> {
-        // pub(crate) dirset: [raw::gpio::DIRSET; 4],
-        // pub(crate) pin: [raw::gpio::PIN; 4],
-        // pub(crate) set: [raw::gpio::SET; 4],
-        // pub(crate) clr: [raw::gpio::CLR; 4],
+        pub(crate) dirset: crate::reg_proxy::RegClusterProxy<raw::gpio::DIRSET>,
+        #[allow(dead_code)]
+        pub(crate) pin: crate::reg_proxy::RegClusterProxy<raw::gpio::PIN>,
+        pub(crate) set: crate::reg_proxy::RegClusterProxy<raw::gpio::SET>,
+        pub(crate) clr: crate::reg_proxy::RegClusterProxy<raw::gpio::CLR>,
+
         pub(crate) _direction: D,
     }
 
@@ -128,9 +126,9 @@ impl Handle<init_state::Disabled> {
     /// [`Disabled`]: ../init_state/struct.Disabled.html
     /// [`Enabled`]: ../init_state/struct.Enabled.html
     pub fn enable(mut self, syscon: &mut syscon::Handle) -> Handle<init_state::Enabled> {
-        dbg!(syscon.is_clock_enabled(&self.iocon));
+        // dbg!(syscon.is_clock_enabled(&self.iocon));
         syscon.enable_clock(&mut self.iocon);
-        dbg!(syscon.is_clock_enabled(&self.iocon));
+        // dbg!(syscon.is_clock_enabled(&self.iocon));
 
         Handle {
             iocon: self.iocon,
@@ -334,15 +332,13 @@ where
         Pin {
             id: self.id,
             state: pin_state::Gpio {
-                // dirset: unsafe{ transmute((*raw::GPIO::ptr()).dirset) },
-                // pin: unsafe{ (*raw::GPIO::ptr()).pin },
-                // set: unsafe{ (*raw::GPIO::ptr()).set },
-                // clr: unsafe{ (*raw::GPIO::ptr()).clr },
+                dirset: crate::reg_proxy::RegClusterProxy::new(),
+                pin: crate::reg_proxy::RegClusterProxy::new(),
+                set: crate::reg_proxy::RegClusterProxy::new(),
+                clr: crate::reg_proxy::RegClusterProxy::new(),
 
                 _direction: gpio::direction::Unknown,
             },
         }
     }
 }
-
-

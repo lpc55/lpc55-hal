@@ -1,13 +1,12 @@
-#[allow(deprecated)]
 use crate::hal::digital::v2::{OutputPin, StatefulOutputPin};
-// embedded_hal::digital::v2_compat::*;
 
-use cortex_m_semihosting::dbg;
+// use cortex_m_semihosting::dbg;
 
 use crate::{
     init_state, raw,
     iocon::{pin_state, Pin, PinId},
     syscon,
+    raw::gpio::{DIRSET, PIN, SET, CLR},
 };
 
 /// Contains types to indicate the direction of GPIO pins
@@ -40,6 +39,13 @@ pub enum Level {
     High,
 }
 
+use crate::reg_cluster;
+// use raw::gpio::{DIRSET, PIN, SET, CLR};
+reg_cluster!(DIRSET, DIRSET, raw::GPIO, dirset);
+reg_cluster!(PIN, PIN, raw::GPIO, pin);
+reg_cluster!(SET, SET, raw::GPIO, set);
+reg_cluster!(CLR, CLR, raw::GPIO, clr);
+
 impl<T, D> Pin<T, pin_state::Gpio<D>>
 where
     T: PinId,
@@ -47,24 +53,21 @@ where
 {
     pub fn into_output(self, initial: Level) -> Pin<T, pin_state::Gpio<direction::Output>> {
 
-        // dirset: unsafe{ transmute((*raw::GPIO::ptr()).dirset) },
         match initial {
-            // Level::High => self.state.set[T::PORT].write(|w| unsafe { w.setp().bits(T::MASK) }),
-            // Level::Low => self.state.clr[T::PORT].write(|w| unsafe { w.clrp().bits(T::MASK) }),
-            Level::High => unsafe{ (*raw::GPIO::ptr()).set[T::PORT].write(|w| w.setp().bits(T::MASK)) },
-            Level::Low => unsafe{ (*raw::GPIO::ptr()).clr[T::PORT].write(|w| w.clrp().bits(T::MASK)) },
+            Level::High => self.state.set[T::PORT].write(|w| unsafe { w.setp().bits(T::MASK) }),
+            Level::Low => self.state.clr[T::PORT].write(|w| unsafe { w.clrp().bits(T::MASK) }),
         }
 
-        unsafe{ (*raw::GPIO::ptr()).dirset[T::PORT].write(|w| w.dirsetp().bits(T::MASK)) };
+        self.state.dirset[T::PORT].write(|w| unsafe { w.dirsetp().bits(T::MASK) } );
 
         Pin {
             id: self.id,
 
             state: pin_state::Gpio {
-                // dirset: self.state.dirset,
-                // pin: self.state.pin,
-                // set: self.state.set,
-                // clr: self.state.clr,
+                dirset: crate::reg_proxy::RegClusterProxy::new(),
+                pin: crate::reg_proxy::RegClusterProxy::new(),
+                set: crate::reg_proxy::RegClusterProxy::new(),
+                clr: crate::reg_proxy::RegClusterProxy::new(),
 
                 _direction: direction::Output,
             },
@@ -82,7 +85,6 @@ where
 /// These methods are only available if
 /// - pin is in GPIO state.
 /// - pin direction is output.
-#[allow(deprecated)]
 impl<T> OutputPin for Pin<T, pin_state::Gpio<direction::Output>>
 where
     T: PinId,
@@ -93,17 +95,16 @@ where
     ///
     ///
     fn set_high(&mut self) -> Result<(), Self::Error> {
-        unsafe{ (*raw::GPIO::ptr()).set[T::PORT].write(|w| w.setp().bits(T::MASK)) };
+        self.state.set[T::PORT].write(|w| unsafe { w.setp().bits(T::MASK) });
         Ok(())
     }
 
     fn set_low(&mut self) -> Result<(), Self::Error> {
-        unsafe{ (*raw::GPIO::ptr()).clr[T::PORT].write(|w| w.clrp().bits(T::MASK)) };
+        self.state.clr[T::PORT].write(|w| unsafe { w.clrp().bits(T::MASK) });
         Ok(())
     }
 }
 
-#[allow(deprecated)]
 impl<T> StatefulOutputPin for Pin<T, pin_state::Gpio<direction::Output>>
 where
 	T: PinId,
@@ -132,9 +133,9 @@ impl GPIO<init_state::Disabled> {
         }
     }
     pub fn enable(mut self, syscon: &mut syscon::Handle) -> GPIO<init_state::Enabled> {
-        dbg!(syscon.is_clock_enabled(&self.gpio));
+        // dbg!(syscon.is_clock_enabled(&self.gpio));
         syscon.enable_clock(&mut self.gpio);
-        dbg!(syscon.is_clock_enabled(&self.gpio));
+        // dbg!(syscon.is_clock_enabled(&self.gpio));
 
         GPIO {
             gpio: self.gpio,
@@ -160,3 +161,4 @@ impl<State> GPIO<State> {
         self.gpio
     }
 }
+

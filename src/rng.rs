@@ -1,9 +1,3 @@
-// extern crate core;
-use core::cmp;
-
-use crate::raw::RNG;
-use cortex_m_semihosting::dbg;
-
 /// Constrained RNG peripheral
 pub struct Rng {
     rng: raw::RNG,
@@ -66,15 +60,15 @@ impl Rng {
             self.rng.online_test_cfg.modify(|_, w| w.activate().set_bit());
             // dbg!(self.rng.online_test_cfg.read().activate().bit());  // <-- true
 
-            dbg!(val.min_chi_squared().bits());  // <-- 15
-            dbg!(val.max_chi_squared().bits());  // <--  0
+            // dbg!(val.min_chi_squared().bits());  // <-- 15
+            // dbg!(val.max_chi_squared().bits());  // <--  0
 
             // TODO: this gets stuck
             // unimplemented!("figure out how to make this not block");
             while val.min_chi_squared().bits() > val.max_chi_squared().bits() {
             }
 
-            dbg!("passed");
+            // dbg!("passed");
 
             if val.max_chi_squared().bits() > REF_CHI_SQUARED {
                 // reset
@@ -97,14 +91,14 @@ impl Rng {
     fn disable(&self) {
     }
 
-    pub fn free(self) -> RNG {
+    pub fn free(self) -> raw::RNG {
         self.rng
     }
 
     pub fn get_random_u32(&self)-> u32 {
         for _ in 0..32 {
             while self.rng.counter_val.read().refresh_cnt() == 0 {
-                dbg!("was not zero");
+                // dbg!("was not zero");
             }
         }
         self.rng.random_number.read().bits()
@@ -127,7 +121,7 @@ impl crate::hal::blocking::rng::Read for Rng {
             let bytes: [u8; 4] = random_word.to_ne_bytes();
 
             // copy to buffer as needed
-            let n = cmp::min(4, buffer.len() - i);
+            let n = core::cmp::min(4, buffer.len() - i);
             buffer[i..i + n].copy_from_slice(&bytes[..n]);
             i += n;
         }

@@ -11,7 +11,7 @@
 //! extern crate lpc55S6x_hal;
 //! extern crate nb;
 //!
-//! use lpc55S6x_hal::prelude::*;
+//! use lpc55S6x_hal::traits::*;
 //! use lpc55S6x_hal::Peripherals;
 //!
 //! let mut p = Peripherals::take().unwrap();

@@ -1,13 +1,10 @@
 #![no_main]
 #![no_std]
 
-// extern crate lpc55s6x_hal;
 extern crate panic_semihosting;
 use cortex_m_semihosting::{dbg, hprint, hprintln};
 use cortex_m::asm;
 use cortex_m_rt::entry;
-
-// use lpc55s6x_hal::prelude::*;
 
 use lpc55s6x_hal as hal;
 
@@ -23,10 +20,9 @@ use lpc55s6x_hal as hal;
 
 #[entry]
 fn main() -> ! {
-    // hprint!("ab").unwrap();
-    // hprint!("b").unwrap();
-    // hprintln!("c").unwrap();
-    // panic!("o.O");
+    hprint!("a").unwrap();
+    hprint!("b").unwrap();
+    hprintln!("c").unwrap();
 
     const UUID: *mut u32 = 0x0009_FC70 as *mut u32;
     // dbg!(UUID);
@@ -55,19 +51,21 @@ fn main() -> ! {
     let peripherals = hal::raw::Peripherals::take().unwrap();
     // const SYSCON: *mut u32 =
     let device_id = peripherals.SYSCON.device_id0.read().bits();
-    hprintln!("device_id0 = {:x?}", device_id);
+    hprintln!("device_id0 = {:x?}", device_id).unwrap();
     let dieid = peripherals.SYSCON.dieid.read().bits();
-    hprintln!("dieid = {:x?}", dieid);
+    hprintln!("dieid = {:x?}", dieid).unwrap();
     dbg!(peripherals.SYSCON.dieid.read().rev_id().bits());
     dbg!(peripherals.SYSCON.dieid.read().mco_num_in_die_id().bits());
     let cpstat = peripherals.SYSCON.cpstat.read().bits();
-    hprintln!("cpstat = {:x?}", cpstat);
+    hprintln!("cpstat = {:x?}", cpstat).unwrap();
 
+    #[allow(non_snake_case)]
     let DEVICE_ID0: *mut u32 = 0x4000_0ff8 as *mut u32;
-    hprintln!("{:x?}", unsafe{DEVICE_ID0.read_volatile()});
+    hprintln!("{:x?}", unsafe{DEVICE_ID0.read_volatile()}).unwrap();
 
+    #[allow(non_snake_case)]
     let DIEID: *mut u32 = 0x4000_0ffc as *mut u32;
-    hprintln!("{:x?}", unsafe{DIEID.read_volatile()});
+    hprintln!("{:x?}", unsafe{DIEID.read_volatile()}).unwrap();
 
     dbg!(peripherals.SYSCON.device_id0.read().flash_size().bits());
     dbg!(peripherals.SYSCON.device_id0.read().modelnum_extention().bits());

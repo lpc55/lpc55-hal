@@ -5,10 +5,11 @@ extern crate panic_semihosting;
 use cortex_m_semihosting::dbg;
 
 use lpc55s6x_hal as hal;
-use hal::{gpio, iocon};
+use hal::{
+    traits::*,
+    gpio, iocon,
+};
 use rtfm::app;
-
-use embedded_hal::digital::v2::OutputPin;
 
 #[app(device = crate::hal::raw)]
 const APP: () = {

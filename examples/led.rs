@@ -4,9 +4,8 @@
 extern crate panic_semihosting;
 use cortex_m_rt::entry;
 
-use lpc55s6x_hal::prelude::*;
-
 use lpc55s6x_hal as hal;
+use hal::traits::*;
 
 #[entry]
 fn main() -> ! {

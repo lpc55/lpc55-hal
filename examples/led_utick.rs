@@ -1,17 +1,17 @@
 #![no_main]
 #![no_std]
 
-extern crate panic_semihosting;
-// use cortex_m_semihosting::dbg;
+// extern crate panic_semihosting;  // 4004 bytes
+extern crate panic_halt;  // 672 bytes
+
 use cortex_m::asm;
 use cortex_m_rt::entry;
 
-// use lpc55s6x_hal::prelude::*;
-use embedded_hal::timer::CountDown;
-
-use lpc55s6x_hal::prelude::*;
 use lpc55s6x_hal as hal;
-use hal::gpio::Level;
+use hal::{
+    traits::*,
+    gpio::Level,
+};
 
 #[entry]
 fn main() -> ! {
