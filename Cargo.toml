@@ -28,12 +28,12 @@ void = { version = "1", default-features = false }
 cortex-m-rt = "0.6"
 # cortex-m-rt = { git = "https://github.com/rust-embedded/cortex-m-rt" }
 # cortex-m-rtfm = "0.4.3"
-# cortex-m-rtfm = { git = "https://github.com/nickray/cortex-m-rtfm", branch = "bump-cortex-m-and-rt" }
+cortex-m-rtfm = { git = "https://github.com/nickray/cortex-m-rtfm", branch = "bump-cortex-m-and-rt" }
 # panic-halt  = "0.2"
 panic-semihosting = { version = "0.5", features = ["jlink-quirks"] }
 
 [features]
-# default-features = ["rt"]
+default = ["rt"]
 rt = ["lpc55s6x-pac/rt"]
 # Boards
 lpcxpresso55s69 = []

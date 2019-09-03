@@ -8,30 +8,28 @@ use lpc55s6x_hal as hal;
 use hal::{gpio, iocon};
 use rtfm::app;
 
-#[allow(deprecated)]
-use embedded_hal::digital::v1::OutputPin;
+use embedded_hal::digital::v2::OutputPin;
 
 #[app(device = crate::hal::raw)]
 const APP: () = {
     // Late resources
-    static mut GPIO: gpio::GPIO = ();
-    static mut LED: iocon::Pin<iocon::PIO1_6, iocon::pin_state::Gpio<'GPIO, gpio::direction::Output>> = ();
+    static mut LED: iocon::Pin<iocon::PIO1_6, iocon::pin_state::Gpio<gpio::direction::Output>> = ();
 
     #[init]
     fn init(c: init::Context) -> init::LateResources {
         dbg!("init");
-        let peripherals = hal::Peripherals::take().unwrap();
+        // let cp = c.core;
+        let dp = c.device;
 
-        let mut syscon = peripherals.SYSCON.split();
-        let gpio = peripherals.GPIO.enable(&mut syscon.handle);
-        let iocon = peripherals.IOCON.split();
+        let mut syscon = hal::syscon::SYSCON::new(dp.SYSCON).split();
+        let gpio = hal::gpio::GPIO::new(dp.GPIO).enable(&mut syscon.handle);
+        let iocon = hal::iocon::IOCON::new(dp.IOCON).split();
 
         let red_led = iocon.pins.pio1_6
             .into_gpio_pin(&gpio)
             .into_output(hal::gpio::Level::High);
 
         init::LateResources {
-            GPIO: gpio,
             LED: red_led,
         }
     }
@@ -41,11 +39,10 @@ const APP: () = {
         let led = c.resources.LED;
         loop {
             dbg!("low");
-            #[allow(deprecated)]
-            led.set_low();
+            led.set_low().unwrap();
+
             dbg!("high");
-            #[allow(deprecated)]
-            led.set_high();
+            led.set_high().unwrap();
         }
     }
 };
