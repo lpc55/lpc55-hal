@@ -33,6 +33,18 @@ tag:
 	git tag -a $(VERSION) -m"v$(VERSION)"
 	git push origin $(VERSION)
 
+#
+# CI
+#
+
+rustup:
+	rustup target add thumbv8m.main-none-eabi
+	rustup target add thumbv8m.main-none-eabihf
+	rustup update
+
+build-all-verbose:
+	cargo build --verbose --examples
+	cargo build --verbose --examples --release
 
 #
 # For running examples
