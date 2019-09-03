@@ -40,28 +40,31 @@ pub enum Level {
     High,
 }
 
-impl<'gpio, T, D> Pin<T, pin_state::Gpio<'gpio, D>>
+impl<T, D> Pin<T, pin_state::Gpio<D>>
 where
     T: PinId,
     D: direction::NotOutput,
 {
-    pub fn into_output(self, initial: Level) -> Pin<T, pin_state::Gpio<'gpio, direction::Output>> {
+    pub fn into_output(self, initial: Level) -> Pin<T, pin_state::Gpio<direction::Output>> {
 
+        // dirset: unsafe{ transmute((*raw::GPIO::ptr()).dirset) },
         match initial {
-            Level::High => self.state.set[T::PORT].write(|w| unsafe { w.setp().bits(T::MASK) }),
-            Level::Low => self.state.clr[T::PORT].write(|w| unsafe { w.clrp().bits(T::MASK) }),
+            // Level::High => self.state.set[T::PORT].write(|w| unsafe { w.setp().bits(T::MASK) }),
+            // Level::Low => self.state.clr[T::PORT].write(|w| unsafe { w.clrp().bits(T::MASK) }),
+            Level::High => unsafe{ (*raw::GPIO::ptr()).set[T::PORT].write(|w| w.setp().bits(T::MASK)) },
+            Level::Low => unsafe{ (*raw::GPIO::ptr()).clr[T::PORT].write(|w| w.clrp().bits(T::MASK)) },
         }
 
-        self.state.dirset[T::PORT].write(|w| unsafe { w.dirsetp().bits(T::MASK) });
+        unsafe{ (*raw::GPIO::ptr()).dirset[T::PORT].write(|w| w.dirsetp().bits(T::MASK)) };
 
         Pin {
             id: self.id,
 
             state: pin_state::Gpio {
-                dirset: self.state.dirset,
-                pin: self.state.pin,
-                set: self.state.set,
-                clr: self.state.clr,
+                // dirset: self.state.dirset,
+                // pin: self.state.pin,
+                // set: self.state.set,
+                // clr: self.state.clr,
 
                 _direction: direction::Output,
             },
@@ -80,7 +83,7 @@ where
 /// - pin is in GPIO state.
 /// - pin direction is output.
 #[allow(deprecated)]
-impl<'gpio, T> OutputPin for Pin<T, pin_state::Gpio<'gpio, direction::Output>>
+impl<T> OutputPin for Pin<T, pin_state::Gpio<direction::Output>>
 where
     T: PinId,
 {
@@ -90,25 +93,28 @@ where
     ///
     ///
     fn set_high(&mut self) -> Result<(), Self::Error> {
-        Ok(self.state.set[T::PORT].write(|w| unsafe { w.setp().bits(T::MASK) }))
+        unsafe{ (*raw::GPIO::ptr()).set[T::PORT].write(|w| w.setp().bits(T::MASK)) };
+        Ok(())
     }
 
     fn set_low(&mut self) -> Result<(), Self::Error> {
-        Ok(self.state.clr[T::PORT].write(|w| unsafe { w.clrp().bits(T::MASK) }))
+        unsafe{ (*raw::GPIO::ptr()).clr[T::PORT].write(|w| w.clrp().bits(T::MASK)) };
+        Ok(())
     }
 }
 
 #[allow(deprecated)]
-impl<'gpio, T> StatefulOutputPin for Pin<T, pin_state::Gpio<'gpio, direction::Output>>
+impl<T> StatefulOutputPin for Pin<T, pin_state::Gpio<direction::Output>>
 where
 	T: PinId,
 {
     fn is_set_high(&self) -> Result<bool, Self::Error> {
-		Ok(self.state.pin[T::PORT].read().port().bits() & T::MASK == T::MASK)
+		Ok(unsafe { (*raw::GPIO::ptr()).pin[T::PORT].read().port().bits() & T::MASK == T::MASK })
+
 	}
 
     fn is_set_low(&self) -> Result<bool, Self::Error> {
-        Ok(!self.state.pin[T::PORT].read().port().bits() & T::MASK == T::MASK)
+		Ok(!unsafe { (*raw::GPIO::ptr()).pin[T::PORT].read().port().bits() & T::MASK == T::MASK })
     }
 }
 

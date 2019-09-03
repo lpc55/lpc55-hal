@@ -11,6 +11,7 @@ use embedded_hal::timer::CountDown;
 
 use lpc55s6x_hal::prelude::*;
 use lpc55s6x_hal as hal;
+use hal::gpio::Level;
 
 #[entry]
 fn main() -> ! {
@@ -28,15 +29,15 @@ fn main() -> ! {
 
     let mut red = iocon.pins.pio1_6
         .into_gpio_pin(&gpio)
-        .into_output(hal::gpio::Level::High);
+        .into_output(Level::High);
 
     let mut green = iocon.pins.pio1_7
         .into_gpio_pin(&gpio)
-        .into_output(hal::gpio::Level::High);
+        .into_output(Level::High);
 
     let mut blue = iocon.pins.pio1_4
         .into_gpio_pin(&gpio)
-        .into_output(hal::gpio::Level::High);
+        .into_output(Level::High);
 
     // loop {
     //     for _ in 0..50_000 {

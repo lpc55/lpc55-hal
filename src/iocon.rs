@@ -1,4 +1,5 @@
 use cortex_m_semihosting::dbg;
+// use core::mem::transmute;
 
 use crate::{
     gpio::{self, GPIO},
@@ -51,7 +52,7 @@ impl IOCON {
 /// Contains types that indicate pin states
 pub mod pin_state {
     use crate::gpio::direction::Direction;
-    use crate::raw::gpio::{CLR, DIRSET, PIN, SET};
+    // use crate::raw::gpio::{CLR, DIRSET, PIN, SET};
 
     /// Implemented by types that indicate pin state
     pub trait PinState {}
@@ -61,16 +62,15 @@ pub mod pin_state {
     impl PinState for Unused {}
 
     /// Marks a [`Pin`]  as being assigned to general-purpose I/O
-    pub struct Gpio<'gpio, D: Direction> {
-        pub(crate) dirset: &'gpio [DIRSET],
-        pub(crate) pin: &'gpio [PIN],
-        pub(crate) set: &'gpio [SET],
-        pub(crate) clr: &'gpio [CLR],
-
+    pub struct Gpio<D: Direction> {
+        // pub(crate) dirset: [raw::gpio::DIRSET; 4],
+        // pub(crate) pin: [raw::gpio::PIN; 4],
+        // pub(crate) set: [raw::gpio::SET; 4],
+        // pub(crate) clr: [raw::gpio::CLR; 4],
         pub(crate) _direction: D,
     }
 
-    impl<'gpio, D> PinState for Gpio<'gpio, D> where D: Direction {}
+    impl<D> PinState for Gpio<D> where D: Direction {}
 }
 
 /// The main API for the IO pin configuration (IOCON)
@@ -321,6 +321,7 @@ pins!(
 /// This is currently not supported.
 pub struct Pin<T: PinId, S: PinState> {
     pub(crate) id: T,
+    #[allow(dead_code)]
     pub(crate) state: S,
 }
 
@@ -329,14 +330,14 @@ where
     T: PinId,
 {
     /// Transition pin to GPIO state
-    pub fn into_gpio_pin(self, gpio: &GPIO) -> Pin<T, pin_state::Gpio<gpio::direction::Unknown>> {
+    pub fn into_gpio_pin(self, _: &GPIO<init_state::Enabled>) -> Pin<T, pin_state::Gpio<gpio::direction::Unknown>> {
         Pin {
             id: self.id,
             state: pin_state::Gpio {
-                dirset: &gpio.gpio.dirset,
-                pin: &gpio.gpio.pin,
-                set: &gpio.gpio.set,
-                clr: &gpio.gpio.clr,
+                // dirset: unsafe{ transmute((*raw::GPIO::ptr()).dirset) },
+                // pin: unsafe{ (*raw::GPIO::ptr()).pin },
+                // set: unsafe{ (*raw::GPIO::ptr()).set },
+                // clr: unsafe{ (*raw::GPIO::ptr()).clr },
 
                 _direction: gpio::direction::Unknown,
             },
