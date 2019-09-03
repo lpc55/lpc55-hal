@@ -12,31 +12,25 @@ repository = "https://github.com/nickray/lpc55s6x-hal"
 edition = "2018"
 
 [dependencies]
-bare-metal = "0.2.4"
-vcell = "0.1"
-
-cortex-m = ">= 0.6.1, < 0.7"
+bare-metal = "0.2"
+cortex-m = "0.6"
+cortex-m-semihosting = "0.3"
 embedded-hal = { version = "0.2", features = ["unproven"] }
 lpc55s6x-pac = "0.0.4"
 # lpc55s6x-pac = { path = "../lpc55s6x-pac" }
-nb = "0.1.1"
+nb = "0.1"
+vcell = "0.1"
 void = { version = "1", default-features = false }
-cortex-m-semihosting = "0.3"
 
 [dev-dependencies]
-cortex-m-rt = "0.6.10"
+# NB: cortex-m-rtfm pulls in an old cortex-m-rt with no eabhihf support
+# Otherwise, git master would work
+cortex-m-rt = "0.6"
 # cortex-m-rt = { git = "https://github.com/rust-embedded/cortex-m-rt" }
-# panic-halt  = "0.2.0"
-# Use new release with the JLink patch once it's released
-# panic-semihosting = "0.5.2"
-# panic-semihosting = { path = "../panic-semihosting", features = ["jlink-quirks"] }
 # cortex-m-rtfm = "0.4.3"
-cortex-m-rtfm = { git = "https://github.com/nickray/cortex-m-rtfm", branch = "bump-cortex-m-and-rt" }
-
-[dev-dependencies.panic-semihosting]
-git = "https://github.com/nickray/panic-semihosting"
-branch = "jlink-quirks"
-features = ["jlink-quirks"]
+# cortex-m-rtfm = { git = "https://github.com/nickray/cortex-m-rtfm", branch = "bump-cortex-m-and-rt" }
+# panic-halt  = "0.2"
+panic-semihosting = { version = "0.5", features = ["jlink-quirks"] }
 
 [features]
 # default-features = ["rt"]

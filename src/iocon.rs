@@ -1,5 +1,3 @@
-// use core::marker::PhantomData;
-
 use cortex_m_semihosting::dbg;
 
 use crate::{

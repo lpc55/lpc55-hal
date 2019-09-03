@@ -1,6 +1,7 @@
 // #![allow(non_camel_case_types)]
 #![no_std]
 
+// Meh, maybe `hal_traits` instead?
 use embedded_hal as hal;
 
 pub extern crate lpc55s6x_pac as raw;
@@ -16,12 +17,7 @@ pub mod utick;
 #[macro_use]
 pub(crate) mod reg_proxy;
 
-pub mod prelude {
-    pub use crate::hal::prelude::*;
-    pub use crate::{
-        sleep::Sleep as _lpc82x_hal_sleep_Sleep,
-    };
-}
+pub mod prelude;
 
 /// Contains types that encode the state of hardware initialization
 ///

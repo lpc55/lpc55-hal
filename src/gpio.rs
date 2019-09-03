@@ -1,5 +1,5 @@
 #[allow(deprecated)]
-use embedded_hal::digital::{OutputPin, StatefulOutputPin};
+use crate::hal::digital::v2::{OutputPin, StatefulOutputPin};
 // embedded_hal::digital::v2_compat::*;
 
 use cortex_m_semihosting::dbg;
@@ -28,6 +28,12 @@ pub mod direction {
     impl NotOutput for Unknown {}
     impl NotOutput for Input {}
 }
+
+// pub trait Level;
+// pub struct Low;
+// impl Level for Low;
+// pub struct High;
+// impl Level for High;
 
 pub enum Level {
     Low,
@@ -78,15 +84,17 @@ impl<'gpio, T> OutputPin for Pin<T, pin_state::Gpio<'gpio, direction::Output>>
 where
     T: PinId,
 {
+    type Error = void::Void;
+
     /// Set the pin output to HIGH
     ///
     ///
-    fn set_high(&mut self) {
-        self.state.set[T::PORT].write(|w| unsafe { w.setp().bits(T::MASK) })
+    fn set_high(&mut self) -> Result<(), Self::Error> {
+        Ok(self.state.set[T::PORT].write(|w| unsafe { w.setp().bits(T::MASK) }))
     }
 
-    fn set_low(&mut self) {
-        self.state.clr[T::PORT].write(|w| unsafe { w.clrp().bits(T::MASK) });
+    fn set_low(&mut self) -> Result<(), Self::Error> {
+        Ok(self.state.clr[T::PORT].write(|w| unsafe { w.clrp().bits(T::MASK) }))
     }
 }
 
@@ -95,12 +103,12 @@ impl<'gpio, T> StatefulOutputPin for Pin<T, pin_state::Gpio<'gpio, direction::Ou
 where
 	T: PinId,
 {
-    fn is_set_high(&self) -> bool {
-		self.state.pin[T::PORT].read().port().bits() & T::MASK == T::MASK
+    fn is_set_high(&self) -> Result<bool, Self::Error> {
+		Ok(self.state.pin[T::PORT].read().port().bits() & T::MASK == T::MASK)
 	}
 
-    fn is_set_low(&self) -> bool {
-        !self.state.pin[T::PORT].read().port().bits() & T::MASK == T::MASK
+    fn is_set_low(&self) -> Result<bool, Self::Error> {
+        Ok(!self.state.pin[T::PORT].read().port().bits() & T::MASK == T::MASK)
     }
 }
 

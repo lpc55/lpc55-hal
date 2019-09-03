@@ -38,14 +38,13 @@ fn main() -> ! {
 
     // use this order to check whether LED initially flashes up
     loop {
-        #![allow(deprecated)]
         // this is to workaround the v1/v2 digital pin
         // situation, until Vadim's v3 lands
 
 		sleep.sleep(delay);
-        red.set_low();
+        red.set_low().unwrap();
 
 		sleep.sleep(delay);
-        red.set_high();
+        red.set_high().unwrap();
     }
 }

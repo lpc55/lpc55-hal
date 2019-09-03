@@ -9,10 +9,8 @@ use cortex_m_rt::entry;
 // use lpc55s6x_hal::prelude::*;
 use embedded_hal::timer::CountDown;
 
+use lpc55s6x_hal::prelude::*;
 use lpc55s6x_hal as hal;
-
-#[allow(deprecated)]
-use embedded_hal::digital::v1::OutputPin;
 
 #[entry]
 fn main() -> ! {
@@ -51,29 +49,25 @@ fn main() -> ! {
 
     let mut utick = peripherals.UTICK.enable(&mut syscon.handle);
     loop {
-        #![allow(deprecated)]
-        // this is to workaround the v1/v2 digital pin
-        // situation, until Vadim's v3 lands
-
-        red.set_low();
+        red.set_low().unwrap();
         utick.start(1_000_000u32);
         while let Err(nb::Error::WouldBlock) = utick.wait() {
             asm::nop();
         }
-        red.set_high();
+        red.set_high().unwrap();
 
-        green.set_low();
+        green.set_low().unwrap();
         utick.start(1_000_000u32);
         while let Err(nb::Error::WouldBlock) = utick.wait() {
             asm::nop();
         }
-        green.set_high();
+        green.set_high().unwrap();
 
-        blue.set_low();
+        blue.set_low().unwrap();
         utick.start(1_000_000u32);
         while let Err(nb::Error::WouldBlock) = utick.wait() {
             asm::nop();
         }
-        blue.set_high();
+        blue.set_high().unwrap();
     }
 }
