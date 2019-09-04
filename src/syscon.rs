@@ -9,7 +9,6 @@
 //!
 //! The SYSCON peripheral is described in the user manual, chapter 4.
 
-
 // use core::marker::PhantomData;
 
 // use crate::raw::syscon::{
@@ -21,10 +20,14 @@
 
 use crate::raw::syscon::{
     // ahbclkctrl0, ahbclkctrl1, ahbclkctrl2, // clock_ctrl,
-    AHBCLKCTRL0, AHBCLKCTRL1, AHBCLKCTRL2,
+    AHBCLKCTRL0,
+    AHBCLKCTRL1,
+    AHBCLKCTRL2,
     CLOCK_CTRL,
     // presetctrl0, presetctrl1, presetctrl2,  // clock_ctrl,
-    PRESETCTRL0, PRESETCTRL1, PRESETCTRL2,
+    PRESETCTRL0,
+    PRESETCTRL1,
+    PRESETCTRL2,
 };
 
 use crate::reg;
@@ -70,7 +73,7 @@ impl SYSCON {
                 presetctrl1: RegProxy::new(),
                 presetctrl2: RegProxy::new(),
             },
-			fro_1mhz_utick_clock: Fro1MhzUtickClock::new(),
+            fro_1mhz_utick_clock: Fro1MhzUtickClock::new(),
         }
     }
 
@@ -88,8 +91,7 @@ impl SYSCON {
 /// [module documentation]: index.html
 pub struct Parts {
     pub handle: Handle,
-	pub fro_1mhz_utick_clock: Fro1MhzUtickClock<init_state::Disabled>,
-
+    pub fro_1mhz_utick_clock: Fro1MhzUtickClock<init_state::Disabled>,
     // more to come obviously
 }
 
@@ -122,58 +124,6 @@ reg!(PRESETCTRL1, PRESETCTRL1, raw::SYSCON, presetctrl1);
 reg!(PRESETCTRL2, PRESETCTRL2, raw::SYSCON, presetctrl2);
 
 impl Handle {
-    /// Enable peripheral clock
-
-    // /// Enables the clock for a peripheral or other hardware component. HAL
-    // /// users usually won't have to call this method directly, as other
-    // /// peripheral APIs will do this for them.
-    // pub fn enable_clock0<P: ClockControl0>(&mut self, peripheral: &P) {
-    //     self.ahbclkctrl0.modify(|_, w| peripheral.enable_clock(w));
-    // }
-
-    // /// Disable peripheral clock
-    // pub fn disable_clock0<P: ClockControl0>(&mut self, peripheral: &P) {
-    //     self.ahbclkctrl0
-    //         .modify(|_, w| peripheral.disable_clock(w));
-    // }
-
-    // /// Check if peripheral clock is enabled
-    // pub fn is_clock_enabled0<P: ClockControl0>(&self, peripheral: &P) -> bool {
-    //     peripheral.is_clock_enabled(&self.ahbclkctrl0.read())
-    // }
-
-    // /// Enables the clock for a peripheral or other hardware component
-    // pub fn enable_clock1<P: ClockControl1>(&mut self, peripheral: &P) {
-    //     self.ahbclkctrl1.modify(|_, w| peripheral.enable_clock(w));
-    // }
-
-    // /// Disable peripheral clock
-    // pub fn disable_clock1<P: ClockControl1>(&mut self, peripheral: &P) {
-    //     self.ahbclkctrl1
-    //         .modify(|_, w| peripheral.disable_clock(w));
-    // }
-
-    // /// Check if peripheral clock is enabled
-    // pub fn is_clock_enabled1<P: ClockControl1>(&self, peripheral: &P) -> bool {
-    //     peripheral.is_clock_enabled(&self.ahbclkctrl1.read())
-    // }
-
-    // /// Enables the clock for a peripheral or other hardware component
-    // pub fn enable_clock2<P: ClockControl2>(&mut self, peripheral: &P) {
-    //     self.ahbclkctrl2.modify(|_, w| peripheral.enable_clock(w));
-    // }
-
-    // /// Disable peripheral clock
-    // pub fn disable_clock2<P: ClockControl2>(&mut self, peripheral: &P) {
-    //     self.ahbclkctrl2
-    //         .modify(|_, w| peripheral.disable_clock(w));
-    // }
-
-    // /// Check if peripheral clock is enabled
-    // pub fn is_clock_enabled2<P: ClockControl2>(&self, peripheral: &P) -> bool {
-    //     peripheral.is_clock_enabled(&self.ahbclkctrl2.read())
-    // }
-
     /// Enables the clock for a peripheral or other hardware component
     pub fn enable_clock<P: ClockControl>(&mut self, peripheral: &P) {
         peripheral.enable_clock(self);
@@ -188,7 +138,6 @@ impl Handle {
     pub fn is_clock_enabled<P: ClockControl>(&self, peripheral: &P) -> bool {
         peripheral.is_clock_enabled(&self)
     }
-
 }
 
 /// Internal trait for controlling peripheral clocks
@@ -247,7 +196,7 @@ macro_rules! impl_clock_control {
                 h.$register.read().$clock().is_enable()
             }
         }
-    }
+    };
 }
 
 impl_clock_control!(raw::ADC0, adc, ahbclkctrl0);
@@ -301,7 +250,6 @@ impl ClockControl for raw::GPIO {
     }
 }
 
-
 pub trait ResetControl {
     /// Internal method to assert peripheral reset
     fn assert_reset<'h>(&self, h: &'h mut Handle) -> &'h mut Handle;
@@ -333,7 +281,6 @@ impl_reset_control!(raw::CASPER, casper_rst, presetctrl2);
 impl_reset_control!(raw::UTICK, utick0_rst, presetctrl1);
 impl_reset_control!(raw::USB0, usb0_dev_rst, presetctrl1);
 
-
 pub struct Fro1MhzUtickClock<State = init_state::Disabled> {
     _state: State,
 }
@@ -346,26 +293,23 @@ impl Fro1MhzUtickClock<init_state::Disabled> {
     }
 
     /// Enable the FRO1MHZ UTICK clock
-    pub fn enable(
-        self,
-        syscon: &mut Handle,
-    ) -> Fro1MhzUtickClock<init_state::Enabled> {
-        syscon.clock_ctrl.modify(|_, w| w.fro1mhz_utick_ena().enable());
+    pub fn enable(self, syscon: &mut Handle) -> Fro1MhzUtickClock<init_state::Enabled> {
+        syscon
+            .clock_ctrl
+            .modify(|_, w| w.fro1mhz_utick_ena().enable());
 
         Fro1MhzUtickClock {
             _state: init_state::Enabled(()),
         }
     }
-
 }
 
 impl Fro1MhzUtickClock<init_state::Enabled> {
     /// Disable the FRO1MHZ UTICK clock
-    pub fn disable(
-        self,
-        syscon: &mut Handle,
-    ) -> Fro1MhzUtickClock<init_state::Disabled> {
-        syscon.clock_ctrl.modify(|_, w| w.fro1mhz_utick_ena().disable());
+    pub fn disable(self, syscon: &mut Handle) -> Fro1MhzUtickClock<init_state::Disabled> {
+        syscon
+            .clock_ctrl
+            .modify(|_, w| w.fro1mhz_utick_ena().disable());
 
         Fro1MhzUtickClock {
             _state: init_state::Disabled,

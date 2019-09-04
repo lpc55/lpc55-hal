@@ -13,7 +13,6 @@ pub struct ModuleId {
 }
 
 impl Rng {
-
     // the new constructor approach
     pub fn new(rng: raw::RNG) -> Rng {
         let _self = Self { rng: rng };
@@ -32,7 +31,7 @@ impl Rng {
     }
 
     /// DO NOT CALL - doesn't work yet
-    #[allow(dead_code,unreachable_code)]
+    #[allow(dead_code, unreachable_code)]
     fn initialize_entropy(&self) {
         unimplemented!();
 
@@ -56,8 +55,12 @@ impl Rng {
         loop {
             // activate CHI computing
             // dbg!(self.rng.online_test_cfg.read().activate().bit());  // <-- false
-            self.rng.online_test_cfg.modify(|_, w| unsafe {w.data_sel().bits(4)}) ;
-            self.rng.online_test_cfg.modify(|_, w| w.activate().set_bit());
+            self.rng
+                .online_test_cfg
+                .modify(|_, w| unsafe { w.data_sel().bits(4) });
+            self.rng
+                .online_test_cfg
+                .modify(|_, w| w.activate().set_bit());
             // dbg!(self.rng.online_test_cfg.read().activate().bit());  // <-- true
 
             // dbg!(val.min_chi_squared().bits());  // <-- 15
@@ -65,18 +68,18 @@ impl Rng {
 
             // TODO: this gets stuck
             // unimplemented!("figure out how to make this not block");
-            while val.min_chi_squared().bits() > val.max_chi_squared().bits() {
-            }
+            while val.min_chi_squared().bits() > val.max_chi_squared().bits() {}
 
             // dbg!("passed");
 
             if val.max_chi_squared().bits() > REF_CHI_SQUARED {
                 // reset
-                self.rng.online_test_cfg.modify(|_, w| w.activate().clear_bit());
+                self.rng
+                    .online_test_cfg
+                    .modify(|_, w| w.activate().clear_bit());
                 // increment SHIFT4X, which has bit width 3
                 // self.rng.counter_cfg.modify(|_, w| (w.shift4x().bits() as u8) + 1);
                 continue;
-
             } else {
                 break;
             }
@@ -88,14 +91,13 @@ impl Rng {
     }
 
     #[allow(dead_code)]
-    fn disable(&self) {
-    }
+    fn disable(&self) {}
 
     pub fn free(self) -> raw::RNG {
         self.rng
     }
 
-    pub fn get_random_u32(&self)-> u32 {
+    pub fn get_random_u32(&self) -> u32 {
         for _ in 0..32 {
             while self.rng.counter_val.read().refresh_cnt() == 0 {
                 // dbg!("was not zero");
@@ -109,11 +111,9 @@ impl Rng {
 pub enum Error {}
 
 impl crate::hal::blocking::rng::Read for Rng {
-
     type Error = Error;
 
     fn read(&mut self, buffer: &mut [u8]) -> Result<(), Self::Error> {
-
         let mut i = 0usize;
         while i < buffer.len() {
             // get 4 bytes
@@ -127,6 +127,5 @@ impl crate::hal::blocking::rng::Read for Rng {
         }
 
         Ok(())
-
     }
 }

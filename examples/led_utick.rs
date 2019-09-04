@@ -2,20 +2,16 @@
 #![no_std]
 
 // extern crate panic_semihosting;  // 4004 bytes
-extern crate panic_halt;  // 672 bytes
+extern crate panic_halt; // 672 bytes
 
 use cortex_m::asm;
 use cortex_m_rt::entry;
 
+use hal::{gpio::Level, prelude::*};
 use lpc55s6x_hal as hal;
-use hal::{
-    prelude::*,
-    gpio::Level,
-};
 
 #[entry]
 fn main() -> ! {
-
     let peripherals = hal::Peripherals::take().unwrap();
 
     let mut syscon = peripherals.SYSCON.split();
@@ -27,15 +23,21 @@ fn main() -> ! {
     // G = pio1_7
     // B = pio1_4
 
-    let mut red = iocon.pins.pio1_6
+    let mut red = iocon
+        .pins
+        .pio1_6
         .into_gpio_pin(&gpio)
         .into_output(Level::High);
 
-    let mut green = iocon.pins.pio1_7
+    let mut green = iocon
+        .pins
+        .pio1_7
         .into_gpio_pin(&gpio)
         .into_output(Level::High);
 
-    let mut blue = iocon.pins.pio1_4
+    let mut blue = iocon
+        .pins
+        .pio1_4
         .into_gpio_pin(&gpio)
         .into_output(Level::High);
 

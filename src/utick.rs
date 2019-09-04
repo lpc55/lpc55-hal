@@ -30,7 +30,6 @@
 //!
 //! Please refer to the [examples in the repository] for more example code.
 
-
 use embedded_hal::timer;
 use nb;
 use void::Void;
@@ -42,12 +41,8 @@ use crate::{
         self,
         // utick::ctrl,
     },
-    syscon::{
-        self,
-        Fro1MhzUtickClock,
-    },
+    syscon::{self, Fro1MhzUtickClock},
 };
-
 
 /// Interface to the micro-tick timer (UTICK)
 pub struct UTICK<State = init_state::Enabled> {
@@ -66,9 +61,7 @@ impl UTICK<init_state::Disabled> {
     /// Enable the UTICK
     ///
     /// Consume a UTICK in `Disabled` state, return an instance in `Enabled` state.
-    pub fn enable(mut self, syscon: &mut syscon::Handle)
-        -> UTICK<init_state::Enabled>
-    {
+    pub fn enable(mut self, syscon: &mut syscon::Handle) -> UTICK<init_state::Enabled> {
         syscon.enable_clock(&mut self.utick);
 
         // TODO: require passing in an enabled FRO1MHZ instead,
@@ -81,7 +74,9 @@ impl UTICK<init_state::Disabled> {
 
         // unsafe { &*crate::raw::SYSCON::ptr() }.clock_ctrl.modify(|_, w| w.fro1mhz_clk_ena().enable());
         // unsafe { &*crate::raw::SYSCON::ptr() }.clock_ctrl.modify(|_, w| w.fro1mhz_clk_ena().disable());
-        unsafe { &*crate::raw::SYSCON::ptr() }.clock_ctrl.modify(|_, w| w.fro1mhz_utick_ena().enable());
+        unsafe { &*crate::raw::SYSCON::ptr() }
+            .clock_ctrl
+            .modify(|_, w| w.fro1mhz_utick_ena().enable());
 
         UTICK {
             utick: self.utick,
@@ -94,10 +89,10 @@ impl UTICK<init_state::Enabled> {
     /// Disable the UTICK
     ///
     /// Consume a UTICK in `Enabled` state, return an instance in `Disabled` state.
-    pub fn disable(mut self, syscon: &mut syscon::Handle)
-        -> UTICK<init_state::Disabled>
-    {
-        unsafe { &*crate::raw::SYSCON::ptr() }.clock_ctrl.modify(|_, w| w.fro1mhz_utick_ena().disable());
+    pub fn disable(mut self, syscon: &mut syscon::Handle) -> UTICK<init_state::Disabled> {
+        unsafe { &*crate::raw::SYSCON::ptr() }
+            .clock_ctrl
+            .modify(|_, w| w.fro1mhz_utick_ena().disable());
         syscon.disable_clock(&mut self.utick);
 
         UTICK {
@@ -105,7 +100,6 @@ impl UTICK<init_state::Enabled> {
             _state: init_state::Disabled,
         }
     }
-
 }
 
 impl timer::Cancel for UTICK<init_state::Enabled> {
@@ -116,21 +110,25 @@ impl timer::Cancel for UTICK<init_state::Enabled> {
         self.utick.ctrl.write(|w| unsafe { w.delayval().bits(0) });
         Ok(())
     }
-
 }
 
 // TODO: also implement Periodic for UTICK
 impl timer::CountDown for UTICK<init_state::Enabled> {
     type Time = u32;
 
-    fn start<T>(&mut self, timeout: T) where T: Into<Self::Time> {
+    fn start<T>(&mut self, timeout: T)
+    where
+        T: Into<Self::Time>,
+    {
         // The delay will be equal to DELAYVAL + 1 periods of the timer clock.
         // The minimum usable value is 1, for a delay of 2 timer clocks. A value of 0 stops the timer.
         let time = timeout.into();
         // Maybe remove again? Empirically, nothing much happens when
         // writing 1 to `delayval`.
         assert!(time >= 2);
-        self.utick.ctrl.write(|w| unsafe { w.delayval().bits(time - 1) });
+        self.utick
+            .ctrl
+            .write(|w| unsafe { w.delayval().bits(time - 1) });
     }
 
     fn wait(&mut self) -> nb::Result<(), Void> {
@@ -159,7 +157,6 @@ impl<State> UTICK<State> {
         self.utick
     }
 }
-
 
 /// A clock that is usable by the micro-tick timer (UTICK)
 ///

@@ -2,9 +2,9 @@
 #![no_std]
 
 extern crate panic_semihosting;
-use cortex_m_semihosting::{dbg, hprint, hprintln};
 use cortex_m::asm;
 use cortex_m_rt::entry;
+use cortex_m_semihosting::{dbg, hprint, hprintln};
 
 use lpc55s6x_hal as hal;
 
@@ -61,14 +61,19 @@ fn main() -> ! {
 
     #[allow(non_snake_case)]
     let DEVICE_ID0: *mut u32 = 0x4000_0ff8 as *mut u32;
-    hprintln!("{:x?}", unsafe{DEVICE_ID0.read_volatile()}).unwrap();
+    hprintln!("{:x?}", unsafe { DEVICE_ID0.read_volatile() }).unwrap();
 
     #[allow(non_snake_case)]
     let DIEID: *mut u32 = 0x4000_0ffc as *mut u32;
-    hprintln!("{:x?}", unsafe{DIEID.read_volatile()}).unwrap();
+    hprintln!("{:x?}", unsafe { DIEID.read_volatile() }).unwrap();
 
     dbg!(peripherals.SYSCON.device_id0.read().flash_size().bits());
-    dbg!(peripherals.SYSCON.device_id0.read().modelnum_extention().bits());
+    dbg!(peripherals
+        .SYSCON
+        .device_id0
+        .read()
+        .modelnum_extention()
+        .bits());
     dbg!(peripherals.SYSCON.device_id0.read().partconfig().bits());
     dbg!(peripherals.SYSCON.device_id0.read().rom_rev_minor().bits());
     dbg!(peripherals.SYSCON.device_id0.read().sram_size().bits());
@@ -78,5 +83,3 @@ fn main() -> ! {
         asm::wfi();
     }
 }
-
-

@@ -9,43 +9,34 @@
 //! [`sleep::Busy`]: struct.Busy.html
 //! [`sleep::Regular`]: struct.Regular.html
 
-
-use cortex_m::{
-    asm,
-    // interrupt,
-};
+use cortex_m::asm;
 use embedded_hal::prelude::*;
 use nb;
 
 use crate::{
-    clock::{
-        self,
-        Ticks,
-    },
+    clock::{self, Ticks},
     // pmu,
     // raw::{
     //     self,
     //     Interrupt,
     // },
-    utick::{
-        self,
-        UTICK,
-    },
+    utick::{self, UTICK},
 };
-
 
 /// Trait for putting the processor to sleep
 ///
 /// There will typically one implementation of `Sleep` per sleep mode that is
 /// available on a given microcontroller.
-pub trait Sleep<Clock> where Clock: clock::Enabled {
+pub trait Sleep<Clock>
+where
+    Clock: clock::Enabled,
+{
     /// Puts the processor to sleep for the given number of ticks of the clock
     fn sleep<'clock, T>(&mut self, ticks: T)
-        where
-            Clock: 'clock,
-            T    : Into<Ticks<'clock, Clock>>;
+    where
+        Clock: 'clock,
+        T: Into<Ticks<'clock, Clock>>;
 }
-
 
 /// Sleep mode based on busy waiting
 ///
@@ -81,7 +72,7 @@ pub trait Sleep<Clock> where Clock: clock::Enabled {
 /// sleep.sleep(delay);
 /// ```
 pub struct Busy<'utick> {
-	utick: &'utick mut UTICK,
+    utick: &'utick mut UTICK,
 }
 
 impl<'utick> Busy<'utick> {
@@ -94,19 +85,18 @@ impl<'utick> Busy<'utick> {
     /// for as long as the `sleep::Busy` instance exists, as it will be needed
     /// to count down the time in every call to [`Sleep::sleep`].
     pub fn prepare(utick: &'utick mut UTICK) -> Self {
-        Busy {
-            utick: utick,
-        }
+        Busy { utick: utick }
     }
 }
 
 impl<'utick, Clock> Sleep<Clock> for Busy<'utick>
-    where Clock: clock::Enabled + utick::Clock
+where
+    Clock: clock::Enabled + utick::Clock,
 {
     fn sleep<'clock, T>(&mut self, ticks: T)
-        where
-            Clock: 'clock,
-            T    : Into<Ticks<'clock, Clock>>
+    where
+        Clock: 'clock,
+        T: Into<Ticks<'clock, Clock>>,
     {
         let ticks: Ticks<Clock> = ticks.into();
 

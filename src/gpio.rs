@@ -1,10 +1,11 @@
 use crate::hal::digital::v2::{OutputPin, StatefulOutputPin};
 
 use crate::{
-    init_state, raw,
+    init_state,
     iocon::{pin_state, Pin, PinId},
+    raw,
+    raw::gpio::{CLR, DIRSET, PIN, SET},
     syscon,
-    raw::gpio::{DIRSET, PIN, SET, CLR},
 };
 
 /// Contains types to indicate the direction of GPIO pins
@@ -49,13 +50,12 @@ where
     D: direction::NotOutput,
 {
     pub fn into_output(self, initial: Level) -> Pin<T, pin_state::Gpio<direction::Output>> {
-
         match initial {
             Level::High => self.state.set[T::PORT].write(|w| unsafe { w.setp().bits(T::MASK) }),
             Level::Low => self.state.clr[T::PORT].write(|w| unsafe { w.clrp().bits(T::MASK) }),
         }
 
-        self.state.dirset[T::PORT].write(|w| unsafe { w.dirsetp().bits(T::MASK) } );
+        self.state.dirset[T::PORT].write(|w| unsafe { w.dirsetp().bits(T::MASK) });
 
         Pin {
             id: self.id,
@@ -103,15 +103,14 @@ where
 
 impl<T> StatefulOutputPin for Pin<T, pin_state::Gpio<direction::Output>>
 where
-	T: PinId,
+    T: PinId,
 {
     fn is_set_high(&self) -> Result<bool, Self::Error> {
-		Ok(self.state.pin[T::PORT].read().port().bits() & T::MASK == T::MASK)
-
-	}
+        Ok(self.state.pin[T::PORT].read().port().bits() & T::MASK == T::MASK)
+    }
 
     fn is_set_low(&self) -> Result<bool, Self::Error> {
-		Ok(! self.state.pin[T::PORT].read().port().bits() & T::MASK == T::MASK)
+        Ok(!self.state.pin[T::PORT].read().port().bits() & T::MASK == T::MASK)
     }
 }
 
@@ -157,4 +156,3 @@ impl<State> GPIO<State> {
         self.gpio
     }
 }
-

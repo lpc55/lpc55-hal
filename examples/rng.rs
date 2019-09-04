@@ -2,12 +2,12 @@
 #![no_std]
 
 extern crate panic_semihosting;
-use cortex_m_semihosting::dbg;
 use cortex_m::asm;
 use cortex_m_rt::entry;
+use cortex_m_semihosting::dbg;
 
-use lpc55s6x_hal as hal;
 use embedded_hal::blocking::rng::Read;
+use lpc55s6x_hal as hal;
 
 #[entry]
 fn main() -> ! {
@@ -29,7 +29,7 @@ fn main() -> ! {
     dbg!(hal::get_cycle_count());
 
     // TODO: make this method generic over i (in this case, 2)
-    dbg!(syscon.handle.is_clock_enabled(&peripherals.RNG));  // seems default is: yes!
+    dbg!(syscon.handle.is_clock_enabled(&peripherals.RNG)); // seems default is: yes!
     syscon.handle.disable_clock(&mut peripherals.RNG);
     dbg!(syscon.handle.is_clock_enabled(&peripherals.RNG));
     syscon.handle.enable_clock(&mut peripherals.RNG);

@@ -45,7 +45,6 @@ impl IOCON {
     }
 }
 
-
 /// Contains types that indicate pin states
 pub mod pin_state {
     use crate::gpio::direction::Direction;
@@ -82,7 +81,6 @@ pub struct Parts {
 
     /// Pins that can be used for GPIO or other functions
     pub pins: Pins,
-
     // /// Movable functions
     // pub movable_functions: MovableFunctions,
 
@@ -157,7 +155,6 @@ impl Handle<init_state::Enabled> {
         }
     }
 }
-
 
 /// Implemented by types that identify pins
 pub trait PinId {
@@ -259,8 +256,6 @@ pins!(
     pio1_7 , PIO1_7 , 1, 0x07, pin_state::Unused, pin_state::Unused;
 );
 
-
-
 /// Main API to control for controlling pins
 ///
 /// `Pin` has two type parameters:
@@ -327,7 +322,10 @@ where
     T: PinId,
 {
     /// Transition pin to GPIO state
-    pub fn into_gpio_pin(self, _: &GPIO<init_state::Enabled>) -> Pin<T, pin_state::Gpio<gpio::direction::Unknown>> {
+    pub fn into_gpio_pin(
+        self,
+        _: &GPIO<init_state::Enabled>,
+    ) -> Pin<T, pin_state::Gpio<gpio::direction::Unknown>> {
         Pin {
             id: self.id,
             state: pin_state::Gpio {
