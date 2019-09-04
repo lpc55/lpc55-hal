@@ -9,7 +9,7 @@ use cortex_m_rt::entry;
 
 use lpc55s6x_hal as hal;
 use hal::{
-    traits::*,
+    prelude::*,
     gpio::Level,
 };
 

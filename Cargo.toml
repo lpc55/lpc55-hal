@@ -1,15 +1,15 @@
 [package]
+name = "lpc55s6x-hal"
 version = "0.0.0"
-authors = [
-  "nickray <n@stalder.io>",
-]
+edition = "2018"
 description   = "Hardware Abstraction Layer (HAL) for the NXP LPC55S6x ARM Cortex-33 microcontrollers"
+repository = "https://github.com/nickray/lpc55s6x-hal"
+license = "MIT OR Apache-2.0"
+readme = "README.md"
 documentation = "https://docs.rs/lpc55s6x-hal"
 keywords = ["no-std", "cortex-m", "nxp", "lpc", "embedded-hal-impl"]
-license = "MIT OR Apache-2.0"
-name = "lpc55s6x-hal"
-repository = "https://github.com/nickray/lpc55s6x-hal"
-edition = "2018"
+categories = ["embedded", "no-std"]
+authors = ["Nicolas Stalder <n@stalder.io>", "Hanno Braun <hanno@braun-robotics.com>"]
 
 [dependencies]
 bare-metal = "0.2"
@@ -28,9 +28,9 @@ void = { version = "1", default-features = false }
 # Otherwise, git master would work
 cortex-m-rt = "0.6"
 # cortex-m-rt = { git = "https://github.com/rust-embedded/cortex-m-rt" }
-
-# cortex-m-rtfm = "0.4.3"
-cortex-m-rtfm = { git = "https://github.com/nickray/cortex-m-rtfm", branch = "bump-cortex-m-and-rt" }
+# Remove, as unreleased/git dependencies are not allowed
+# cortex-m-rtfm = "0.5"  # unreleased
+#cortex-m-rtfm = { git = "https://github.com/japaric/cortex-m-rtfm", branch = "heterogeneous" }
 cortex-m-semihosting = "0.3"
 panic-halt  = "0.2"
 panic-semihosting = { version = "0.5", features = ["jlink-quirks"] }

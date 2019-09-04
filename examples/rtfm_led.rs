@@ -6,38 +6,38 @@ use cortex_m_semihosting::dbg;
 
 use lpc55s6x_hal as hal;
 use hal::{
-    traits::*,
-    gpio, iocon,
+    prelude::*,
+    gpio::{self, Level},
+    iocon,
 };
-use rtfm::app;
 
-#[app(device = crate::hal::raw)]
+#[rtfm::app(device = crate::hal::raw, peripherals = true)]
 const APP: () = {
-    // Late resources
-    static mut LED: iocon::Pin<iocon::PIO1_6, iocon::pin_state::Gpio<gpio::direction::Output>> = ();
+    struct Resources {
+        led: iocon::Pin<iocon::PIO1_6, iocon::pin_state::Gpio<gpio::direction::Output>>,
+    }
 
     #[init]
     fn init(c: init::Context) -> init::LateResources {
         dbg!("init");
-        // let cp = c.core;
+        let _cp = c.core;
         let dp = c.device;
 
+        // setup red LED
         let mut syscon = hal::syscon::SYSCON::new(dp.SYSCON).split();
         let gpio = hal::gpio::GPIO::new(dp.GPIO).enable(&mut syscon.handle);
         let iocon = hal::iocon::IOCON::new(dp.IOCON).split();
 
         let red_led = iocon.pins.pio1_6
             .into_gpio_pin(&gpio)
-            .into_output(hal::gpio::Level::High);
+            .into_output(Level::High);
 
-        init::LateResources {
-            LED: red_led,
-        }
+        init::LateResources { led: red_led }
     }
 
-    #[idle(resources = [LED])]
+    #[idle(resources = [led])]
     fn idle(c: idle::Context) -> ! {
-        let led = c.resources.LED;
+        let led = c.resources.led;
         loop {
             dbg!("low");
             led.set_low().unwrap();

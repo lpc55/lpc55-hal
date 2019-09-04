@@ -17,8 +17,8 @@ pub mod utick;
 #[macro_use]
 pub(crate) mod reg_proxy;
 
-// aka `prelude` in other HALs
-pub mod traits;
+// currently, all sorts of traits
+pub mod prelude;
 
 /// Contains types that encode the state of hardware initialization
 ///
