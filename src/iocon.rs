@@ -106,7 +106,7 @@ pub struct Handle<State = init_state::Disabled> {
 impl Handle<init_state::Disabled> {
     pub(crate) fn new(iocon: raw::IOCON) -> Self {
         Handle {
-            iocon: iocon,
+            iocon,
             _state: init_state::Disabled,
         }
     }
@@ -122,9 +122,9 @@ impl Handle<init_state::Disabled> {
     ///
     /// [`Disabled`]: ../init_state/struct.Disabled.html
     /// [`Enabled`]: ../init_state/struct.Enabled.html
-    pub fn enable(mut self, syscon: &mut syscon::Handle) -> Handle<init_state::Enabled> {
+    pub fn enable(self, syscon: &mut syscon::Handle) -> Handle<init_state::Enabled> {
         // dbg!(syscon.is_clock_enabled(&self.iocon));
-        syscon.enable_clock(&mut self.iocon);
+        syscon.enable_clock(&self.iocon);
         // dbg!(syscon.is_clock_enabled(&self.iocon));
 
         Handle {
@@ -146,8 +146,8 @@ impl Handle<init_state::Enabled> {
     ///
     /// [`Enabled`]: ../init_state/struct.Enabled.html
     /// [`Disabled`]: ../init_state/struct.Disabled.html
-    pub fn disable(mut self, syscon: &mut syscon::Handle) -> Handle<init_state::Disabled> {
-        syscon.disable_clock(&mut self.iocon);
+    pub fn disable(self, syscon: &mut syscon::Handle) -> Handle<init_state::Disabled> {
+        syscon.disable_clock(&self.iocon);
 
         Handle {
             iocon: self.iocon,

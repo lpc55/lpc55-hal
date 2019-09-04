@@ -123,13 +123,13 @@ pub struct GPIO<State = init_state::Enabled> {
 impl GPIO<init_state::Disabled> {
     pub fn new(gpio: raw::GPIO) -> Self {
         GPIO {
-            gpio: gpio,
+            gpio,
             _state: init_state::Disabled,
         }
     }
-    pub fn enable(mut self, syscon: &mut syscon::Handle) -> GPIO<init_state::Enabled> {
+    pub fn enable(self, syscon: &mut syscon::Handle) -> GPIO<init_state::Enabled> {
         // dbg!(syscon.is_clock_enabled(&self.gpio));
-        syscon.enable_clock(&mut self.gpio);
+        syscon.enable_clock(&self.gpio);
         // dbg!(syscon.is_clock_enabled(&self.gpio));
 
         GPIO {
@@ -140,8 +140,8 @@ impl GPIO<init_state::Disabled> {
 }
 
 impl GPIO<init_state::Enabled> {
-    pub fn disable(mut self, syscon: &mut syscon::Handle) -> GPIO<init_state::Disabled> {
-        syscon.disable_clock(&mut self.gpio);
+    pub fn disable(self, syscon: &mut syscon::Handle) -> GPIO<init_state::Disabled> {
+        syscon.disable_clock(&self.gpio);
 
         GPIO {
             gpio: self.gpio,

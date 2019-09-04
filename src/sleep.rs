@@ -85,7 +85,7 @@ impl<'utick> Busy<'utick> {
     /// for as long as the `sleep::Busy` instance exists, as it will be needed
     /// to count down the time in every call to [`Sleep::sleep`].
     pub fn prepare(utick: &'utick mut UTICK) -> Self {
-        Busy { utick: utick }
+        Busy { utick }
     }
 }
 

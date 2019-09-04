@@ -15,7 +15,7 @@ pub struct ModuleId {
 impl Rng {
     // the new constructor approach
     pub fn new(rng: raw::RNG) -> Rng {
-        let _self = Self { rng: rng };
+        let _self = Self { rng };
         _self.enable();
         // _self.initialize_entropy();
         _self

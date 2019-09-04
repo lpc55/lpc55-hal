@@ -239,6 +239,7 @@ impl ClockControl for raw::GPIO {
         h
     }
 
+    #[allow(clippy::nonminimal_bool)]
     fn is_clock_enabled(&self, h: &Handle) -> bool {
         h.ahbclkctrl0.read().gpio0().is_enable() &&
         h.ahbclkctrl0.read().gpio1().is_enable() &&
