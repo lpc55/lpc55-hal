@@ -15,8 +15,8 @@ jobs:
           command: make rustup
 
       - run:
-          name: Build the firmware
-          command: make build-all-verbose
+          name: Build the examples
+          command: make build-examples-verbosely
 
       - save_cache:
           key: project-cache
