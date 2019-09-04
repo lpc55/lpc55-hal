@@ -61,8 +61,8 @@ impl UTICK<init_state::Disabled> {
     /// Enable the UTICK
     ///
     /// Consume a UTICK in `Disabled` state, return an instance in `Enabled` state.
-    pub fn enable(self, syscon: &mut syscon::Handle) -> UTICK<init_state::Enabled> {
-        syscon.enable_clock(&self.utick);
+    pub fn enable(mut self, syscon: &mut syscon::Handle) -> UTICK<init_state::Enabled> {
+        syscon.enable_clock(&mut self.utick);
 
         // TODO: require passing in an enabled FRO1MHZ instead,
         //       so we don't silently enable it.
@@ -89,11 +89,11 @@ impl UTICK<init_state::Enabled> {
     /// Disable the UTICK
     ///
     /// Consume a UTICK in `Enabled` state, return an instance in `Disabled` state.
-    pub fn disable(self, syscon: &mut syscon::Handle) -> UTICK<init_state::Disabled> {
+    pub fn disable(mut self, syscon: &mut syscon::Handle) -> UTICK<init_state::Disabled> {
         unsafe { &*crate::raw::SYSCON::ptr() }
             .clock_ctrl
             .modify(|_, w| w.fro1mhz_utick_ena().disable());
-        syscon.disable_clock(&self.utick);
+        syscon.disable_clock(&mut self.utick);
 
         UTICK {
             utick: self.utick,

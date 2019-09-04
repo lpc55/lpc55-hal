@@ -13,7 +13,7 @@ fn main() -> ! {
 
     let mut syscon = peripherals.SYSCON.split();
 
-    let gpio = peripherals.GPIO.enable(&mut syscon.handle);
+    let mut gpio = peripherals.GPIO.enable(&mut syscon.handle);
     let iocon = peripherals.IOCON.split();
     // UM kind of says it's not enabled, but it actually is
     iocon.handle.enable(&mut syscon.handle);
@@ -27,7 +27,7 @@ fn main() -> ! {
     let mut red = iocon
         .pins
         .pio1_6
-        .into_gpio_pin(&gpio)
+        .into_gpio_pin(&mut gpio)
         .into_output(hal::gpio::Level::High); // start turned off
 
     let clock = syscon.fro_1mhz_utick_clock.enable(&mut syscon.handle);

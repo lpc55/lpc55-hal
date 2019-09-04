@@ -25,11 +25,11 @@ const APP: () = {
 
         // setup red LED
         let mut syscon = hal::syscon::SYSCON::new(dp.SYSCON).split();
-        let gpio = hal::gpio::GPIO::new(dp.GPIO).enable(&mut syscon.handle);
+        let mut gpio = hal::gpio::GPIO::new(dp.GPIO).enable(&mut syscon.handle);
         let iocon = hal::iocon::IOCON::new(dp.IOCON).split();
 
         let red_led = iocon.pins.pio1_6
-            .into_gpio_pin(&gpio)
+            .into_gpio_pin(&mut gpio)
             .into_output(Level::High);
 
         init::LateResources { led: red_led }

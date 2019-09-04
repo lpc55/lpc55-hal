@@ -125,12 +125,12 @@ reg!(PRESETCTRL2, PRESETCTRL2, raw::SYSCON, presetctrl2);
 
 impl Handle {
     /// Enables the clock for a peripheral or other hardware component
-    pub fn enable_clock<P: ClockControl>(&mut self, peripheral: &P) {
+    pub fn enable_clock<P: ClockControl>(&mut self, peripheral: &mut P) {
         peripheral.enable_clock(self);
     }
 
     /// Disable peripheral clock
-    pub fn disable_clock<P: ClockControl>(&mut self, peripheral: &P) {
+    pub fn disable_clock<P: ClockControl>(&mut self, peripheral: &mut P) {
         peripheral.disable_clock(self);
     }
 

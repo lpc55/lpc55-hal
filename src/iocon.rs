@@ -122,9 +122,9 @@ impl Handle<init_state::Disabled> {
     ///
     /// [`Disabled`]: ../init_state/struct.Disabled.html
     /// [`Enabled`]: ../init_state/struct.Enabled.html
-    pub fn enable(self, syscon: &mut syscon::Handle) -> Handle<init_state::Enabled> {
+    pub fn enable(mut self, syscon: &mut syscon::Handle) -> Handle<init_state::Enabled> {
         // dbg!(syscon.is_clock_enabled(&self.iocon));
-        syscon.enable_clock(&self.iocon);
+        syscon.enable_clock(&mut self.iocon);
         // dbg!(syscon.is_clock_enabled(&self.iocon));
 
         Handle {
@@ -146,8 +146,8 @@ impl Handle<init_state::Enabled> {
     ///
     /// [`Enabled`]: ../init_state/struct.Enabled.html
     /// [`Disabled`]: ../init_state/struct.Disabled.html
-    pub fn disable(self, syscon: &mut syscon::Handle) -> Handle<init_state::Disabled> {
-        syscon.disable_clock(&self.iocon);
+    pub fn disable(mut self, syscon: &mut syscon::Handle) -> Handle<init_state::Disabled> {
+        syscon.disable_clock(&mut self.iocon);
 
         Handle {
             iocon: self.iocon,
@@ -324,7 +324,7 @@ where
     /// Transition pin to GPIO state
     pub fn into_gpio_pin(
         self,
-        _: &GPIO<init_state::Enabled>,
+        _: &mut GPIO<init_state::Enabled>,
     ) -> Pin<T, pin_state::Gpio<gpio::direction::Unknown>> {
         Pin {
             id: self.id,
@@ -339,3 +339,4 @@ where
         }
     }
 }
+

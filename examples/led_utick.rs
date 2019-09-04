@@ -16,7 +16,7 @@ fn main() -> ! {
 
     let mut syscon = peripherals.SYSCON.split();
 
-    let gpio = peripherals.GPIO.enable(&mut syscon.handle);
+    let mut gpio = peripherals.GPIO.enable(&mut syscon.handle);
     let iocon = peripherals.IOCON.split();
 
     // R = pio1_6
@@ -26,19 +26,19 @@ fn main() -> ! {
     let mut red = iocon
         .pins
         .pio1_6
-        .into_gpio_pin(&gpio)
+        .into_gpio_pin(&mut gpio)
         .into_output(Level::High);
 
     let mut green = iocon
         .pins
         .pio1_7
-        .into_gpio_pin(&gpio)
+        .into_gpio_pin(&mut gpio)
         .into_output(Level::High);
 
     let mut blue = iocon
         .pins
         .pio1_4
-        .into_gpio_pin(&gpio)
+        .into_gpio_pin(&mut gpio)
         .into_output(Level::High);
 
     // loop {
