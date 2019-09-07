@@ -9,14 +9,20 @@ use lpc55s6x_hal as hal;
 
 #[entry]
 fn main() -> ! {
-    let peripherals = hal::Peripherals::take().unwrap();
+    // let peripherals = hal::Peripherals::take().unwrap();
+    let dp = hal::raw::Peripherals::take().unwrap();
 
-    let mut syscon = peripherals.SYSCON.split();
+    // let mut syscon = peripherals.SYSCON.split();
+    let mut syscon = hal::syscon::SYSCON::new(dp.SYSCON).split();
 
-    let mut gpio = peripherals.GPIO.enable(&mut syscon.handle);
-    let iocon = peripherals.IOCON.split();
+    // let mut gpio = peripherals.GPIO.enable(&mut syscon.handle);
+    let mut gpio = hal::gpio::take(dp.GPIO).enabled(&mut syscon.handle);
+
+    // let iocon = peripherals.IOCON.split();
+    let iocon = hal::iocon::take(dp.IOCON);//.split();
+
     // UM kind of says it's not enabled, but it actually is
-    iocon.handle.enable(&mut syscon.handle);
+    let iocon = iocon.enable(&mut syscon.handle);
 
     // R = pio1_6
     // G = pio1_7
@@ -24,11 +30,14 @@ fn main() -> ! {
     //
     // on = low, off = high
 
-    let mut red = iocon
-        .pins
+    let pins = hal::pins::Pins::take().unwrap();
+    let mut red = pins
         .pio1_6
         .into_gpio_pin(&mut gpio)
         .into_output(hal::gpio::Level::High); // start turned off
+
+    let iocon =iocon.disable(&mut syscon.handle);
+    iocon.release();
 
     let clock = syscon.fro_1mhz_utick_clock.enable(&mut syscon.handle);
     let delay = hal::clock::Ticks {
@@ -36,7 +45,8 @@ fn main() -> ! {
         clock: &clock,
     }; // 500 ms = 0.5 s
 
-    let mut utick = peripherals.UTICK.enable(&mut syscon.handle);
+    // let mut utick = peripherals.UTICK.enable(&mut syscon.handle);
+    let mut utick = hal::utick::take(dp.UTICK).enabled(&mut syscon.handle);
     let mut sleep = hal::sleep::Busy::prepare(&mut utick);
 
     // use this order to check whether LED initially flashes up

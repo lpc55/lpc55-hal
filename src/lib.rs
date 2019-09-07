@@ -21,22 +21,10 @@ pub(crate) mod reg_proxy;
 // currently, all sorts of traits
 pub mod prelude;
 
-/// Contains types that encode the state of hardware initialization
-///
-/// The types in this module are used by structs representing peripherals or
-/// other hardware components, to encode the initialization state of the
-/// underlying hardware as part of the type.
-pub mod init_state {
-    /// Indicates that the hardware component is enabled
-    ///
-    /// This usually indicates that the hardware has been initialized and can be
-    /// used for its intended purpose. Contains an optional payload that APIs
-    /// can use to keep data that is only available while enabled.
-    pub struct Enabled<T = ()>(pub T);
-
-    /// Indicates that the hardware component is disabled
-    pub struct Disabled;
-}
+pub mod states;
+use states::{
+    init_state,
+};
 
 ///
 /// This is the entry point to the HAL API. Before you can do anything else, you
@@ -73,16 +61,16 @@ pub struct Peripherals {
     ///
     /// The GPIO peripheral is enabled by default.
     /// TODO: do *not* rely on this
-    pub GPIO: gpio::GPIO<init_state::Disabled>,
+    pub GPIO: gpio::Gpio<init_state::Disabled>,
 
     /// I/O configuration
-    pub IOCON: iocon::IOCON,
+    pub IOCON: iocon::Iocon<init_state::Disabled>,
 
     /// System configuration
     pub SYSCON: syscon::SYSCON,
 
     /// Micro-Tick Timer
-    pub UTICK: utick::UTICK<init_state::Disabled>,
+    pub UTICK: utick::Utick<init_state::Disabled>,
 
     /// Analog-to-Digital Converter (ADC)
     ///
@@ -234,10 +222,10 @@ impl Peripherals {
             // HAL peripherals
             // NOTE(unsafe) The init state of the gpio peripheral is enabled,
             // thus it's safe to create an already initialized gpio port
-            GPIO: gpio::GPIO::new(p.GPIO),
-            IOCON: iocon::IOCON::new(p.IOCON),
+            GPIO: gpio::take(p.GPIO),
+            IOCON: iocon::take(p.IOCON),
             SYSCON: syscon::SYSCON::new(p.SYSCON),
-            UTICK: utick::UTICK::new(p.UTICK),
+            UTICK: utick::take(p.UTICK),
 
             // Raw peripherals
             ADC0: p.ADC0,

@@ -31,7 +31,7 @@ use crate::raw::syscon::{
 };
 
 use crate::reg;
-use crate::{clock, init_state};
+use crate::{clock, states::init_state};
 
 // Let's see if this is overengineered or not, maybe remove
 use crate::reg_proxy::RegProxy;

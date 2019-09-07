@@ -1,6 +1,6 @@
 use crate::{
-    gpio::{self, GPIO},
-    init_state,
+    gpio::{self, Gpio},
+    states::init_state,
 };
 
 /// Implemented by types that identify pins
@@ -40,6 +40,8 @@ pub mod pin_state {
     impl<D> PinState for Gpio<D> where D: Direction {}
 }
 
+static mut TAKEN: bool = false;
+
 macro_rules! pins {
     ($(
         $field:ident,
@@ -67,7 +69,23 @@ macro_rules! pins {
         }
 
         impl Pins {
-            pub(crate) fn new() -> Self {
+
+            pub fn take() -> Option<Self> {
+                if unsafe { TAKEN } {
+                    None
+                } else {
+                    Some(unsafe {
+                        TAKEN = true;
+                        Pins::steal()
+                    } )
+                }
+            }
+
+            pub fn release(self) {
+                unsafe { TAKEN = false };
+            }
+
+            pub unsafe fn steal() -> Self {
                 Pins {
                     $(
                         $field: Pin {
@@ -195,7 +213,7 @@ where
     /// Transition pin to GPIO state
     pub fn into_gpio_pin(
         self,
-        _: &mut GPIO<init_state::Enabled>,
+        _: &mut Gpio<init_state::Enabled>,
     ) -> Pin<T, pin_state::Gpio<gpio::direction::Unknown>> {
         Pin {
             id: self.id,

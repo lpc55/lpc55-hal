@@ -20,7 +20,7 @@ use crate::{
     //     self,
     //     Interrupt,
     // },
-    utick::{self, UTICK},
+    utick::{self, Utick},
 };
 
 /// Trait for putting the processor to sleep
@@ -72,7 +72,7 @@ where
 /// sleep.sleep(delay);
 /// ```
 pub struct Busy<'utick> {
-    utick: &'utick mut UTICK,
+    utick: &'utick mut Utick,
 }
 
 impl<'utick> Busy<'utick> {
@@ -84,7 +84,7 @@ impl<'utick> Busy<'utick> {
     /// Requires a mutable reference to [`UTICK`]. The reference will be borrowed
     /// for as long as the `sleep::Busy` instance exists, as it will be needed
     /// to count down the time in every call to [`Sleep::sleep`].
-    pub fn prepare(utick: &'utick mut UTICK) -> Self {
+    pub fn prepare(utick: &'utick mut Utick) -> Self {
         Busy { utick }
     }
 }

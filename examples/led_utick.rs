@@ -12,31 +12,34 @@ use lpc55s6x_hal as hal;
 
 #[entry]
 fn main() -> ! {
-    let peripherals = hal::Peripherals::take().unwrap();
+    // let peripherals = hal::Peripherals::take().unwrap();
+    let dp = hal::raw::Peripherals::take().unwrap();
 
-    let mut syscon = peripherals.SYSCON.split();
+    let mut syscon = hal::syscon::SYSCON::new(dp.SYSCON).split();
 
-    let mut gpio = peripherals.GPIO.enable(&mut syscon.handle);
-    let iocon = peripherals.IOCON.split();
+    // let mut gpio = peripherals.GPIO.enable(&mut syscon.handle);
+    let mut gpio = hal::gpio::take(dp.GPIO).enabled(&mut syscon.handle);
+    // let iocon = peripherals.IOCON.split();
+    // let iocon = hal::iocon::take(dp.IOCON);//.split();
+
 
     // R = pio1_6
     // G = pio1_7
     // B = pio1_4
 
-    let mut red = iocon
-        .pins
+    let pins = hal::pins::Pins::take().unwrap();
+
+    let mut red = pins
         .pio1_6
         .into_gpio_pin(&mut gpio)
         .into_output(Level::High);
 
-    let mut green = iocon
-        .pins
+    let mut green = pins
         .pio1_7
         .into_gpio_pin(&mut gpio)
         .into_output(Level::High);
 
-    let mut blue = iocon
-        .pins
+    let mut blue = pins
         .pio1_4
         .into_gpio_pin(&mut gpio)
         .into_output(Level::High);
@@ -50,7 +53,8 @@ fn main() -> ! {
     //     }
     // }
 
-    let mut utick = peripherals.UTICK.enable(&mut syscon.handle);
+    // let mut utick = peripherals.UTICK.enable(&mut syscon.handle);
+    let mut utick = hal::utick::take(dp.UTICK).enabled(&mut syscon.handle);
     loop {
         red.set_low().unwrap();
         utick.start(1_000_000u32);

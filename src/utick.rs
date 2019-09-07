@@ -35,7 +35,7 @@ use nb;
 use void::Void;
 
 use crate::{
-    init_state,
+    states::init_state,
     // pmu::LowPowerClock,
     raw::{
         self,
@@ -45,15 +45,20 @@ use crate::{
 };
 
 /// Interface to the micro-tick timer (UTICK)
-pub struct UTICK<State = init_state::Enabled> {
-    utick: raw::UTICK,
+pub struct Utick<State = init_state::Enabled> {
+    raw: raw::UTICK,
     _state: State,
 }
 
-impl UTICK<init_state::Disabled> {
-    pub(crate) fn new(utick: raw::UTICK) -> Self {
-        UTICK {
-            utick,
+pub fn take(utick: raw::UTICK) -> Utick<init_state::Disabled> {
+    Utick::new(utick)
+}
+
+impl Utick<init_state::Disabled> {
+    // pub(crate) fn new(utick: raw::UTICK) -> Self {
+    pub fn new(utick: raw::UTICK) -> Self {
+        Utick {
+            raw: utick,
             _state: init_state::Disabled,
         }
     }
@@ -61,8 +66,8 @@ impl UTICK<init_state::Disabled> {
     /// Enable the UTICK
     ///
     /// Consume a UTICK in `Disabled` state, return an instance in `Enabled` state.
-    pub fn enable(mut self, syscon: &mut syscon::Handle) -> UTICK<init_state::Enabled> {
-        syscon.enable_clock(&mut self.utick);
+    pub fn enabled(mut self, syscon: &mut syscon::Handle) -> Utick<init_state::Enabled> {
+        syscon.enable_clock(&mut self.raw);
 
         // TODO: require passing in an enabled FRO1MHZ instead,
         //       so we don't silently enable it.
@@ -78,42 +83,42 @@ impl UTICK<init_state::Disabled> {
             .clock_ctrl
             .modify(|_, w| w.fro1mhz_utick_ena().enable());
 
-        UTICK {
-            utick: self.utick,
+        Utick {
+            raw: self.raw,
             _state: init_state::Enabled(()),
         }
     }
 }
 
-impl UTICK<init_state::Enabled> {
+impl Utick<init_state::Enabled> {
     /// Disable the UTICK
     ///
     /// Consume a UTICK in `Enabled` state, return an instance in `Disabled` state.
-    pub fn disable(mut self, syscon: &mut syscon::Handle) -> UTICK<init_state::Disabled> {
+    pub fn disabled(mut self, syscon: &mut syscon::Handle) -> Utick<init_state::Disabled> {
         unsafe { &*crate::raw::SYSCON::ptr() }
             .clock_ctrl
             .modify(|_, w| w.fro1mhz_utick_ena().disable());
-        syscon.disable_clock(&mut self.utick);
+        syscon.disable_clock(&mut self.raw);
 
-        UTICK {
-            utick: self.utick,
+        Utick {
+            raw: self.raw,
             _state: init_state::Disabled,
         }
     }
 }
 
-impl timer::Cancel for UTICK<init_state::Enabled> {
+impl timer::Cancel for Utick<init_state::Enabled> {
     type Error = Void;
 
     fn cancel(&mut self) -> Result<(), Self::Error> {
         // A value of 0 stops the timer.
-        self.utick.ctrl.write(|w| unsafe { w.delayval().bits(0) });
+        self.raw.ctrl.write(|w| unsafe { w.delayval().bits(0) });
         Ok(())
     }
 }
 
 // TODO: also implement Periodic for UTICK
-impl timer::CountDown for UTICK<init_state::Enabled> {
+impl timer::CountDown for Utick<init_state::Enabled> {
     type Time = u32;
 
     fn start<T>(&mut self, timeout: T)
@@ -126,13 +131,13 @@ impl timer::CountDown for UTICK<init_state::Enabled> {
         // Maybe remove again? Empirically, nothing much happens when
         // writing 1 to `delayval`.
         assert!(time >= 2);
-        self.utick
+        self.raw
             .ctrl
             .write(|w| unsafe { w.delayval().bits(time - 1) });
     }
 
     fn wait(&mut self) -> nb::Result<(), Void> {
-        if self.utick.stat.read().active().bit_is_clear() {
+        if self.raw.stat.read().active().bit_is_clear() {
             return Ok(());
         }
 
@@ -140,7 +145,7 @@ impl timer::CountDown for UTICK<init_state::Enabled> {
     }
 }
 
-impl<State> UTICK<State> {
+impl<State> Utick<State> {
     /// Return the raw peripheral
     ///
     /// This method serves as an escape hatch from the HAL API. It returns the
@@ -153,8 +158,8 @@ impl<State> UTICK<State> {
     /// prioritize it accordingly.
     ///
     /// [open an issue]: https://github.com/lpc-rs/lpc8xx-hal/issues
-    pub fn free(self) -> raw::UTICK {
-        self.utick
+    pub fn release(self) -> raw::UTICK {
+        self.raw
     }
 }
 
