@@ -9,6 +9,7 @@ pub extern crate lpc55s6x_pac as raw;
 pub mod clock;
 pub mod gpio;
 pub mod iocon;
+pub mod pins;
 pub mod rng;
 pub mod sleep;
 pub mod syscon;

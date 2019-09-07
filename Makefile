@@ -2,6 +2,10 @@ build-both:
 	cargo build
 	cargo build --release
 
+view-rtfm-expansion:
+	rustfmt target/rtfm-expansion.rs
+	vi target/rtfm-expansion.rs
+
 #
 # External documentation
 #

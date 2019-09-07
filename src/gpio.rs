@@ -2,7 +2,7 @@ use crate::hal::digital::v2::{OutputPin, StatefulOutputPin};
 
 use crate::{
     init_state,
-    iocon::{pin_state, Pin, PinId},
+    pins::{pin_state, Pin, PinId},
     raw,
     raw::gpio::{CLR, DIRSET, PIN, SET},
     syscon,
