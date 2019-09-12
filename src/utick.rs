@@ -145,6 +145,12 @@ impl timer::CountDown for EnabledUtick<'_> {
         self.raw
             .ctrl
             .write(|w| unsafe { w.delayval().bits(time - 1) });
+        // So... this seems a bit unsafe (what if time is 2?)
+        // But: without it, in --release builds the timer behaves erratically.
+        // The UM says this on the topic: "Note that the Micro-tick Timer operates from a different
+        // (typically slower) clock than the CPU and bus systems.  This means there may be a
+        // synchronization delay when accessing Micro-tick Timer registers."
+        while self.raw.stat.read().active().bit_is_clear() {}
     }
 
     fn wait(&mut self) -> nb::Result<(), Void> {
