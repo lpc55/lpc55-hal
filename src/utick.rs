@@ -66,7 +66,7 @@ impl Utick<init_state::Disabled> {
     /// Enable the UTICK
     ///
     /// Consume a UTICK in `Disabled` state, return an instance in `Enabled` state.
-    pub fn enabled(mut self, syscon: &mut syscon::Handle) -> Utick<init_state::Enabled> {
+    pub fn enabled(mut self, syscon: &mut syscon::Syscon) -> Utick<init_state::Enabled> {
         syscon.enable_clock(&mut self.raw);
 
         // TODO: require passing in an enabled FRO1MHZ instead,
@@ -94,7 +94,7 @@ impl Utick<init_state::Enabled> {
     /// Disable the UTICK
     ///
     /// Consume a UTICK in `Enabled` state, return an instance in `Disabled` state.
-    pub fn disabled(mut self, syscon: &mut syscon::Handle) -> Utick<init_state::Disabled> {
+    pub fn disabled(mut self, syscon: &mut syscon::Syscon) -> Utick<init_state::Disabled> {
         unsafe { &*crate::raw::SYSCON::ptr() }
             .clock_ctrl
             .modify(|_, w| w.fro1mhz_utick_ena().disable());
@@ -147,17 +147,6 @@ impl timer::CountDown for Utick<init_state::Enabled> {
 
 impl<State> Utick<State> {
     /// Return the raw peripheral
-    ///
-    /// This method serves as an escape hatch from the HAL API. It returns the
-    /// raw peripheral, allowing you to do whatever you want with it, without
-    /// limitations imposed by the API.
-    ///
-    /// If you are using this method because a feature you need is missing from
-    /// the HAL API, please [open an issue] or, if an issue for your feature
-    /// request already exists, comment on the existing issue, so we can
-    /// prioritize it accordingly.
-    ///
-    /// [open an issue]: https://github.com/lpc-rs/lpc8xx-hal/issues
     pub fn release(self) -> raw::UTICK {
         self.raw
     }

@@ -15,7 +15,7 @@ fn main() -> ! {
 
     let mut syscon = hal::syscon::wrap(dp.SYSCON);
 
-    let mut gpio = hal::gpio::wrap(dp.GPIO).enabled(&mut syscon.handle);
+    let mut gpio = hal::gpio::wrap(dp.GPIO).enabled(&mut syscon);
 
     let pins = hal::pins::Pins::take().unwrap();
 

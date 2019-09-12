@@ -29,11 +29,11 @@ fn main() -> ! {
     dbg!(hal::get_cycle_count());
 
     // TODO: make this method generic over i (in this case, 2)
-    dbg!(syscon.handle.is_clock_enabled(&dp.RNG)); // seems default is: yes!
-    syscon.handle.disable_clock(&mut dp.RNG);
-    dbg!(syscon.handle.is_clock_enabled(&dp.RNG));
-    syscon.handle.enable_clock(&mut dp.RNG);
-    dbg!(syscon.handle.is_clock_enabled(&dp.RNG));
+    dbg!(syscon.is_clock_enabled(&dp.RNG)); // seems default is: yes!
+    syscon.disable_clock(&mut dp.RNG);
+    dbg!(syscon.is_clock_enabled(&dp.RNG));
+    syscon.enable_clock(&mut dp.RNG);
+    dbg!(syscon.is_clock_enabled(&dp.RNG));
 
     // NB: if RNG clock were disabled, reads below would get stuck
 
@@ -41,7 +41,7 @@ fn main() -> ! {
     dbg!(dp.RNG.random_number.read().bits());
 
     // HAL access
-    let mut rng = hal::rng::Rng::new(dp.RNG);
+    let mut rng = hal::rng::wrap(dp.RNG).enabled(&mut syscon);
     let mut random_bytes = [0u8; 5];
     rng.read(&mut random_bytes).expect("RNG failure");
     dbg!(random_bytes);

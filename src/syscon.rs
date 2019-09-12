@@ -18,32 +18,13 @@
 
 // use cortex_m_semihosting::dbg;
 
-use crate::raw::{
-    self,
-    syscon::{
-        // ahbclkctrl0, ahbclkctrl1, ahbclkctrl2, // clock_ctrl,
-        AHBCLKCTRL0,
-        AHBCLKCTRL1,
-        AHBCLKCTRL2,
-        CLOCK_CTRL,
-        // presetctrl0, presetctrl1, presetctrl2,  // clock_ctrl,
-        PRESETCTRL0,
-        PRESETCTRL1,
-        PRESETCTRL2,
-    },
-};
-
-use crate::reg;
+use crate::raw;
 use crate::{clock, states::init_state};
-
-// Let's see if this is overengineered or not, maybe remove
-use crate::reg_proxy::RegProxy;
 
 /// Entry point to the SYSCON API
 pub struct Syscon {
     // TODO: do we want init_state here too?
     raw: raw::SYSCON,
-    pub handle: Handle,
 }
 
 pub fn wrap(syscon: raw::SYSCON) -> Syscon {
@@ -60,15 +41,6 @@ impl Syscon {
     pub fn new(syscon: raw::SYSCON) -> Self {
         Syscon {
             raw: syscon,
-            handle: Handle {
-                ahbclkctrl0: RegProxy::new(),
-                ahbclkctrl1: RegProxy::new(),
-                ahbclkctrl2: RegProxy::new(),
-                clock_ctrl: RegProxy::new(),
-                presetctrl0: RegProxy::new(),
-                presetctrl1: RegProxy::new(),
-                presetctrl2: RegProxy::new(),
-            },
         }
     }
 
@@ -94,25 +66,8 @@ impl Syscon {
 /// PMU.
 ///
 /// [module documentation]: index.html
-pub struct Handle {
-    ahbclkctrl0: RegProxy<AHBCLKCTRL0>,
-    ahbclkctrl1: RegProxy<AHBCLKCTRL1>,
-    ahbclkctrl2: RegProxy<AHBCLKCTRL2>,
-    clock_ctrl: RegProxy<CLOCK_CTRL>,
-    presetctrl0: RegProxy<PRESETCTRL0>,
-    presetctrl1: RegProxy<PRESETCTRL1>,
-    presetctrl2: RegProxy<PRESETCTRL2>,
-}
 
-reg!(AHBCLKCTRL0, AHBCLKCTRL0, raw::SYSCON, ahbclkctrl0);
-reg!(AHBCLKCTRL1, AHBCLKCTRL1, raw::SYSCON, ahbclkctrl1);
-reg!(AHBCLKCTRL2, AHBCLKCTRL2, raw::SYSCON, ahbclkctrl2);
-reg!(CLOCK_CTRL, CLOCK_CTRL, raw::SYSCON, clock_ctrl);
-reg!(PRESETCTRL0, PRESETCTRL0, raw::SYSCON, presetctrl0);
-reg!(PRESETCTRL1, PRESETCTRL1, raw::SYSCON, presetctrl1);
-reg!(PRESETCTRL2, PRESETCTRL2, raw::SYSCON, presetctrl2);
-
-impl Handle {
+impl Syscon {
     /// Enables the clock for a peripheral or other hardware component
     pub fn enable_clock<P: ClockControl>(&mut self, peripheral: &mut P) {
         peripheral.enable_clock(self);
@@ -140,13 +95,13 @@ impl Handle {
 /// different AHLBCKLCTRL?, which a HAL user shouldn't really need to know about.
 pub trait ClockControl {
     /// Internal method to enable a peripheral clock
-    fn enable_clock<'h>(&self, h: &'h mut Handle) -> &'h mut Handle;
+    fn enable_clock(&self, s: &mut Syscon);
 
     /// Internal method to disable a peripheral clock
-    fn disable_clock<'h>(&self, h: &'h mut Handle) -> &'h mut Handle;
+    fn disable_clock(&self, s: &mut Syscon);
 
     /// Check if peripheral clock is enabled
-    fn is_clock_enabled(&self, r: &Handle) -> bool;
+    fn is_clock_enabled(&self, s: &Syscon) -> bool;
 }
 
 //
@@ -171,18 +126,16 @@ pub trait ClockControl {
 macro_rules! impl_clock_control {
     ($clock_control:ty, $clock:ident, $register:ident) => {
         impl ClockControl for $clock_control {
-            fn enable_clock<'h>(&self, h: &'h mut Handle) -> &'h mut Handle {
-                h.$register.modify(|_, w| w.$clock().enable());
-                h
+            fn enable_clock(&self, s: &mut Syscon) {
+                s.raw.$register.modify(|_, w| w.$clock().enable());
             }
 
-            fn disable_clock<'h>(&self, h: &'h mut Handle) -> &'h mut Handle {
-                h.$register.modify(|_, w| w.$clock().disable());
-                h
+            fn disable_clock(&self, s: &mut Syscon) {
+                s.raw.$register.modify(|_, w| w.$clock().disable());
             }
 
-            fn is_clock_enabled(&self, h: &Handle) -> bool {
-                h.$register.read().$clock().is_enable()
+            fn is_clock_enabled(&self, s: &Syscon) -> bool {
+                s.raw.$register.read().$clock().is_enable()
             }
         }
     };
@@ -206,40 +159,23 @@ impl_clock_control!(raw::RNG, rng, ahbclkctrl2);
 
 // GPIO needs a separate implementation
 impl ClockControl for raw::GPIO {
-    // There are all these GPIO? registers, but only GPIO0 and GPIO1
-    // actually exist according to UM
-    fn enable_clock<'h>(&self, h: &'h mut Handle) -> &'h mut Handle {
-        h.ahbclkctrl0.modify(|_, w| w.gpio0().enable());
-        h.ahbclkctrl0.modify(|_, w| w.gpio1().enable());
-        // h.ahbclkctrl0.modify(|_, w| w.gpio2().enable());
-        // h.ahbclkctrl0.modify(|_, w| w.gpio3().enable());
-        // h.ahbclkctrl2.modify(|_, w| w.gpio4().enable());
-        // h.ahbclkctrl2.modify(|_, w| w.gpio5().enable());
-        h
+    fn enable_clock(&self, s: &mut Syscon) {
+        s.raw.ahbclkctrl0.modify(|_, w| w.gpio0().enable());
+        s.raw.ahbclkctrl0.modify(|_, w| w.gpio1().enable());
     }
 
-    fn disable_clock<'h>(&self, h: &'h mut Handle) -> &'h mut Handle {
-        h.ahbclkctrl0.modify(|_, w| w.gpio0().disable());
-        h.ahbclkctrl0.modify(|_, w| w.gpio1().disable());
-        // h.ahbclkctrl0.modify(|_, w| w.gpio2().disable());
-        // h.ahbclkctrl0.modify(|_, w| w.gpio3().disable());
-        // h.ahbclkctrl2.modify(|_, w| w.gpio4().disable());
-        // h.ahbclkctrl2.modify(|_, w| w.gpio5().disable());
-        h
+    fn disable_clock(&self, s: &mut Syscon) {
+        s.raw.ahbclkctrl0.modify(|_, w| w.gpio0().disable());
+        s.raw.ahbclkctrl0.modify(|_, w| w.gpio1().disable());
     }
 
     #[allow(clippy::nonminimal_bool)]
-    fn is_clock_enabled(&self, h: &Handle) -> bool {
-        h.ahbclkctrl0.read().gpio0().is_enable() &&
-        h.ahbclkctrl0.read().gpio1().is_enable() &&
-        // h.ahbclkctrl0.read().gpio2().is_enable() &&
-        // h.ahbclkctrl0.read().gpio3().is_enable() &&
-        // h.ahbclkctrl2.read().gpio4().is_enable() &&
-        // h.ahbclkctrl2.read().gpio5().is_enable() &&
-        true
+    fn is_clock_enabled(&self, s: &Syscon) -> bool {
+        s.raw.ahbclkctrl0.read().gpio0().is_enable() && s.raw.ahbclkctrl0.read().gpio1().is_enable()
     }
 }
 
+/*
 pub trait ResetControl {
     /// Internal method to assert peripheral reset
     fn assert_reset<'h>(&self, h: &'h mut Handle) -> &'h mut Handle;
@@ -270,6 +206,8 @@ impl_reset_control!(raw::IOCON, iocon_rst, presetctrl0);
 impl_reset_control!(raw::CASPER, casper_rst, presetctrl2);
 impl_reset_control!(raw::UTICK, utick0_rst, presetctrl1);
 impl_reset_control!(raw::USB0, usb0_dev_rst, presetctrl1);
+*/
+
 
 static mut FRO1MHZUTICKCLOCK_TAKEN: bool = false;
 
@@ -300,8 +238,9 @@ impl Fro1MhzUtickClock<init_state::Disabled> {
     }
 
     /// Enable the FRO1MHZ UTICK clock
-    pub fn enable(self, syscon: &mut Handle) -> Fro1MhzUtickClock<init_state::Enabled> {
+    pub fn enable(self, syscon: &mut Syscon) -> Fro1MhzUtickClock<init_state::Enabled> {
         syscon
+            .raw
             .clock_ctrl
             .modify(|_, w| w.fro1mhz_utick_ena().enable());
 
@@ -313,8 +252,9 @@ impl Fro1MhzUtickClock<init_state::Disabled> {
 
 impl Fro1MhzUtickClock<init_state::Enabled> {
     /// Disable the FRO1MHZ UTICK clock
-    pub fn disable(self, syscon: &mut Handle) -> Fro1MhzUtickClock<init_state::Disabled> {
+    pub fn disable(self, syscon: &mut Syscon) -> Fro1MhzUtickClock<init_state::Disabled> {
         syscon
+            .raw
             .clock_ctrl
             .modify(|_, w| w.fro1mhz_utick_ena().disable());
 

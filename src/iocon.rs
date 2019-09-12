@@ -40,7 +40,7 @@ impl Iocon<init_state::Disabled> {
     /// Enable IO pin configuration
     ///
     /// Turn on the clock for a disabled Iocon, enabling it.
-    pub fn enable(mut self, syscon: &mut syscon::Handle) -> Iocon<init_state::Enabled> {
+    pub fn enable(mut self, syscon: &mut syscon::Syscon) -> Iocon<init_state::Enabled> {
         // dbg!(syscon.is_clock_enabled(&self.iocon));
         syscon.enable_clock(&mut self.raw);
         // dbg!(syscon.is_clock_enabled(&self.iocon));
@@ -64,7 +64,7 @@ impl Iocon<init_state::Enabled> {
     ///
     /// [`Enabled`]: ../init_state/struct.Enabled.html
     /// [`Disabled`]: ../init_state/struct.Disabled.html
-    pub fn disable(mut self, syscon: &mut syscon::Handle) -> Iocon<init_state::Disabled> {
+    pub fn disable(mut self, syscon: &mut syscon::Syscon) -> Iocon<init_state::Disabled> {
         syscon.disable_clock(&mut self.raw);
 
         Iocon {

@@ -134,7 +134,7 @@ impl Gpio<init_state::Disabled> {
         }
     }
     /// Consumes disabled Gpio, returns an enabled one
-    pub fn enabled(mut self, syscon: &mut syscon::Handle) -> Gpio<init_state::Enabled> {
+    pub fn enabled(mut self, syscon: &mut syscon::Syscon) -> Gpio<init_state::Enabled> {
         // dbg!(syscon.is_clock_enabled(&self.gpio));
         syscon.enable_clock(&mut self.raw);
         // dbg!(syscon.is_clock_enabled(&self.gpio));
@@ -148,7 +148,7 @@ impl Gpio<init_state::Disabled> {
 
 impl Gpio<init_state::Enabled> {
     /// Consumes enabled Gpio, returns a disabled one
-    pub fn disabled(mut self, syscon: &mut syscon::Handle) -> Gpio<init_state::Disabled> {
+    pub fn disabled(mut self, syscon: &mut syscon::Syscon) -> Gpio<init_state::Disabled> {
         syscon.disable_clock(&mut self.raw);
 
         Gpio {

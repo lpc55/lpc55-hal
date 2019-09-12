@@ -75,6 +75,7 @@ where
     T: Reg,
 {
     /// Create a new proxy object
+    #[allow(dead_code)]
     pub fn new() -> Self {
         RegProxy {
             _marker: PhantomData,

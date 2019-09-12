@@ -1,6 +1,12 @@
-/// Constrained RNG peripheral
-pub struct Rng {
-    rng: raw::RNG,
+use crate::{
+    states::init_state,
+    syscon::Syscon,
+};
+
+/// HAL-ified RNG peripheral
+pub struct Rng<State = init_state::Enabled> {
+    raw: raw::RNG,
+    _state: State,
 }
 
 #[derive(Debug)]
@@ -12,24 +18,46 @@ pub struct ModuleId {
     aperture: u8,
 }
 
-impl Rng {
-    // the new constructor approach
-    pub fn new(rng: raw::RNG) -> Rng {
-        let _self = Self { rng };
-        _self.enable();
-        // _self.initialize_entropy();
-        _self
-    }
+pub fn wrap(rng: raw::RNG) -> Rng<init_state::Disabled> {
+    Rng::new(rng)
+}
 
+impl Rng {
+    /// random method to get some information about the RNG
     pub fn module_id(&self) -> ModuleId {
         ModuleId {
-            id: self.rng.moduleid.read().id().bits(),
-            maj_rev: self.rng.moduleid.read().maj_rev().bits(),
-            min_rev: self.rng.moduleid.read().min_rev().bits(),
-            aperture: self.rng.moduleid.read().aperture().bits(),
+            id: self.raw.moduleid.read().id().bits(),
+            maj_rev: self.raw.moduleid.read().maj_rev().bits(),
+            min_rev: self.raw.moduleid.read().min_rev().bits(),
+            aperture: self.raw.moduleid.read().aperture().bits(),
         }
     }
 
+    pub fn release(self) -> raw::RNG {
+        self.raw
+    }
+}
+
+impl Rng<init_state::Disabled> {
+    fn new(rng: raw::RNG) -> Self {
+        Rng {
+            raw: rng,
+            _state: init_state::Disabled,
+        }
+    }
+
+    pub fn enabled(mut self, syscon: &mut Syscon) -> Rng<init_state::Enabled> {
+        syscon.enable_clock(&mut self.raw);
+
+        Rng {
+            raw: self.raw,
+            _state: init_state::Enabled(()),
+        }
+    }
+
+}
+
+impl Rng<init_state::Enabled> {
     /// DO NOT CALL - doesn't work yet
     #[allow(dead_code, unreachable_code)]
     fn initialize_entropy(&self) {
@@ -45,23 +73,23 @@ impl Rng {
         // TODO: check again when going into production
 
         // poll ONLINE_TEST_VAL
-        let val = &self.rng.online_test_val.read();
+        let val = &self.raw.online_test_val.read();
         #[allow(non_snake_case)]
         let REF_CHI_SQUARED = 2;
 
-        // dbg!("shift4x is", self.rng.counter_cfg.read().shift4x().bits());
-        // let _: u8 =  self.rng.counter_cfg.read().shift4x().bits();
+        // dbg!("shift4x is", self.raw.counter_cfg.read().shift4x().bits());
+        // let _: u8 =  self.raw.counter_cfg.read().shift4x().bits();
 
         loop {
             // activate CHI computing
-            // dbg!(self.rng.online_test_cfg.read().activate().bit());  // <-- false
-            self.rng
+            // dbg!(self.raw.online_test_cfg.read().activate().bit());  // <-- false
+            self.raw
                 .online_test_cfg
                 .modify(|_, w| unsafe { w.data_sel().bits(4) });
-            self.rng
+            self.raw
                 .online_test_cfg
                 .modify(|_, w| w.activate().set_bit());
-            // dbg!(self.rng.online_test_cfg.read().activate().bit());  // <-- true
+            // dbg!(self.raw.online_test_cfg.read().activate().bit());  // <-- true
 
             // dbg!(val.min_chi_squared().bits());  // <-- 15
             // dbg!(val.max_chi_squared().bits());  // <--  0
@@ -74,11 +102,11 @@ impl Rng {
 
             if val.max_chi_squared().bits() > REF_CHI_SQUARED {
                 // reset
-                self.rng
+                self.raw
                     .online_test_cfg
                     .modify(|_, w| w.activate().clear_bit());
                 // increment SHIFT4X, which has bit width 3
-                // self.rng.counter_cfg.modify(|_, w| (w.shift4x().bits() as u8) + 1);
+                // self.raw.counter_cfg.modify(|_, w| (w.shift4x().bits() as u8) + 1);
                 continue;
             } else {
                 break;
@@ -86,24 +114,22 @@ impl Rng {
         }
     }
 
-    fn enable(&self) {
-        // TODO: check and enable clock
-    }
+    pub fn disabled(mut self, syscon: &mut Syscon) -> Rng<init_state::Disabled> {
+        syscon.disable_clock(&mut self.raw);
 
-    #[allow(dead_code)]
-    fn disable(&self) {}
-
-    pub fn free(self) -> raw::RNG {
-        self.rng
+        Rng {
+            raw: self.raw,
+            _state: init_state::Disabled,
+        }
     }
 
     pub fn get_random_u32(&self) -> u32 {
         for _ in 0..32 {
-            while self.rng.counter_val.read().refresh_cnt() == 0 {
+            while self.raw.counter_val.read().refresh_cnt() == 0 {
                 // dbg!("was not zero");
             }
         }
-        self.rng.random_number.read().bits()
+        self.raw.random_number.read().bits()
     }
 }
 

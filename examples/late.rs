@@ -11,7 +11,7 @@
 #![no_main]
 #![no_std]
 
-use cortex_m_semihosting::{dbg, hprintln};
+use cortex_m_semihosting::hprintln;
 use hal::raw::Interrupt;
 use heapless::{
     consts::*,
