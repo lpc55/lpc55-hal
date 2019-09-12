@@ -12,22 +12,15 @@ use lpc55s6x_hal as hal;
 
 #[entry]
 fn main() -> ! {
-    // let peripherals = hal::Peripherals::take().unwrap();
     let dp = hal::raw::Peripherals::take().unwrap();
-
-    let mut syscon = hal::syscon::SYSCON::new(dp.SYSCON).split();
-
-    // let mut gpio = peripherals.GPIO.enable(&mut syscon.handle);
-    let mut gpio = hal::gpio::take(dp.GPIO).enabled(&mut syscon.handle);
-    // let iocon = peripherals.IOCON.split();
-    // let iocon = hal::iocon::take(dp.IOCON);//.split();
-
+    let mut syscon = hal::syscon::wrap(dp.SYSCON);
+    let mut gpio = hal::gpio::wrap(dp.GPIO).enabled(&mut syscon.handle);
+    let pins = hal::pins::Pins::take().unwrap();
+    let mut utick = hal::utick::wrap(dp.UTICK).enabled(&mut syscon.handle);
 
     // R = pio1_6
     // G = pio1_7
     // B = pio1_4
-
-    let pins = hal::pins::Pins::take().unwrap();
 
     let mut red = pins
         .pio1_6
@@ -44,17 +37,6 @@ fn main() -> ! {
         .into_gpio_pin(&mut gpio)
         .into_output(Level::High);
 
-    // loop {
-    //     for _ in 0..50_000 {
-    //         red.set_low();
-    //     }
-    //     for _ in 0..50_000 {
-    //         red.set_high();
-    //     }
-    // }
-
-    // let mut utick = peripherals.UTICK.enable(&mut syscon.handle);
-    let mut utick = hal::utick::take(dp.UTICK).enabled(&mut syscon.handle);
     loop {
         red.set_low().unwrap();
         utick.start(1_000_000u32);

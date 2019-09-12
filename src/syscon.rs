@@ -18,16 +18,19 @@
 
 // use cortex_m_semihosting::dbg;
 
-use crate::raw::syscon::{
-    // ahbclkctrl0, ahbclkctrl1, ahbclkctrl2, // clock_ctrl,
-    AHBCLKCTRL0,
-    AHBCLKCTRL1,
-    AHBCLKCTRL2,
-    CLOCK_CTRL,
-    // presetctrl0, presetctrl1, presetctrl2,  // clock_ctrl,
-    PRESETCTRL0,
-    PRESETCTRL1,
-    PRESETCTRL2,
+use crate::raw::{
+    self,
+    syscon::{
+        // ahbclkctrl0, ahbclkctrl1, ahbclkctrl2, // clock_ctrl,
+        AHBCLKCTRL0,
+        AHBCLKCTRL1,
+        AHBCLKCTRL2,
+        CLOCK_CTRL,
+        // presetctrl0, presetctrl1, presetctrl2,  // clock_ctrl,
+        PRESETCTRL0,
+        PRESETCTRL1,
+        PRESETCTRL2,
+    },
 };
 
 use crate::reg;
@@ -37,33 +40,26 @@ use crate::{clock, states::init_state};
 use crate::reg_proxy::RegProxy;
 
 /// Entry point to the SYSCON API
-///
-/// The SYSCON API is split into multiple parts, which are all available through
-/// [`syscon::Parts`]. You can use [`SYSCON::split`] to gain access to
-/// [`syscon::Parts`].
-///
-/// You can also use this struct to gain access to the raw peripheral using
-/// [`SYSCON::free`]. This is the main reason this struct exists, as it's no
-/// longer possible to do this after the API has been split.
-///
-/// Use [`Peripherals`] to gain access to an instance of this struct.
-///
-/// Please refer to the [module documentation] for more information.
-///
-/// [`syscon::Parts`]: struct.Parts.html
-/// [`Peripherals`]: ../struct.Peripherals.html
-/// [module documentation]: index.html
-pub struct SYSCON {
-    syscon: raw::SYSCON,
+pub struct Syscon {
+    // TODO: do we want init_state here too?
+    raw: raw::SYSCON,
+    pub handle: Handle,
 }
 
-impl SYSCON {
-    pub fn new(syscon: raw::SYSCON) -> Self {
-        SYSCON { syscon }
-    }
+pub fn wrap(syscon: raw::SYSCON) -> Syscon {
+    Syscon::new(syscon)
+}
 
-    pub fn split(self) -> Parts {
-        Parts {
+impl Syscon {
+    pub fn release(self) -> raw::SYSCON {
+        self.raw
+    }
+}
+
+impl Syscon {
+    pub fn new(syscon: raw::SYSCON) -> Self {
+        Syscon {
+            raw: syscon,
             handle: Handle {
                 ahbclkctrl0: RegProxy::new(),
                 ahbclkctrl1: RegProxy::new(),
@@ -73,13 +69,12 @@ impl SYSCON {
                 presetctrl1: RegProxy::new(),
                 presetctrl2: RegProxy::new(),
             },
-            fro_1mhz_utick_clock: Fro1MhzUtickClock::new(),
         }
     }
 
     // TODO: relocate
     pub fn rev_id(&self) -> u8 {
-        self.syscon.dieid.read().rev_id().bits()
+        self.raw.dieid.read().rev_id().bits()
     }
 }
 
@@ -89,12 +84,6 @@ impl SYSCON {
 /// the [module documentation] for more information.
 ///
 /// [module documentation]: index.html
-pub struct Parts {
-    pub handle: Handle,
-    pub fro_1mhz_utick_clock: Fro1MhzUtickClock<init_state::Disabled>,
-    // more to come obviously
-}
-
 /// Handle to the SYSCON peripheral
 ///
 /// This handle to the SYSCON peripheral provides access to the main part of the
@@ -282,12 +271,29 @@ impl_reset_control!(raw::CASPER, casper_rst, presetctrl2);
 impl_reset_control!(raw::UTICK, utick0_rst, presetctrl1);
 impl_reset_control!(raw::USB0, usb0_dev_rst, presetctrl1);
 
+static mut FRO1MHZUTICKCLOCK_TAKEN: bool = false;
+
 pub struct Fro1MhzUtickClock<State = init_state::Disabled> {
     _state: State,
 }
 
 impl Fro1MhzUtickClock<init_state::Disabled> {
-    pub(crate) fn new() -> Self {
+    pub fn take() -> Option<Self> {
+        if unsafe { FRO1MHZUTICKCLOCK_TAKEN } {
+            None
+        } else {
+            Some(unsafe {
+                FRO1MHZUTICKCLOCK_TAKEN = true;
+                Fro1MhzUtickClock::steal()
+            })
+        }
+    }
+
+    pub fn release(self) {
+        unsafe { FRO1MHZUTICKCLOCK_TAKEN = false };
+    }
+
+    pub unsafe fn steal() -> Self {
         Fro1MhzUtickClock {
             _state: init_state::Disabled,
         }

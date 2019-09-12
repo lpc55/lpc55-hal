@@ -9,17 +9,10 @@ use lpc55s6x_hal as hal;
 
 #[entry]
 fn main() -> ! {
-    // let peripherals = hal::Peripherals::take().unwrap();
     let dp = hal::raw::Peripherals::take().unwrap();
-
-    // let mut syscon = peripherals.SYSCON.split();
-    let mut syscon = hal::syscon::SYSCON::new(dp.SYSCON).split();
-
-    // let mut gpio = peripherals.GPIO.enable(&mut syscon.handle);
-    let mut gpio = hal::gpio::take(dp.GPIO).enabled(&mut syscon.handle);
-
-    // let iocon = peripherals.IOCON.split();
-    let iocon = hal::iocon::take(dp.IOCON);//.split();
+    let mut syscon = hal::syscon::wrap(dp.SYSCON);
+    let mut gpio = hal::gpio::wrap(dp.GPIO).enabled(&mut syscon.handle);
+    let iocon = hal::iocon::wrap(dp.IOCON);
 
     // UM kind of says it's not enabled, but it actually is
     let iocon = iocon.enable(&mut syscon.handle);
@@ -36,24 +29,22 @@ fn main() -> ! {
         .into_gpio_pin(&mut gpio)
         .into_output(hal::gpio::Level::High); // start turned off
 
-    let iocon =iocon.disable(&mut syscon.handle);
+    let iocon = iocon.disable(&mut syscon.handle);
     iocon.release();
 
-    let clock = syscon.fro_1mhz_utick_clock.enable(&mut syscon.handle);
+    let clock = hal::syscon::Fro1MhzUtickClock::take()
+        .unwrap()
+        .enable(&mut syscon.handle);
     let delay = hal::clock::Ticks {
         value: 500_000,
         clock: &clock,
     }; // 500 ms = 0.5 s
 
     // let mut utick = peripherals.UTICK.enable(&mut syscon.handle);
-    let mut utick = hal::utick::take(dp.UTICK).enabled(&mut syscon.handle);
+    let mut utick = hal::utick::wrap(dp.UTICK).enabled(&mut syscon.handle);
     let mut sleep = hal::sleep::Busy::prepare(&mut utick);
 
-    // use this order to check whether LED initially flashes up
     loop {
-        // this is to workaround the v1/v2 digital pin
-        // situation, until Vadim's v3 lands
-
         sleep.sleep(delay);
         red.set_low().unwrap();
 

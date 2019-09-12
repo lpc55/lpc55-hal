@@ -1,10 +1,10 @@
 use crate::hal::digital::v2::{OutputPin, StatefulOutputPin};
 
 use crate::{
-    states::init_state,
-    pins::{pin_state, Pin, PinId},
+    pins::{Pin, PinId},
     raw,
     raw::gpio::{CLR, DIRSET, PIN, SET},
+    states::{init_state, pin_state},
     syscon,
 };
 
@@ -122,7 +122,7 @@ pub struct Gpio<State = init_state::Enabled> {
     _state: State,
 }
 
-pub fn take(gpio: raw::GPIO) -> Gpio<init_state::Disabled> {
+pub fn wrap(gpio: raw::GPIO) -> Gpio<init_state::Disabled> {
     Gpio::new(gpio)
 }
 

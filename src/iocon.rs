@@ -1,14 +1,10 @@
-use crate::{
-    states::init_state,
-    raw,
-    syscon,
-};
+use crate::{raw, states::init_state, syscon};
 
 // use crate::pins::{
 //     Pins,
 // };
 
-pub fn take(iocon: raw::IOCON) -> Iocon {
+pub fn wrap(iocon: raw::IOCON) -> Iocon {
     Iocon::new(iocon)
 }
 
@@ -77,4 +73,3 @@ impl Iocon<init_state::Enabled> {
         }
     }
 }
-

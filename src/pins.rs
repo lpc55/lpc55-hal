@@ -1,6 +1,6 @@
 use crate::{
     gpio::{self, Gpio},
-    states::init_state,
+    states::{init_state, pin_state},
 };
 
 /// Implemented by types that identify pins
@@ -14,30 +14,6 @@ pub trait PinId {
     /// This is `0x00000001` for [`PIO0_0`], `0x00000002` for [`PIO0_1`],
     /// `0x00000004` for [`PIO0_2`], and so forth.
     const MASK: u32;
-}
-
-/// Contains types that indicate pin states
-pub mod pin_state {
-    use crate::gpio::direction::Direction;
-
-    /// Implemented by types that indicate pin state
-    pub trait PinState {}
-
-    /// Marks a [`Pin`] as being unused
-    pub struct Unused;
-    impl PinState for Unused {}
-
-    /// Marks a [`Pin`]  as being assigned to general-purpose I/O
-    pub struct Gpio<D: Direction> {
-        pub(crate) dirset: crate::reg_proxy::RegClusterProxy<raw::gpio::DIRSET>,
-        pub(crate) pin: crate::reg_proxy::RegClusterProxy<raw::gpio::PIN>,
-        pub(crate) set: crate::reg_proxy::RegClusterProxy<raw::gpio::SET>,
-        pub(crate) clr: crate::reg_proxy::RegClusterProxy<raw::gpio::CLR>,
-
-        pub(crate) _direction: D,
-    }
-
-    impl<D> PinState for Gpio<D> where D: Direction {}
 }
 
 static mut TAKEN: bool = false;
@@ -228,4 +204,3 @@ where
         }
     }
 }
-

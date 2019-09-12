@@ -35,12 +35,12 @@ use nb;
 use void::Void;
 
 use crate::{
-    states::init_state,
     // pmu::LowPowerClock,
     raw::{
         self,
         // utick::ctrl,
     },
+    states::init_state,
     syscon::{self, Fro1MhzUtickClock},
 };
 
@@ -50,7 +50,7 @@ pub struct Utick<State = init_state::Enabled> {
     _state: State,
 }
 
-pub fn take(utick: raw::UTICK) -> Utick<init_state::Disabled> {
+pub fn wrap(utick: raw::UTICK) -> Utick<init_state::Disabled> {
     Utick::new(utick)
 }
 
@@ -74,7 +74,7 @@ impl Utick<init_state::Disabled> {
         // NB: UM says bit 4 (FRO_HF_FREQM_ENA), which is incorrect
         // Empirically, it is enough to enable `fro1mhz_utick_ena`,
         // even if `fro1mhz_clk_ena` is explicitly disabled.
-        // Hence I think we can claim to "own" `fro1mhz_utick_ena` and
+        // Hence I think we can wrap to "own" `fro1mhz_utick_ena` and
         // do things silently after all.
 
         // unsafe { &*crate::raw::SYSCON::ptr() }.clock_ctrl.modify(|_, w| w.fro1mhz_clk_ena().enable());

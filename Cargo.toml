@@ -11,6 +11,9 @@ keywords = ["no-std", "cortex-m", "nxp", "lpc", "embedded-hal-impl"]
 categories = ["embedded", "no-std"]
 authors = ["Nicolas Stalder <n@stalder.io>", "Hanno Braun <hanno@braun-robotics.com>"]
 
+[badges]
+circle-ci = { repository = "nickray/lpc55s6x-hal" }
+
 [dependencies]
 bare-metal = "0.2"
 cortex-m = "0.6"
@@ -20,27 +23,30 @@ lpc55s6x-pac = "0.0.4"
 # lpc55s6x-pac = { path = "../lpc55s6x-pac" }
 
 nb = "0.1"
-vcell = "0.1"
+# vcell = "0.1"
 void = { version = "1", default-features = false }
 
 [dev-dependencies]
+aes-soft = "0.3"
 # NB: cortex-m-rtfm pulls in an old cortex-m-rt with no eabhihf support
 # Otherwise, git master would work
 cortex-m-rt = "0.6"
 # cortex-m-rt = { git = "https://github.com/rust-embedded/cortex-m-rt" }
 # Remove, as unreleased/git dependencies are not allowed
 # cortex-m-rtfm = "0.5"  # unreleased
-#cortex-m-rtfm = { git = "https://github.com/japaric/cortex-m-rtfm", branch = "heterogeneous" }
+cortex-m-rtfm = { git = "https://github.com/japaric/cortex-m-rtfm", branch = "heterogeneous" }
+# cortex-m-rtfm = { path = "../cortex-m-rtfm" }
 cortex-m-semihosting = "0.3"
+heapless = "0.5"
 panic-halt  = "0.2"
 panic-semihosting = { version = "0.5", features = ["jlink-quirks"] }
 
 [features]
 default = ["rt"]
 rt = ["lpc55s6x-pac/rt"]
-# Boards
-lpcxpresso55s69 = []
-solo = []
+# # Boards
+# lpcxpresso55s69 = []
+# solo = []
 
 [profile.release]
 codegen-units = 1

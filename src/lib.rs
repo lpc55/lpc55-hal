@@ -22,9 +22,7 @@ pub(crate) mod reg_proxy;
 pub mod prelude;
 
 pub mod states;
-use states::{
-    init_state,
-};
+use states::init_state;
 
 ///
 /// This is the entry point to the HAL API. Before you can do anything else, you
@@ -67,72 +65,42 @@ pub struct Peripherals {
     pub IOCON: iocon::Iocon<init_state::Disabled>,
 
     /// System configuration
-    pub SYSCON: syscon::SYSCON,
+    pub SYSCON: syscon::Syscon,
 
     /// Micro-Tick Timer
     pub UTICK: utick::Utick<init_state::Disabled>,
 
-    /// Analog-to-Digital Converter (ADC)
-    ///
-    /// A HAL API for this peripheral has not been implemented yet. In the
-    /// meantime, this field provides you with the raw register mappings, which
-    /// allow you full, unprotected access to the peripheral.
+    /// Analog-to-Digital Converter (ADC) - not HAL-ified.
     pub ADC0: raw::ADC0,
 
-    /// CRC engine
-    ///
-    /// A HAL API for this peripheral has not been implemented yet. In the
-    /// meantime, this field provides you with the raw register mappings, which
-    /// allow you full, unprotected access to the peripheral.
+    /// CRC engine - not HAL-ified.
     pub CRC_ENGINE: raw::CRC_ENGINE,
 
-    /// Standard counter/timer (CTIMER)
-    ///
-    /// A HAL API for this peripheral has not been implemented yet. In the
-    /// meantime, this field provides you with the raw register mappings, which
-    /// allow you full, unprotected access to the peripheral.
+    /// Standard counter/timer (CTIMER) - not HAL-ified.
     pub CTIMER0: raw::CTIMER0,
 
-    /// Flash
-    ///
-    /// A HAL API for this peripheral has not been implemented yet. In the
-    /// meantime, this field provides you with the raw register mappings, which
-    /// allow you full, unprotected access to the peripheral.
+    /// Flash - not HAL-ified.
     pub FLASH: raw::FLASH,
 
-    /// CPUID
-    ///
-    /// This is a core peripherals that's available on all ARM Cortex-M0+ cores.
+    /// CPUID - core peripheral
     pub CPUID: raw::CPUID,
 
-    /// Debug Control Block (DCB)
-    ///
-    /// This is a core peripherals that's available on all ARM Cortex-M0+ cores.
+    /// Debug Control Block (DCB) - core peripheral
     pub DCB: raw::DCB,
 
-    /// Data Watchpoint and Trace unit (DWT)
-    ///
-    /// This is a core peripherals that's available on all ARM Cortex-M0+ cores.
+    /// Data Watchpoint and Trace unit (DWT) - core peripheral
     pub DWT: raw::DWT,
 
-    /// Memory Protection Unit (MPU)
-    ///
-    /// This is a core peripherals that's available on all ARM Cortex-M0+ cores.
+    /// Memory Protection Unit (MPU) - core peripheral
     pub MPU: raw::MPU,
 
-    /// Nested Vector Interrupt Controller (NVIC)
-    ///
-    /// This is a core peripherals that's available on all ARM Cortex-M0+ cores.
+    /// Nested Vector Interrupt Controller (NVIC) - core peripheral
     pub NVIC: raw::NVIC,
 
-    /// System Control Block (SCB)
-    ///
-    /// This is a core peripherals that's available on all ARM Cortex-M0+ cores.
+    /// System Control Block (SCB) - core peripheral
     pub SCB: raw::SCB,
 
-    /// SysTick: System Timer
-    ///
-    /// This is a core peripherals that's available on all ARM Cortex-M0+ cores.
+    /// SysTick: System Timer - core peripheral
     pub SYST: raw::SYST,
 }
 
@@ -222,10 +190,10 @@ impl Peripherals {
             // HAL peripherals
             // NOTE(unsafe) The init state of the gpio peripheral is enabled,
             // thus it's safe to create an already initialized gpio port
-            GPIO: gpio::take(p.GPIO),
-            IOCON: iocon::take(p.IOCON),
-            SYSCON: syscon::SYSCON::new(p.SYSCON),
-            UTICK: utick::take(p.UTICK),
+            GPIO: gpio::wrap(p.GPIO),
+            IOCON: iocon::wrap(p.IOCON),
+            SYSCON: syscon::wrap(p.SYSCON),
+            UTICK: utick::wrap(p.UTICK),
 
             // Raw peripherals
             ADC0: p.ADC0,

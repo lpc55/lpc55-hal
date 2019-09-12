@@ -45,3 +45,27 @@ pub mod gpio {
         High,
     }
 }
+
+/// Contains types that indicate pin states
+pub mod pin_state {
+    use super::gpio::direction::Direction;
+
+    /// Implemented by types that indicate pin state
+    pub trait PinState {}
+
+    /// Marks a [`Pin`] as being unused
+    pub struct Unused;
+    impl PinState for Unused {}
+
+    /// Marks a [`Pin`]  as being assigned to general-purpose I/O
+    pub struct Gpio<D: Direction> {
+        pub(crate) dirset: crate::reg_proxy::RegClusterProxy<raw::gpio::DIRSET>,
+        pub(crate) pin: crate::reg_proxy::RegClusterProxy<raw::gpio::PIN>,
+        pub(crate) set: crate::reg_proxy::RegClusterProxy<raw::gpio::SET>,
+        pub(crate) clr: crate::reg_proxy::RegClusterProxy<raw::gpio::CLR>,
+
+        pub(crate) _direction: D,
+    }
+
+    impl<D> PinState for Gpio<D> where D: Direction {}
+}
