@@ -20,7 +20,7 @@ use crate::{
     //     self,
     //     Interrupt,
     // },
-    utick::{self, Utick},
+    utick::{self, EnabledUtick},
 };
 
 /// Trait for putting the processor to sleep
@@ -71,11 +71,11 @@ where
 /// let delay = Ticks { value: 750_000, clock: &clock }; // 1000 ms
 /// sleep.sleep(delay);
 /// ```
-pub struct Busy<'utick> {
-    utick: &'utick mut Utick,
+pub struct Busy<'utick, 'fro1mhz> {
+    utick: &'utick mut EnabledUtick<'fro1mhz>,
 }
 
-impl<'utick> Busy<'utick> {
+impl<'utick, 'fro1mhz> Busy<'utick, 'fro1mhz> {
     /// Prepare busy sleep mode
     ///
     /// Returns an instance of `sleep::Busy`, which implements [`Sleep`] and can
@@ -84,12 +84,12 @@ impl<'utick> Busy<'utick> {
     /// Requires a mutable reference to [`UTICK`]. The reference will be borrowed
     /// for as long as the `sleep::Busy` instance exists, as it will be needed
     /// to count down the time in every call to [`Sleep::sleep`].
-    pub fn prepare(utick: &'utick mut Utick) -> Self {
+    pub fn prepare(utick: &'utick mut EnabledUtick<'fro1mhz>) -> Self {
         Busy { utick }
     }
 }
 
-impl<'utick, Clock> Sleep<Clock> for Busy<'utick>
+impl<'utick, 'fro1mhz, Clock> Sleep<Clock> for Busy<'utick, 'fro1mhz>
 where
     Clock: clock::Enabled + utick::Clock,
 {

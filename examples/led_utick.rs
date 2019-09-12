@@ -16,7 +16,12 @@ fn main() -> ! {
     let mut syscon = hal::syscon::wrap(dp.SYSCON);
     let mut gpio = hal::gpio::wrap(dp.GPIO).enabled(&mut syscon);
     let pins = hal::pins::Pins::take().unwrap();
-    let mut utick = hal::utick::wrap(dp.UTICK).enabled(&mut syscon);
+    let fro1mhz = hal::syscon::Fro1MhzUtickClock::take()
+        .unwrap()
+        .enable(&mut syscon);
+    let mut utick = hal::utick::wrap(dp.UTICK).enabled(&mut syscon, &fro1mhz);
+    // let (utick, fro1mhz) = utick.disabled(&mut syscon);
+    // let mut utick = utick.enabled(&mut syscon, fro1mhz);
 
     // R = pio1_6
     // G = pio1_7

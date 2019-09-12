@@ -35,13 +35,14 @@ fn main() -> ! {
     let clock = hal::syscon::Fro1MhzUtickClock::take()
         .unwrap()
         .enable(&mut syscon);
+
+    let mut utick = hal::utick::wrap(dp.UTICK).enabled(&mut syscon, &clock);
+
     let delay = hal::clock::Ticks {
         value: 500_000,
         clock: &clock,
     }; // 500 ms = 0.5 s
 
-    // let mut utick = peripherals.UTICK.enable(&mut syscon);
-    let mut utick = hal::utick::wrap(dp.UTICK).enabled(&mut syscon);
     let mut sleep = hal::sleep::Busy::prepare(&mut utick);
 
     loop {

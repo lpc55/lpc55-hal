@@ -44,14 +44,23 @@ use crate::{
     syscon::{self, Fro1MhzUtickClock},
 };
 
+pub type EnabledUtick<'fro1mhz> = Utick<init_state::Enabled<&'fro1mhz Fro1MhzUtickClock<init_state::Enabled>>>;
+
 /// Interface to the micro-tick timer (UTICK)
-pub struct Utick<State = init_state::Enabled> {
+pub struct Utick<State = init_state::Disabled> {
     raw: raw::UTICK,
-    _state: State,
+    pub _state: State,
 }
 
 pub fn wrap(utick: raw::UTICK) -> Utick<init_state::Disabled> {
     Utick::new(utick)
+}
+
+impl Utick {
+    /// Return the raw peripheral
+    pub fn release(self) -> raw::UTICK {
+        self.raw
+    }
 }
 
 impl Utick<init_state::Disabled> {
@@ -66,38 +75,40 @@ impl Utick<init_state::Disabled> {
     /// Enable the UTICK
     ///
     /// Consume a UTICK in `Disabled` state, return an instance in `Enabled` state.
-    pub fn enabled(mut self, syscon: &mut syscon::Syscon) -> Utick<init_state::Enabled> {
+    pub fn enabled<'fro1mhz>(
+        mut self,
+        syscon: &mut syscon::Syscon,
+        fro1mhz: &'fro1mhz Fro1MhzUtickClock<init_state::Enabled>,
+
+    ) -> EnabledUtick<'fro1mhz> {
+
         syscon.enable_clock(&mut self.raw);
 
-        // TODO: require passing in an enabled FRO1MHZ instead,
-        //       so we don't silently enable it.
+        // Below is no longer needed, since we require passing in an enabled FRO1MHZ.
+        // Maybe these references will have to go again though due to RTFM...
+        //
         // NB: UM says bit 4 (FRO_HF_FREQM_ENA), which is incorrect
         // Empirically, it is enough to enable `fro1mhz_utick_ena`,
         // even if `fro1mhz_clk_ena` is explicitly disabled.
-        // Hence I think we can wrap to "own" `fro1mhz_utick_ena` and
-        // do things silently after all.
-
-        // unsafe { &*crate::raw::SYSCON::ptr() }.clock_ctrl.modify(|_, w| w.fro1mhz_clk_ena().enable());
-        // unsafe { &*crate::raw::SYSCON::ptr() }.clock_ctrl.modify(|_, w| w.fro1mhz_clk_ena().disable());
-        unsafe { &*crate::raw::SYSCON::ptr() }
-            .clock_ctrl
-            .modify(|_, w| w.fro1mhz_utick_ena().enable());
+        // unsafe { &*crate::raw::SYSCON::ptr() }
+        //     .clock_ctrl
+        //     .modify(|_, w| w.fro1mhz_utick_ena().enable());
 
         Utick {
             raw: self.raw,
-            _state: init_state::Enabled(()),
+            _state: init_state::Enabled(fro1mhz),
         }
     }
 }
 
-impl Utick<init_state::Enabled> {
+impl EnabledUtick<'_> {
     /// Disable the UTICK
     ///
     /// Consume a UTICK in `Enabled` state, return an instance in `Disabled` state.
     pub fn disabled(mut self, syscon: &mut syscon::Syscon) -> Utick<init_state::Disabled> {
-        unsafe { &*crate::raw::SYSCON::ptr() }
-            .clock_ctrl
-            .modify(|_, w| w.fro1mhz_utick_ena().disable());
+        // unsafe { &*crate::raw::SYSCON::ptr() }
+        //     .clock_ctrl
+        //     .modify(|_, w| w.fro1mhz_utick_ena().disable());
         syscon.disable_clock(&mut self.raw);
 
         Utick {
@@ -107,7 +118,7 @@ impl Utick<init_state::Enabled> {
     }
 }
 
-impl timer::Cancel for Utick<init_state::Enabled> {
+impl timer::Cancel for EnabledUtick<'_> {
     type Error = Void;
 
     fn cancel(&mut self) -> Result<(), Self::Error> {
@@ -118,7 +129,7 @@ impl timer::Cancel for Utick<init_state::Enabled> {
 }
 
 // TODO: also implement Periodic for UTICK
-impl timer::CountDown for Utick<init_state::Enabled> {
+impl timer::CountDown for EnabledUtick<'_> {
     type Time = u32;
 
     fn start<T>(&mut self, timeout: T)
@@ -142,13 +153,6 @@ impl timer::CountDown for Utick<init_state::Enabled> {
         }
 
         Err(nb::Error::WouldBlock)
-    }
-}
-
-impl<State> Utick<State> {
-    /// Return the raw peripheral
-    pub fn release(self) -> raw::UTICK {
-        self.raw
     }
 }
 
