@@ -3,6 +3,9 @@
 /// The types in this module are used by structs representing peripherals or
 /// other hardware components, to encode the initialization state of the
 /// underlying hardware as part of the type.
+///
+/// The default state in peripherals using this is usually set to Enabled,
+/// to allow APIs consuming it to enforce this less verbosely.
 pub mod init_state {
     /// Indicates that the hardware component is enabled
     ///

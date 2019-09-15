@@ -10,9 +10,11 @@ pub mod clock;
 pub mod gpio;
 pub mod iocon;
 pub mod pins;
+pub mod pmc;
 pub mod rng;
 pub mod sleep;
 pub mod syscon;
+pub mod usbfs;
 pub mod utick;
 
 #[macro_use]
@@ -64,8 +66,14 @@ pub struct Peripherals {
     /// I/O configuration
     pub IOCON: iocon::Iocon<init_state::Disabled>,
 
+    /// Power configuration
+    pub PMC: pmc::Pmc,
+
     /// System configuration
     pub SYSCON: syscon::Syscon,
+
+    /// USB full-speed
+    pub USBFS: usbfs::UsbFs<init_state::Disabled>,
 
     /// Micro-Tick Timer
     pub UTICK: utick::Utick<init_state::Disabled>,
@@ -192,7 +200,9 @@ impl Peripherals {
             // thus it's safe to create an already initialized gpio port
             GPIO: gpio::wrap(p.GPIO),
             IOCON: iocon::wrap(p.IOCON),
+            PMC: pmc::wrap(p.PMC),
             SYSCON: syscon::wrap(p.SYSCON),
+            USBFS: usbfs::wrap(p.USB0),
             UTICK: utick::wrap(p.UTICK),
 
             // Raw peripherals

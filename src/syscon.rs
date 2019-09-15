@@ -39,9 +39,7 @@ impl Syscon {
 
 impl Syscon {
     pub fn new(syscon: raw::SYSCON) -> Self {
-        Syscon {
-            raw: syscon,
-        }
+        Syscon { raw: syscon }
     }
 
     // TODO: relocate
@@ -207,7 +205,6 @@ impl_reset_control!(raw::CASPER, casper_rst, presetctrl2);
 impl_reset_control!(raw::UTICK, utick0_rst, presetctrl1);
 impl_reset_control!(raw::USB0, usb0_dev_rst, presetctrl1);
 */
-
 
 static mut FRO1MHZUTICKCLOCK_TAKEN: bool = false;
 

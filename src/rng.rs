@@ -1,7 +1,4 @@
-use crate::{
-    states::init_state,
-    syscon::Syscon,
-};
+use crate::{states::init_state, syscon::Syscon};
 
 /// HAL-ified RNG peripheral
 pub struct Rng<State = init_state::Enabled> {
@@ -54,7 +51,6 @@ impl Rng<init_state::Disabled> {
             _state: init_state::Enabled(()),
         }
     }
-
 }
 
 impl Rng<init_state::Enabled> {

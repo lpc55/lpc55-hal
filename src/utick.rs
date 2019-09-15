@@ -21,7 +21,8 @@ use crate::{
     syscon::{self, Fro1MhzUtickClock},
 };
 
-pub type EnabledUtick<'fro1mhz> = Utick<init_state::Enabled<&'fro1mhz Fro1MhzUtickClock<init_state::Enabled>>>;
+pub type EnabledUtick<'fro1mhz> =
+    Utick<init_state::Enabled<&'fro1mhz Fro1MhzUtickClock<init_state::Enabled>>>;
 
 /// Interface to the micro-tick timer (UTICK)
 pub struct Utick<State = init_state::Disabled> {
@@ -56,9 +57,7 @@ impl Utick<init_state::Disabled> {
         mut self,
         syscon: &mut syscon::Syscon,
         fro1mhz: &'fro1mhz Fro1MhzUtickClock<init_state::Enabled>,
-
     ) -> EnabledUtick<'fro1mhz> {
-
         syscon.enable_clock(&mut self.raw);
 
         // Below is no longer needed, since we require passing in an enabled FRO1MHZ.
