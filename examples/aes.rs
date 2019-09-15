@@ -19,8 +19,6 @@ use cortex_m_semihosting::dbg;
 
 #[entry]
 fn main() -> ! {
-    // let _dp = hal::raw::Peripherals::take().unwrap();
-
     // AES-xxx variants have key sizes of xxx bits
     let key = GenericArray::from_slice(&[0u8; 32]);
     // AES always has block size of 128 bits
@@ -36,10 +34,10 @@ fn main() -> ! {
     cipher.encrypt_block(&mut block);
     let after = hal::get_cycle_count();
     dbg!("encrypting took {} cycles", after - before);
-    // dbg!(block);
+    dbg!(block);
     // And decrypt it back
     cipher.decrypt_block(&mut block);
-    // dbg!(block);
+    dbg!(block);
     assert_eq!(block, block_copy);
 
     // // We can encrypt 8 blocks simultaneously using

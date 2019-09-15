@@ -43,34 +43,7 @@ where
 /// Provides a [`Sleep`] implementation based on busy waiting and uses the [UTICK]
 /// to measure the time. An interrupt handler is not required.
 ///
-/// Only clocks that the UTICK supports can be used. See [`utick::Clock`] for more
-/// details.
-///
-/// Since this sleep mode waits busily, which is very energy-inefficient, it is
-/// only suitable for simple examples, or very short wait times.
-///
-/// # Examples
-///
-/// ``` no_run
-/// use lpc82x_hal::prelude::*;
-/// use lpc82x_hal::{
-///     sleep,
-///     Peripherals,
-/// };
-/// use lpc82x_hal::clock::Ticks;
-///
-/// let mut p = Peripherals::take().unwrap();
-///
-/// let mut syscon = p.SYSCON.split();
-/// let mut utick    = p.UTICK.enable(&mut syscon.handle);
-///
-/// let clock = syscon.irc_derived_clock;
-///
-/// let mut sleep = sleep::Busy::prepare(&mut utick);
-///
-/// let delay = Ticks { value: 750_000, clock: &clock }; // 1000 ms
-/// sleep.sleep(delay);
-/// ```
+/// Examples: led_utick.rs
 pub struct Busy<'utick, 'fro1mhz> {
     utick: &'utick mut EnabledUtick<'fro1mhz>,
 }
@@ -84,7 +57,7 @@ impl<'utick, 'fro1mhz> Busy<'utick, 'fro1mhz> {
     /// Requires a mutable reference to [`UTICK`]. The reference will be borrowed
     /// for as long as the `sleep::Busy` instance exists, as it will be needed
     /// to count down the time in every call to [`Sleep::sleep`].
-    pub fn prepare(utick: &'utick mut EnabledUtick<'fro1mhz>) -> Self {
+    pub fn wrap(utick: &'utick mut EnabledUtick<'fro1mhz>) -> Self {
         Busy { utick }
     }
 }

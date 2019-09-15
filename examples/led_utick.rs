@@ -4,8 +4,9 @@
 // extern crate panic_semihosting;  // 4004 bytes
 extern crate panic_halt; // 672 bytes
 
-use cortex_m::asm;
+// use cortex_m::asm;
 use cortex_m_rt::entry;
+// use nb::block;
 
 use hal::{gpio::Level, prelude::*};
 use lpc55s6x_hal as hal;
@@ -45,23 +46,18 @@ fn main() -> ! {
     loop {
         red.set_low().unwrap();
         utick.start(1_000_000u32);
-        while let Err(nb::Error::WouldBlock) = utick.wait() {
-            asm::nop();
-        }
+        // block!(utick.wait()).unwrap();
+        utick.blocking_wait();
         red.set_high().unwrap();
 
         green.set_low().unwrap();
         utick.start(1_000_000u32);
-        while let Err(nb::Error::WouldBlock) = utick.wait() {
-            asm::nop();
-        }
+        utick.blocking_wait();
         green.set_high().unwrap();
 
         blue.set_low().unwrap();
         utick.start(1_000_000u32);
-        while let Err(nb::Error::WouldBlock) = utick.wait() {
-            asm::nop();
-        }
+        utick.blocking_wait();
         blue.set_high().unwrap();
     }
 }

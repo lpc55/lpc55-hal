@@ -5,30 +5,7 @@
 //! The UTICK peripheral is described in the user manual, chapter 26.
 //! It is driven by the FRO 1Mhz clock and has a microsecond resolution.
 //!
-//! # Examples
-//!
-//! ``` no_run
-//! extern crate lpc55S6x_hal;
-//! extern crate nb;
-//!
-//! use lpc55S6x_hal::prelude::*;
-//! use lpc55S6x_hal::Peripherals;
-//!
-//! let mut p = Peripherals::take().unwrap();
-//!
-//! let mut syscon = p.SYSCON.split();
-//! let mut timer  = p.UTICK.enable(&mut syscon.handle);
-//!
-//! // Start the timer at 1_000_000. Sine the UTICK tuner 1 MHz,
-//! // this translates to a one second wait.
-//! timer.start(1_000_000u32);
-//!
-//! while let Err(nb::Error::WouldBlock) = timer.wait() {
-//!     // do stuff
-//! }
-//! ```
-//!
-//! Please refer to the [examples in the repository] for more example code.
+//! # Examples: led.rs, led_utick.rs
 
 use embedded_hal::timer;
 use nb;
@@ -162,6 +139,12 @@ impl timer::CountDown for EnabledUtick<'_> {
     }
 }
 
+impl EnabledUtick<'_> {
+    pub fn blocking_wait(&mut self) {
+        while self.raw.stat.read().active().bit_is_set() {}
+    }
+}
+
 /// A clock that is usable by the micro-tick timer (UTICK)
 ///
 /// This trait is implemented for all clocks that are supported by the UTICK,
@@ -169,4 +152,4 @@ impl timer::CountDown for EnabledUtick<'_> {
 /// The user shouldn't need to implement this trait themselves.
 pub trait Clock {}
 
-impl<State> Clock for Fro1MhzUtickClock<State> {}
+impl Clock for Fro1MhzUtickClock<init_state::Enabled> {}

@@ -6,6 +6,10 @@ view-rtfm-expansion:
 	rustfmt target/rtfm-expansion.rs
 	vi target/rtfm-expansion.rs
 
+# turn off the LEDs and whatnot
+darkness:
+	gdb-multiarch -q -x darkness.gdb > /dev/null 2> /dev/null
+
 #
 # External documentation
 #
