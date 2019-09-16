@@ -4,3 +4,4 @@ Cargo.lock
 /ref
 .gdb_history
 core
+**/*.log

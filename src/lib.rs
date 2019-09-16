@@ -6,6 +6,7 @@ use embedded_hal as hal;
 
 pub extern crate lpc55s6x_pac as raw;
 
+pub mod anactrl;
 pub mod clock;
 pub mod gpio;
 pub mod iocon;
@@ -15,10 +16,14 @@ pub mod rng;
 pub mod sleep;
 pub mod syscon;
 pub mod usbfs;
+pub mod usbfsh;
 pub mod utick;
 
 #[macro_use]
 pub(crate) mod reg_proxy;
+
+#[macro_use]
+pub(crate) mod macros;
 
 // currently, all sorts of traits
 pub mod prelude;
@@ -57,6 +62,9 @@ use states::init_state;
 /// use of the hardware.
 #[allow(non_snake_case)]
 pub struct Peripherals {
+    /// Analog control
+    pub ANACTRL: anactrl::AnaCtrl,
+
     /// General-purpose I/O (GPIO)
     ///
     /// The GPIO peripheral is enabled by default.
@@ -72,8 +80,11 @@ pub struct Peripherals {
     /// System configuration
     pub SYSCON: syscon::Syscon,
 
-    /// USB full-speed
+    /// USB full-speed device
     pub USBFS: usbfs::UsbFs<init_state::Disabled>,
+
+    /// USB full-speed host
+    pub USBFSH: usbfsh::UsbFsHost<init_state::Disabled>,
 
     /// Micro-Tick Timer
     pub UTICK: utick::Utick<init_state::Disabled>,
@@ -196,6 +207,7 @@ impl Peripherals {
     fn new(p: raw::Peripherals, cp: raw::CorePeripherals) -> Self {
         Peripherals {
             // HAL peripherals
+            ANACTRL: anactrl::wrap(p.ANACTRL),
             // NOTE(unsafe) The init state of the gpio peripheral is enabled,
             // thus it's safe to create an already initialized gpio port
             GPIO: gpio::wrap(p.GPIO),
@@ -203,6 +215,7 @@ impl Peripherals {
             PMC: pmc::wrap(p.PMC),
             SYSCON: syscon::wrap(p.SYSCON),
             USBFS: usbfs::wrap(p.USB0),
+            USBFSH: usbfsh::wrap(p.USBFSH),
             UTICK: utick::wrap(p.UTICK),
 
             // Raw peripherals

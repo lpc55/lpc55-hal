@@ -19,37 +19,15 @@ use crate::{
     },
     states::init_state,
     syscon::{self, Fro1MhzUtickClock},
+    wrap_peripheral_with_state,
 };
+
+wrap_peripheral_with_state!(Utick, UTICK, utick);
 
 pub type EnabledUtick<'fro1mhz> =
     Utick<init_state::Enabled<&'fro1mhz Fro1MhzUtickClock<init_state::Enabled>>>;
 
-/// Interface to the micro-tick timer (UTICK)
-pub struct Utick<State = init_state::Disabled> {
-    raw: raw::UTICK,
-    pub _state: State,
-}
-
-pub fn wrap(utick: raw::UTICK) -> Utick<init_state::Disabled> {
-    Utick::new(utick)
-}
-
-impl Utick {
-    /// Return the raw peripheral
-    pub fn release(self) -> raw::UTICK {
-        self.raw
-    }
-}
-
 impl Utick<init_state::Disabled> {
-    // pub(crate) fn new(utick: raw::UTICK) -> Self {
-    pub fn new(utick: raw::UTICK) -> Self {
-        Utick {
-            raw: utick,
-            _state: init_state::Disabled,
-        }
-    }
-
     /// Enable the UTICK
     ///
     /// Consume a UTICK in `Disabled` state, return an instance in `Enabled` state.

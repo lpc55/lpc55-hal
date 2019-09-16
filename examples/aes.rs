@@ -15,7 +15,7 @@ use lpc55s6x_hal as hal;
 use aes_soft::block_cipher_trait::generic_array::GenericArray;
 use aes_soft::block_cipher_trait::BlockCipher;
 
-use cortex_m_semihosting::dbg;
+use cortex_m_semihosting::{dbg, hprintln};
 
 #[entry]
 fn main() -> ! {
@@ -33,7 +33,7 @@ fn main() -> ! {
     let before = hal::get_cycle_count();
     cipher.encrypt_block(&mut block);
     let after = hal::get_cycle_count();
-    dbg!("encrypting took {} cycles", after - before);
+    hprintln!("encrypting took {} cycles", after - before).unwrap();
     dbg!(block);
     // And decrypt it back
     cipher.decrypt_block(&mut block);

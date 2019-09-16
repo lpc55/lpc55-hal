@@ -58,8 +58,13 @@ build-examples-verbosely:
 # For running examples
 #
 
+# jlink:
+# 	JLinkGDBServer -device LPC55S69 -if SWD
 jlink:
-	JLinkGDBServer -device LPC55S69 -if SWD
+	scripts/jlink
+
+stop-jlink:
+	pkill JLinkGDBServer
 
 EXAMPLE := led
 

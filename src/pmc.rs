@@ -6,28 +6,32 @@
 //!
 
 use crate::raw;
+use crate::wrap_peripheral;
+
 // use crate::states::init_state;
 
-/// Entry point to the PMC API
-pub struct Pmc {
-    raw: raw::PMC,
-}
+// /// Entry point to the PMC API
+// pub struct Pmc {
+//     raw: raw::PMC,
+// }
 
-pub fn wrap(pmc: raw::PMC) -> Pmc {
-    Pmc::new(pmc)
-}
+// pub fn wrap(pmc: raw::PMC) -> Pmc {
+//     Pmc::new(pmc)
+// }
 
-impl Pmc {
-    pub fn release(self) -> raw::PMC {
-        self.raw
-    }
-}
+// impl Pmc {
+//     pub fn release(self) -> raw::PMC {
+//         self.raw
+//     }
+// }
 
-impl Pmc {
-    pub fn new(pmc: raw::PMC) -> Self {
-        Pmc { raw: pmc }
-    }
-}
+// impl Pmc {
+//     pub fn new(pmc: raw::PMC) -> Self {
+//         Pmc { raw: pmc }
+//     }
+// }
+
+wrap_peripheral!(Pmc, PMC, pmc);
 
 impl Pmc {
     /// Enables the power for a peripheral or other hardware component
@@ -72,23 +76,47 @@ pub trait PowerControl {
 //         h.ahbclkctrl1.read().utick0().is_enable()
 //     }
 // }
-impl PowerControl for raw::USB0 {
-    fn powered_on(&self, pmc: &mut Pmc) {
-        // Enable the power to the USB0 PHY by clearing the bit PDEN_USBFSPHY in the PDRUNCFG0 register
-        pmc.raw
-            .pdruncfg0
-            .modify(|_, w| w.pden_usbfsphy().poweredon());
-    }
 
-    /// Internal method
-    fn powered_off(&self, pmc: &mut Pmc) {
-        pmc.raw
-            .pdruncfg0
-            .modify(|_, w| w.pden_usbfsphy().poweredoff());
-    }
+// impl PowerControl for raw::USB0 {
+//     fn powered_on(&self, pmc: &mut Pmc) {
+//         // Enable the power to the USB0 PHY by clearing the bit PDEN_USBFSPHY in the PDRUNCFG0 register
+//         pmc.raw
+//             .pdruncfg0
+//             .modify(|_, w| w.pden_usbfsphy().poweredon());
+//     }
 
-    /// Internal method
-    fn is_powered(&self, pmc: &Pmc) -> bool {
-        pmc.raw.pdruncfg0.read().pden_usbfsphy().is_poweredon()
-    }
+//     /// Internal method
+//     fn powered_off(&self, pmc: &mut Pmc) {
+//         pmc.raw
+//             .pdruncfg0
+//             .modify(|_, w| w.pden_usbfsphy().poweredoff());
+//     }
+
+//     /// Internal method
+//     fn is_powered(&self, pmc: &Pmc) -> bool {
+//         pmc.raw.pdruncfg0.read().pden_usbfsphy().is_poweredon()
+//     }
+// }
+
+macro_rules! impl_power_control {
+    ($power_control:ty, $register:ident) => {
+        impl PowerControl for $power_control {
+            fn powered_on(&self, pmc: &mut Pmc) {
+                pmc.raw.pdruncfg0.modify(|_, w| w.$register().poweredon());
+            }
+
+            fn powered_off(&self, pmc: &mut Pmc) {
+                pmc.raw.pdruncfg0.modify(|_, w| w.$register().poweredoff());
+            }
+
+            fn is_powered(&self, pmc: &Pmc) -> bool {
+                pmc.raw.pdruncfg0.read().$register().is_poweredon()
+            }
+        }
+    };
 }
+
+// well maybe there needs to be a USBFS peripheral with power control,
+// and on top of that USBFSD, USBFSHM, USBFSHS... to make this all logical.
+impl_power_control!(raw::USB0, pden_usbfsphy);
+impl_power_control!(raw::USBFSH, pden_usbfsphy);

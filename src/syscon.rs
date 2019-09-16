@@ -21,27 +21,31 @@
 use crate::raw;
 use crate::{clock, states::init_state};
 
-/// Entry point to the SYSCON API
-pub struct Syscon {
-    // TODO: do we want init_state here too?
-    raw: raw::SYSCON,
-}
+// /// Entry point to the SYSCON API
+// pub struct Syscon {
+//     // TODO: do we want init_state here too?
+//     raw: raw::SYSCON,
+// }
 
-pub fn wrap(syscon: raw::SYSCON) -> Syscon {
-    Syscon::new(syscon)
-}
+// pub fn wrap(syscon: raw::SYSCON) -> Syscon {
+//     Syscon::new(syscon)
+// }
+
+// impl Syscon {
+//     pub fn release(self) -> raw::SYSCON {
+//         self.raw
+//     }
+// }
+
+// impl Syscon {
+//     pub fn new(syscon: raw::SYSCON) -> Self {
+//         Syscon { raw: syscon }
+//     }
+// }
+
+crate::wrap_peripheral!(Syscon, SYSCON, syscon);
 
 impl Syscon {
-    pub fn release(self) -> raw::SYSCON {
-        self.raw
-    }
-}
-
-impl Syscon {
-    pub fn new(syscon: raw::SYSCON) -> Self {
-        Syscon { raw: syscon }
-    }
-
     // TODO: relocate
     pub fn rev_id(&self) -> u8 {
         self.raw.dieid.read().rev_id().bits()
@@ -79,6 +83,50 @@ impl Syscon {
     /// Check if peripheral clock is enabled
     pub fn is_clock_enabled<P: ClockControl>(&self, peripheral: &P) -> bool {
         peripheral.is_clock_enabled(&self)
+    }
+}
+
+/// TODO: do this systematically
+/// By default, fro_12m is enabled in MAINCLKSELA
+impl Syscon {
+    pub fn get_main_clk(&self) -> u8 {
+        self.raw.mainclksela.read().sel().variant().into()
+    }
+    pub fn fro_12m_as_main_clk(&mut self) {
+        // TODO: change these names in the PAC to their UM names
+        // e.g. enum_0x0 -> fro_12m etc.
+        self.raw.mainclksela.modify(|_, w| w.sel().enum_0x0());
+    }
+    pub fn fro_hf_as_main_clk(&mut self) {
+        // TODO: change these names in the PAC to their UM names
+        // e.g. enum_0x0 -> fro_12m etc.
+        self.raw.mainclksela.modify(|_, w| w.sel().enum_0x3());
+    }
+
+    /// TODO: Check if fro_hf is actually 96Mhz??
+    /// UM ANACTRL.FRO192M_CTRL.ENA_96MHZCLK says the 96Mhz clock
+    /// is disabled by default
+    pub fn fro_hf_as_usbfs_clk(&mut self) {
+        // 96 Mhz via changing main clock and sourcing that
+        // self.fro_hf_as_main_clk();
+        // self.raw.usb0clksel.modify(|_, w| w.sel().enum_0x0());
+
+        // Directly pick fro_hf as usbfs clock
+        self.raw.usb0clksel.modify(|_, w| w.sel().enum_0x3());
+        // Divide by two to get 48 Mhz
+        self.raw
+            .usb0clkdiv
+            .modify(unsafe { |_, w| w.div().bits(2) });
+        // Wait until the clock is stable
+        while self.raw.usb0clkdiv.read().reqflag().is_ongoing() {}
+    }
+
+    pub fn is_enabled_usb0_hosts(&self) -> bool {
+        self.raw.ahbclkctrl2.read().usb0_hosts().is_enable()
+    }
+
+    pub fn enable_usb0_hosts(&mut self) {
+        self.raw.ahbclkctrl2.modify(|_, w| w.usb0_hosts().enable());
     }
 }
 
@@ -146,6 +194,7 @@ impl_clock_control!(raw::GINT0, gint, ahbclkctrl0);
 impl_clock_control!(raw::PINT, pint, ahbclkctrl0);
 
 impl_clock_control!(raw::USB0, usb0_dev, ahbclkctrl1);
+impl_clock_control!(raw::USBFSH, usb0_hosts, ahbclkctrl2);
 impl_clock_control!(raw::UTICK, utick0, ahbclkctrl1);
 
 impl_clock_control!(raw::ANACTRL, analog_ctrl, ahbclkctrl2);
