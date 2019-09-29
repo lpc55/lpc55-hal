@@ -1,4 +1,3 @@
-# LPC55s6x HAL
 
 Hardware Abstraction Layer (HAL) for [NXP LPC55S6x][nxp-lpc55s6x] [Cortex-M33][cortex-m33] microcontrollers,
 written in Rust.
@@ -37,8 +36,8 @@ In addition, `make fetch-docs` downloads various vendor-supplied documentation:
 - [LPC55S6x Data Sheet][datasheet]
 - [LPC55S6x User Manual][usermanual]
 - [LPC55S6x Errata][errata]
-- [Cortex-M33 Generic User Guide][genericuserguide]
-- [LPCXpresso55S69 Development Board User Manual][um11158] (requires an NXP account)
+- [Cortex-M33 Generic User Guide][genericuserguide] (requires an NXP account)
+- [LPCXpresso55S69 Development Board User Manual][evkusermanual] (requires an NXP account)
 
 ## Examples
 
@@ -86,7 +85,7 @@ Parts of the code are directly lifted from the [LPC8xx HALs][lpc8xx-hal].
 [mit-link]: https://spdx.org/licenses/MIT.html
 
 [datasheet]: https://www.nxp.com/docs/en/data-sheet/LPC55S6x.pdf
-[usermanual]: https://www.nxp.com/docs/en/user-guide/UM11126.pdf
+[usermanual]: https://www.nxp.com/webapp/Download?colCode=UM11126
 [errata]: https://www.nxp.com/docs/en/errata/ES_LPC55S6x.pdf
 [genericuserguide]: https://static.docs.arm.com/100235/0004/arm_cortex_m33_dgug_100235_0004_00_en.pdf
-[um11158]: https://www.nxp.com/webapp/Download?colCode=UM11158
+[evkusermanual]: https://www.nxp.com/webapp/Download?colCode=UM11158

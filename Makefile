@@ -63,6 +63,10 @@ build-examples-verbosely:
 jlink:
 	scripts/jlink
 
+fg-jlink:
+	-pkill JLinkGDBServer
+	JLinkGDBServer -device LPC55S69 -if SWD &> jlink.log &
+
 stop-jlink:
 	pkill JLinkGDBServer
 

@@ -24,23 +24,16 @@ impl Iocon {
 /// PMU.
 ///
 /// [module documentation]: index.html
-pub struct Iocon<State = init_state::Disabled> {
+pub struct Iocon<State = init_state::Enabled> {
     raw: raw::IOCON,
     _state: State,
 }
 
 impl Iocon<init_state::Disabled> {
-    pub(crate) fn new(iocon: raw::IOCON) -> Self {
-        Iocon {
-            raw: iocon,
-            _state: init_state::Disabled,
-        }
-    }
-
     /// Enable IO pin configuration
     ///
     /// Turn on the clock for a disabled Iocon, enabling it.
-    pub fn enable(mut self, syscon: &mut syscon::Syscon) -> Iocon<init_state::Enabled> {
+    pub fn enabled(mut self, syscon: &mut syscon::Syscon) -> Iocon<init_state::Enabled> {
         // dbg!(syscon.is_clock_enabled(&self.iocon));
         syscon.enable_clock(&mut self.raw);
         // dbg!(syscon.is_clock_enabled(&self.iocon));
@@ -53,6 +46,13 @@ impl Iocon<init_state::Disabled> {
 }
 
 impl Iocon<init_state::Enabled> {
+    pub(crate) fn new(iocon: raw::IOCON) -> Self {
+        Iocon {
+            raw: iocon,
+            _state: init_state::Enabled(()),
+        }
+    }
+
     /// Disable IO pin configuration
     ///
     /// Turns off the clock for an enabled Iocon, disabling it.
@@ -64,12 +64,28 @@ impl Iocon<init_state::Enabled> {
     ///
     /// [`Enabled`]: ../init_state/struct.Enabled.html
     /// [`Disabled`]: ../init_state/struct.Disabled.html
-    pub fn disable(mut self, syscon: &mut syscon::Syscon) -> Iocon<init_state::Disabled> {
+    pub fn disabled(mut self, syscon: &mut syscon::Syscon) -> Iocon<init_state::Disabled> {
         syscon.disable_clock(&mut self.raw);
 
         Iocon {
             raw: self.raw,
             _state: init_state::Disabled,
         }
+    }
+
+    pub fn get_pio_0_22_config(&self) -> u32 {
+        self.raw.pio0_22.read().bits()
+    }
+
+    pub fn configure_pio_0_22_as_usb0_vbus(&self) {
+        self.raw.pio0_22.modify(|_, w|
+            w
+            .func().alt7() // FUNC7, pin configured as USB0_VBUS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        );
     }
 }

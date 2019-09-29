@@ -16,14 +16,14 @@ pub mod rng;
 pub mod sleep;
 pub mod syscon;
 pub mod usbfs;
-pub mod usbfsh;
+// pub mod usbfsh;
 pub mod utick;
 
 #[macro_use]
 pub(crate) mod reg_proxy;
 
 #[macro_use]
-pub(crate) mod macros;
+pub mod macros;
 
 // currently, all sorts of traits
 pub mod prelude;
@@ -72,7 +72,7 @@ pub struct Peripherals {
     pub GPIO: gpio::Gpio<init_state::Disabled>,
 
     /// I/O configuration
-    pub IOCON: iocon::Iocon<init_state::Disabled>,
+    pub IOCON: iocon::Iocon<init_state::Enabled>,
 
     /// Power configuration
     pub PMC: pmc::Pmc,
@@ -81,10 +81,10 @@ pub struct Peripherals {
     pub SYSCON: syscon::Syscon,
 
     /// USB full-speed device
-    pub USBFS: usbfs::UsbFs<init_state::Disabled>,
+    pub USBFSD: usbfs::device::UsbFsDev<init_state::Disabled>,
 
     /// USB full-speed host
-    pub USBFSH: usbfsh::UsbFsHost<init_state::Disabled>,
+    pub USBFSH: usbfs::host::UsbFsHost<init_state::Disabled>,
 
     /// Micro-Tick Timer
     pub UTICK: utick::Utick<init_state::Disabled>,
@@ -214,9 +214,9 @@ impl Peripherals {
             IOCON: iocon::wrap(p.IOCON),
             PMC: pmc::wrap(p.PMC),
             SYSCON: syscon::wrap(p.SYSCON),
-            USBFS: usbfs::wrap(p.USB0),
-            USBFSH: usbfsh::wrap(p.USBFSH),
-            UTICK: utick::wrap(p.UTICK),
+            USBFSD: usbfs::device::wrap(p.USB0),
+            USBFSH: usbfs::host::wrap(p.USBFSH),
+            UTICK: utick::wrap(p.UTICK0),
 
             // Raw peripherals
             ADC0: p.ADC0,
@@ -239,3 +239,8 @@ impl Peripherals {
 pub fn get_cycle_count() -> u32 {
     raw::DWT::get_cycle_count()
 }
+
+extern "C" {
+    pub fn POWER_SetVoltageForFreq(freq: u32);
+}
+

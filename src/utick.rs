@@ -22,7 +22,7 @@ use crate::{
     wrap_peripheral_with_state,
 };
 
-wrap_peripheral_with_state!(Utick, UTICK, utick);
+wrap_peripheral_with_state!(Utick, UTICK0, utick);
 
 pub type EnabledUtick<'fro1mhz> =
     Utick<init_state::Enabled<&'fro1mhz Fro1MhzUtickClock<init_state::Enabled>>>;
@@ -37,6 +37,7 @@ impl Utick<init_state::Disabled> {
         fro1mhz: &'fro1mhz Fro1MhzUtickClock<init_state::Enabled>,
     ) -> EnabledUtick<'fro1mhz> {
         syscon.enable_clock(&mut self.raw);
+        syscon.reset(&mut self.raw);
 
         // Below is no longer needed, since we require passing in an enabled FRO1MHZ.
         // Maybe these references will have to go again though due to RTFM...

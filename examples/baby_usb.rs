@@ -7,25 +7,42 @@
 extern crate panic_halt;
 use cortex_m::asm;
 use cortex_m_rt::entry;
-use cortex_m_semihosting::dbg;
+use cortex_m_semihosting::{dbg, hprintln};
 
 #[allow(unused_imports)]
 use hal::prelude::*;
 #[allow(unused_imports)]
 use lpc55s6x_hal as hal;
 
+use core::ptr;
+
 #[entry]
 fn main() -> ! {
+    let p_portmode = (0x400A_2000 + 0x5C) as *mut u32;
+
     let dp = hal::raw::Peripherals::take().unwrap();
     let mut pmc = hal::pmc::wrap(dp.PMC);
     let mut syscon = hal::syscon::wrap(dp.SYSCON);
+    let mut iocon = hal::iocon::wrap(dp.IOCON).enable(&mut syscon);
 
-    dbg!(syscon.get_main_clk()); // in contrast to UM, this returns 0x3 (fro_hf)
-    syscon.fro_12m_as_main_clk();
-    dbg!(syscon.get_main_clk());
+    // configure pins
+    hprintln!("{:x}", iocon.get_pio_0_22_config()).unwrap();
+    iocon.configure_pio_0_22_as_usb0_vbus();
+    hprintln!("{:x}", iocon.get_pio_0_22_config()).unwrap();
+
+    // setup FRO clocking
+    let mut anactrl = hal::anactrl::wrap(dp.ANACTRL);
+    syscon.fro_12m_as_main_clk(); // switch to FRO 12MHzso we can change the clock setting
+    anactrl.enable_96mhzclk();
+    // the mysterious libpower
+    unsafe { hal::POWER_SetVoltageForFreq(96_000_000) };
+    syscon.set_num_wait_states(8);
+    syscon.set_ahbclkdiv(1);
     syscon.fro_hf_as_main_clk();
-    dbg!(syscon.get_main_clk());
 
+    dbg!("phew");
+
+    let usbfsd = hal::usbfs::wrap(dp.USB0).enabled(&mut pmc, &mut syscon);
     syscon.fro_hf_as_usbfs_clk();
 
     // Port mode configuration: Enable port mode configuration by setting the
@@ -34,47 +51,64 @@ fn main() -> ! {
     // device controller on the USB0 port. Once configured, to save power, clear
     // USB0_HOSTS in the AHBCLKCTRL2 register, See Section 4.5.19 “AHB clock control 2”.
 
-    // dbg!(syscon.is_enabled_usb0_hosts());
-    // dbg!(syscon.enable_usb0_hosts());
-    // dbg!(syscon.is_enabled_usb0_hosts());
-
     let usbfsh = hal::usbfsh::wrap(dp.USBFSH);
-    dbg!(usbfsh.is_enabled(&pmc, &syscon)); // false
-    let mut usbfsh = usbfsh.enabled(&mut pmc, &mut syscon);
-    dbg!(usbfsh.is_enabled(&pmc, &syscon)); // true
 
-    dbg!("this crashes everything. TODO: fix!");
+    let portmode = unsafe { ptr::read(p_portmode) };
+    dbg!(portmode);
+
+    let mut usbfsh = usbfsh.enabled(&mut pmc, &mut syscon);//.disabled(&mut pmc, &mut syscon);
+
+    // current hypothesis: need to call `POWER_SetVoltageForFreq(96000000U)`
+    // from their `fsl_power_lib.c`, which they only make available via
+    // various `libpower_*.a` files.
+    //
+    // https://community.nxp.com/thread/465009
+    //enable());
+
+    dbg!("risque");
+    dbg!(syscon.is_enabled_usb0_hosts());
+    syscon.enable_usb0_hosts();
+    dbg!(syscon.is_enabled_usb0_hosts());
+
+    dbg!("pmc.pdruncfg0.usb_phy");
+    dbg!(unsafe { ptr::read((0x4002_0000 + 0xb8) as *const u32) & (1u32 << 11) != 0} );
+    dbg!(usbfsd.is_powered(&pmc));
+
+    dbg!(unsafe { &(*hal::raw::PMC::ptr()).pdruncfg0.modify(|_, w| w.pden_usbfsphy().poweredon()) } );
+    dbg!("pmc.pdruncfg0.usb_phy");
+    dbg!(unsafe { ptr::read((0x4002_0000 + 0xb8) as *const u32) & (1u32 << 11) != 0} );
+    dbg!(usbfsd.is_powered(&pmc));
+
+    dbg!("syscon.ahbclkctrl2.usb0_hosts");
+    dbg!(unsafe { ptr::read((0x4000_0000 + 0x208) as *const u32) & (1u32 << 17) != 0} );
+
     // dbg!(usbfsh.is_device_enabled());
     // dbg!(usbfsh.enable_device());
-    // dbg!(usbfsh.is_device_enabled());
+    dbg!(unsafe { ptr::read((0x400A_2000 + 0x5C) as *const u32) & (1u32 << 16) } );
+    dbg!("oh ok");
 
-    let usbfs = hal::usbfs::wrap(dp.USB0);
+    // let portmode = unsafe { ptr::read(p) };
+    // dbg!(portmode);
 
-    // dbg!(syscon.is_clock_enabled(&dp.USB0)); // false
-    // syscon.enable_clock(&mut dp.USB0);
-    // dbg!(syscon.is_clock_enabled(&dp.USB0)); // true
+    // dbg!("this crashes everything. TODO: fix!");
+    // USB0:   0x4008_4000
+    // USBFSH: 0x400a_2000
 
-    // dbg!(pmc.is_powered(&dp.USB0)); // false
-    // pmc.power_on(&mut dp.USB0);
-    // dbg!(pmc.is_powered(&dp.USB0)); // true
-
-    dbg!(usbfs.is_enabled(&pmc, &syscon)); // false
-    let usbfs = usbfs.enabled(&mut pmc, &mut syscon);
-    dbg!(usbfs.is_enabled(&pmc, &syscon)); // true
 
     // latch clock to USBFSD SOF packets
     // TODO: does this mess up when nothing's attached?
     // doesn't seem so...
-    let mut anactrl = hal::anactrl::wrap(dp.ANACTRL);
-    dbg!(anactrl.is_12mhzclk_enabled());
-    dbg!(anactrl.is_48mhzclk_enabled());
-    dbg!(anactrl.is_96mhzclk_enabled());
-    anactrl.latch_fro_hf_to_usbfs();
+    // let mut anactrl = hal::anactrl::wrap(dp.ANACTRL);
+    // // dbg!(anactrl.is_12mhzclk_enabled());
+    // // dbg!(anactrl.is_48mhzclk_enabled());
+    // // dbg!(anactrl.is_96mhzclk_enabled());
+    // anactrl.latch_fro_hf_to_usbfs();
 
     // UM says: (5, 1)  <-- probly swapped
     // We get: (1, 6)
-    dbg!(usbfs.info());
+    // dbg!(usbfs.info());
 
+    dbg!("off to wfi land");
     loop {
         asm::wfi();
     }

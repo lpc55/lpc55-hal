@@ -111,6 +111,8 @@ pins!(
     pio0_14, PIO0_14, 0, 0x0e, pin_state::Unused, pin_state::Unused;
     pio0_15, PIO0_15, 0, 0x0f, pin_state::Unused, pin_state::Unused;
 
+    pio0_22, PIO0_22, 0, 0x16, pin_state::Unused, pin_state::Unused;
+
     pio1_0 , PIO1_0 , 1, 0x00, pin_state::Unused, pin_state::Unused;
     pio1_1 , PIO1_1 , 1, 0x01, pin_state::Unused, pin_state::Unused;
     pio1_2 , PIO1_2 , 1, 0x02, pin_state::Unused, pin_state::Unused;
@@ -204,3 +206,13 @@ where
         }
     }
 }
+
+// impl<T, U> Pin<T, U>
+// where
+//     T: PinId,
+// {
+//     pub fn pin_info(&self, iocon: &iocon) -> u32 {
+//         self.raw.pio0_22.modify(|_, w|
+//     }
+
+// }

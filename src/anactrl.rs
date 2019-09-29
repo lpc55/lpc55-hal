@@ -46,10 +46,6 @@ wrap_peripheral!(AnaCtrl, ANACTRL, anactrl);
 
 impl AnaCtrl {
     pub fn latch_fro_hf_to_usbfs(&mut self) {
-        // "FRO192M trimming and 'Enable' comes from FRO192M_CTRL registers."
-        self.raw
-            .analog_ctrl_cfg
-            .modify(|_, w| w.fro192m_trim_src().fro192mctrl());
         // "If this bit is set and the USB peripheral is enabled into full-speed
         // device mode, the USB block will provide FRO clock adjustments to
         // lock it to the host clock using the SOF packets."
@@ -72,5 +68,9 @@ impl AnaCtrl {
     /// UM says not enabled by default, empiricially seems it is
     pub fn is_96mhzclk_enabled(&self) -> bool {
         self.raw.fro192m_ctrl.read().ena_96mhzclk().is_enable()
+    }
+
+    pub fn enable_96mhzclk(&self) {
+        self.raw.fro192m_ctrl.modify(|_, w| w.ena_96mhzclk().enable());
     }
 }

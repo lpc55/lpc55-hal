@@ -16,32 +16,10 @@
 //     // UARTCLKDIV, UARTFRGDIV, UARTFRGMULT,
 // };
 
-// use cortex_m_semihosting::dbg;
+use cortex_m_semihosting::dbg;
 
 use crate::raw;
 use crate::{clock, states::init_state};
-
-// /// Entry point to the SYSCON API
-// pub struct Syscon {
-//     // TODO: do we want init_state here too?
-//     raw: raw::SYSCON,
-// }
-
-// pub fn wrap(syscon: raw::SYSCON) -> Syscon {
-//     Syscon::new(syscon)
-// }
-
-// impl Syscon {
-//     pub fn release(self) -> raw::SYSCON {
-//         self.raw
-//     }
-// }
-
-// impl Syscon {
-//     pub fn new(syscon: raw::SYSCON) -> Self {
-//         Syscon { raw: syscon }
-//     }
-// }
 
 crate::wrap_peripheral!(Syscon, SYSCON, syscon);
 
@@ -53,22 +31,6 @@ impl Syscon {
 }
 
 /// The main API for the SYSCON peripheral
-///
-/// Provides access to all types that make up the SYSCON API. Please refer to
-/// the [module documentation] for more information.
-///
-/// [module documentation]: index.html
-/// Handle to the SYSCON peripheral
-///
-/// This handle to the SYSCON peripheral provides access to the main part of the
-/// SYSCON API. It is also required by other parts of the HAL API to synchronize
-/// access the the underlying registers, wherever this is required.
-///
-/// Please refer to the [module documentation] for more information about the
-/// PMU.
-///
-/// [module documentation]: index.html
-
 impl Syscon {
     /// Enables the clock for a peripheral or other hardware component
     pub fn enable_clock<P: ClockControl>(&mut self, peripheral: &mut P) {
@@ -84,23 +46,59 @@ impl Syscon {
     pub fn is_clock_enabled<P: ClockControl>(&self, peripheral: &P) -> bool {
         peripheral.is_clock_enabled(&self)
     }
+
+    /// Reset a peripheral
+    pub fn reset<P: ResetControl>(&mut self, peripheral: &mut P) {
+        peripheral.assert_reset(self);
+        peripheral.clear_reset(self);
+    }
+
 }
 
 /// TODO: do this systematically
 /// By default, fro_12m is enabled in MAINCLKSELA
 impl Syscon {
     pub fn get_main_clk(&self) -> u8 {
-        self.raw.mainclksela.read().sel().variant().into()
+        self.raw.mainclksela.read().sel().bits()
     }
+
+    pub fn get_num_wait_states(&self) -> u8 {
+        self.raw.fmccr.read().flashtim().bits()
+    }
+
+    pub fn set_num_wait_states(&mut self, num_wait_states: u8) {
+        self.raw.fmccr.modify(|_, w| unsafe { w.flashtim().bits(num_wait_states) } );
+    }
+
+    pub fn set_ahbclkdiv(&self, div: u8) {
+        assert!(div >= 1);
+        // dbg!(self.raw.ahbclkdiv.read().div().bits());
+        self.raw.ahbclkdiv.modify(unsafe { |_, w| w.div().bits(div - 1) });
+        // dbg!(self.raw.ahbclkdiv.read().div().bits());
+    }
+
     pub fn fro_12m_as_main_clk(&mut self) {
         // TODO: change these names in the PAC to their UM names
         // e.g. enum_0x0 -> fro_12m etc.
         self.raw.mainclksela.modify(|_, w| w.sel().enum_0x0());
     }
+
     pub fn fro_hf_as_main_clk(&mut self) {
+        // 1. may have to anactrl_fro192m_ctrl_ena_96mhzclk
+
+        // 2. set voltage for 96MHz frequency
+
+        // 3. set flash access cycles
+        // formula is min(8, floor(9e-7*freq))
+        // /* see fsl_clock.c, CLOCK_SetFLASHAccessCyclesForFreq */
+        // in this case it's 8
+        let num_wait_states = 8;
+        self.set_num_wait_states(num_wait_states);
+
         // TODO: change these names in the PAC to their UM names
         // e.g. enum_0x0 -> fro_12m etc.
         self.raw.mainclksela.modify(|_, w| w.sel().enum_0x3());
+        self.raw.mainclkselb.modify(|_, w| w.sel().enum_0x0());
     }
 
     /// TODO: Check if fro_hf is actually 96Mhz??
@@ -111,14 +109,26 @@ impl Syscon {
         // self.fro_hf_as_main_clk();
         // self.raw.usb0clksel.modify(|_, w| w.sel().enum_0x0());
 
-        // Directly pick fro_hf as usbfs clock
-        self.raw.usb0clksel.modify(|_, w| w.sel().enum_0x3());
-        // Divide by two to get 48 Mhz
+        // Divide by n = 2 to get 48 Mhz (i.e., write (n - 1))
+        dbg!(self.raw.usb0clkdiv.read().div().bits());
         self.raw
             .usb0clkdiv
-            .modify(unsafe { |_, w| w.div().bits(2) });
-        // Wait until the clock is stable
+            .modify(unsafe { |_, w| w.div().bits(0) });
+        dbg!(self.raw.usb0clkdiv.read().div().bits());
+        // Wait until the clock is stable (fsl_clock.c doesn't do this)
         while self.raw.usb0clkdiv.read().reqflag().is_ongoing() {}
+        dbg!(self.raw.usb0clkdiv.read().div().bits());
+
+        // Directly pick fro_hf as usbfs clock
+        self.raw.usb0clksel.modify(|_, w| w.sel().enum_0x3());
+    }
+
+    pub fn is_enabled_usb0_hostm(&self) -> bool {
+        self.raw.ahbclkctrl2.read().usb0_hostm().is_enable()
+    }
+
+    pub fn enable_usb0_hostm(&mut self) {
+        self.raw.ahbclkctrl2.modify(|_, w| w.usb0_hostm().enable());
     }
 
     pub fn is_enabled_usb0_hosts(&self) -> bool {
@@ -174,6 +184,7 @@ macro_rules! impl_clock_control {
         impl ClockControl for $clock_control {
             fn enable_clock(&self, s: &mut Syscon) {
                 s.raw.$register.modify(|_, w| w.$clock().enable());
+                while s.raw.$register.read().$clock().is_disable() {}
             }
 
             fn disable_clock(&self, s: &mut Syscon) {
@@ -195,7 +206,7 @@ impl_clock_control!(raw::PINT, pint, ahbclkctrl0);
 
 impl_clock_control!(raw::USB0, usb0_dev, ahbclkctrl1);
 impl_clock_control!(raw::USBFSH, usb0_hosts, ahbclkctrl2);
-impl_clock_control!(raw::UTICK, utick0, ahbclkctrl1);
+impl_clock_control!(raw::UTICK0, utick, ahbclkctrl1);
 
 impl_clock_control!(raw::ANACTRL, analog_ctrl, ahbclkctrl2);
 impl_clock_control!(raw::CASPER, casper, ahbclkctrl2);
@@ -222,38 +233,65 @@ impl ClockControl for raw::GPIO {
     }
 }
 
-/*
 pub trait ResetControl {
     /// Internal method to assert peripheral reset
-    fn assert_reset<'h>(&self, h: &'h mut Handle) -> &'h mut Handle;
+    fn assert_reset(&self, syscon: &mut Syscon);
 
     /// Internal method to clear peripheral reset
-    fn clear_reset<'h>(&self, h: &'h mut Handle) -> &'h mut Handle;
+    fn clear_reset(&self, syscon: &mut Syscon);
 }
 
-// TODO: check whether we're calling asserted/released is correct
 macro_rules! impl_reset_control {
     ($reset_control:ty, $field:ident, $register:ident) => {
         impl<'a> ResetControl for $reset_control {
-            fn assert_reset<'h>(&self, h: &'h mut Handle) -> &'h mut Handle {
-                h.$register.modify(|_, w| w.$field().asserted());
-                h
+            fn assert_reset(&self, syscon: &mut Syscon) {
+                syscon.raw.$register.modify(|_, w| w.$field().asserted());
+                while syscon.raw.$register.read().$field().is_released() {}
             }
 
-            fn clear_reset<'h>(&self, h: &'h mut Handle) -> &'h mut Handle {
-                h.$register.modify(|_, w| w.$field().released());
-                h
+            fn clear_reset(&self, syscon: &mut Syscon) {
+                syscon.raw.$register.modify(|_, w| w.$field().released());
+                while syscon.raw.$register.read().$field().is_asserted() {}
+            }
+        }
+    };
+    ($reset_control:ty, $field1:ident, $field2:ident, $register:ident) => {
+        impl<'a> ResetControl for $reset_control {
+            fn assert_reset(&self, syscon: &mut Syscon) {
+                syscon.raw.$register.modify(|_, w| w.$field1().asserted());
+                while syscon.raw.$register.read().$field1().is_released() {}
+                syscon.raw.$register.modify(|_, w| w.$field2().asserted());
+                while syscon.raw.$register.read().$field2().is_released() {}
+            }
+
+            fn clear_reset(&self, syscon: &mut Syscon) {
+                syscon.raw.$register.modify(|_, w| w.$field1().released());
+                while syscon.raw.$register.read().$field1().is_asserted() {}
+                syscon.raw.$register.modify(|_, w| w.$field2().released());
+                while syscon.raw.$register.read().$field2().is_asserted() {}
             }
         }
     };
 }
 
 // to be completed
-impl_reset_control!(raw::IOCON, iocon_rst, presetctrl0);
 impl_reset_control!(raw::CASPER, casper_rst, presetctrl2);
-impl_reset_control!(raw::UTICK, utick0_rst, presetctrl1);
+impl_reset_control!(raw::UTICK0, utick_rst, presetctrl1);
 impl_reset_control!(raw::USB0, usb0_dev_rst, presetctrl1);
-*/
+// TODO: figure out this weird messed up totally stupid macro syntax
+// to assert/release multiple resets. And/or don't tie everything to
+// a peripheral which is a not-so-perfect abstraction...
+impl_reset_control!(raw::USBFSH, usb0_hostm_rst, usb0_hosts_rst, presetctrl2);
+// impl_reset_control!(raw::USBHSD,
+//     usb1_dev_rst, presetctrl2,
+//     usb1_phy_rst, presetctrl2,
+//     usb1_ram_rst, presetctrl2,
+// );
+// impl_reset_control!(raw::USBHSD,
+//     usb1_host_rst, presetctrl2,
+//     usb1_phy_rst, presetctrl2,
+//     usb1_ram_rst, presetctrl2,
+// );
 
 static mut FRO1MHZUTICKCLOCK_TAKEN: bool = false;
 

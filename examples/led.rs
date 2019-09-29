@@ -3,19 +3,23 @@
 
 extern crate panic_semihosting;
 use cortex_m_rt::entry;
+use cortex_m_semihosting::dbg;
 
 use hal::prelude::*;
 use lpc55s6x_hal as hal;
+// use lpc55s6x_ral as ral;
 
 #[entry]
 fn main() -> ! {
+    dbg!("test");
     let dp = hal::raw::Peripherals::take().unwrap();
     let mut syscon = hal::syscon::wrap(dp.SYSCON);
+    dbg!(syscon.get_num_wait_states());
     let mut gpio = hal::gpio::wrap(dp.GPIO).enabled(&mut syscon);
     let iocon = hal::iocon::wrap(dp.IOCON);
 
     // UM kind of says it's not enabled, but it actually is
-    let iocon = iocon.enable(&mut syscon);
+    // let iocon = iocon.enabled(&mut syscon);
 
     // R = pio1_6
     // G = pio1_7
@@ -29,14 +33,14 @@ fn main() -> ! {
         .into_gpio_pin(&mut gpio)
         .into_output(hal::gpio::Level::High); // start turned off
 
-    let iocon = iocon.disable(&mut syscon);
-    iocon.release();
+    let iocon = iocon.disabled(&mut syscon);
+    // iocon.release();
 
     let clock = hal::syscon::Fro1MhzUtickClock::take()
         .unwrap()
         .enable(&mut syscon);
 
-    let mut utick = hal::utick::wrap(dp.UTICK).enabled(&mut syscon, &clock);
+    let mut utick = hal::utick::wrap(dp.UTICK0).enabled(&mut syscon, &clock);
 
     let delay = hal::clock::Ticks {
         value: 500_000,
