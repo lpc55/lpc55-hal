@@ -7,3 +7,4 @@ core
 **/*.log
 **/*.o
 **/*.a
+/jlink-fw-sw

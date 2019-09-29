@@ -6,7 +6,7 @@ use crate::usbfs::bus::constants::{
     UsbAccessType,
 };
 // use crate::target::{UsbRegisters, usb, UsbAccessType};
-use crate::usbfs::bus::endpoint_memory::{EndpointBuffer, BufferDescriptor, EndpointMemoryAllocator};
+use crate::usbfs::bus::endpoint_memory::{EndpointBuffer, /*BufferDescriptor,*/ EndpointMemoryAllocator};
 use super::endpoint_list;
 use super::endpoint_list::Instance as EndpointListInstance;
 use crate::{
@@ -81,6 +81,13 @@ impl Endpoint {
         out_addroff as usize
     }
 
+    pub fn buf_addroff(&self, buf: &EndpointBuffer, cs: &CriticalSection, epl: &EndpointListInstance) -> u32 {
+        // let out_buf = self.out_buf.as_ref().unwrap().borrow(cs);
+        let buf_addr = buf.addr();
+        let addroff = (buf_addr >> 6) & 0x7ff;
+        addroff as u32
+    }
+
     // need critical section?
     pub fn reset_out_buf(&self, cs: &CriticalSection, epl: &EndpointListInstance) {
         // hardware modifies the NBytes and Offset entries,
@@ -102,10 +109,11 @@ impl Endpoint {
             // let out_buf_addr = out_buf.addr();
             // // hprintln!("checking out_buf_addr 0x{:x}", out_buf_addr).unwrap();
             // assert!(out_buf_addr & 0x3f == 0);
-            let out_addroff = self.out_buf_addroff(cs, epl);
-            modify_endpoint!(endpoint_list, epl, EP0OUT, ADDROFF: out_addroff as u32);
-
-            modify_endpoint!(endpoint_list, epl, SETUP, ADDROFF: out_addroff as u32);
+            // let out_addroff = self.out_buf_addroff(cs, epl);
+            let out_addroff = self.buf_addroff(out_buf, cs, epl);
+            modify_endpoint!(endpoint_list, epl, EP0OUT, ADDROFF: out_addroff);
+            modify_endpoint!(endpoint_list, epl, EP0OUT, A: Active);
+            modify_endpoint!(endpoint_list, epl, SETUP, ADDROFF: out_addroff);
 
         } else {
             hprintln!("rest_out_buf not implemented for non-control endpoints").unwrap();
@@ -139,10 +147,12 @@ impl Endpoint {
         let in_buf = self.in_buf.as_ref().unwrap().borrow(cs);
         if i == 0 {
             modify_endpoint!(endpoint_list, epl, EP0IN, NBYTES: 0);
-            let in_buf_addr = in_buf.addr();
-            assert!(in_buf_addr & 0x3f == 0);
-            let in_addroff = (in_buf_addr >> 6) & 0x7ff;
+            // let in_buf_addr = in_buf.addr();
+            // assert!(in_buf_addr & 0x3f == 0);
+            // let in_addroff = (in_buf_addr >> 6) & 0x7ff;
+            let in_addroff = self.buf_addroff(in_buf, cs, epl);
             modify_endpoint!(endpoint_list, epl, EP0IN, ADDROFF: in_addroff);
+            modify_endpoint!(endpoint_list, epl, EP0IN, A: Active);
         } else {
             hprintln!("rest_in_buf not implemented for non-control endpoints").unwrap();
         }
@@ -252,7 +262,7 @@ impl Endpoint {
 //             else { EndpointStatus::Disabled} );
     }
 
-    pub fn write(&self, buf: &[u8]) -> Result<usize> {
+    pub fn write(&self, buf: &[u8], usb0: &USB0, epl: &EndpointListInstance) -> Result<usize> {
         interrupt::free(|cs| {
             let in_buf = self.in_buf.as_ref().unwrap().borrow(cs);
 
@@ -267,7 +277,10 @@ impl Endpoint {
 //                 _ => {},
 //             };
 
+            hprintln!("write = {:?}", buf).unwrap();
             in_buf.write(buf);
+            self.reset_in_buf(cs, epl);
+
 //             self.descr().count_tx.set(buf.len() as u16 as UsbAccessType);
 
 //             self.set_stat_tx(cs, EndpointStatus::Valid);
@@ -276,7 +289,7 @@ impl Endpoint {
         })
     }
 
-    pub fn read(&self, buf: &mut [u8], usb0: &USB0, epl: &EndpointListInstance) -> usb_device::Result<usize> {
+    pub fn read(&self, buf: &mut [u8], usb0: &USB0, epl: &EndpointListInstance) -> Result<usize> {
         interrupt::free(|cs| {
             let out_buf = self.out_buf.as_ref().unwrap().borrow(cs);
 
@@ -312,6 +325,8 @@ impl Endpoint {
                 let count = (out_buf.len() - nbytes) as usize;
                 hprintln!("there are 0x{:x} bytes to read", count).unwrap();
                 out_buf.read(&mut buf[..count]);
+                hprintln!("read = {:?}", &buf[..count]).unwrap();
+                self.reset_out_buf(cs, epl);
                 return Ok(count)
                 // }
 

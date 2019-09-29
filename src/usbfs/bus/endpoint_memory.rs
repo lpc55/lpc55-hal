@@ -87,12 +87,12 @@ impl EndpointBuffer {
     }
 }
 
-pub struct BufferDescriptor {
-    pub addr_tx: VolatileCell<UsbAccessType>,
-    pub count_tx: VolatileCell<UsbAccessType>,
-    pub addr_rx: VolatileCell<UsbAccessType>,
-    pub count_rx: VolatileCell<UsbAccessType>,
-}
+// pub struct BufferDescriptor {
+//     pub addr_tx: VolatileCell<UsbAccessType>,
+//     pub count_tx: VolatileCell<UsbAccessType>,
+//     pub addr_rx: VolatileCell<UsbAccessType>,
+//     pub count_rx: VolatileCell<UsbAccessType>,
+// }
 
 pub struct EndpointMemoryAllocator {
     next_free_offset: usize,
