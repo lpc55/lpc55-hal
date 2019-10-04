@@ -146,7 +146,7 @@ impl<PINS: Send+Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
                     let size = max_packet_size;
 
                     let buffer = self.ep_allocator.allocate_buffer(size as _)?;
-                    hprintln!("alloc_ep allocated {}B for OUT buffer {}", size, index).unwrap();
+                    // hprintln!("alloc_ep allocated {}B for OUT buffer {}", size, index).unwrap();
 
                     ep.set_out_buf(buffer);
 
@@ -157,7 +157,7 @@ impl<PINS: Send+Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
                     let size = max_packet_size;
 
                     let buffer = self.ep_allocator.allocate_buffer(size as _)?;
-                    hprintln!("alloc_ep allocated {}B for IN buffer {}", size, index).unwrap();
+                    // hprintln!("alloc_ep allocated {}B for IN buffer {}", size, index).unwrap();
 
                     ep.set_in_buf(buffer);
 
@@ -182,7 +182,7 @@ impl<PINS: Send+Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
         }
 
         self.max_endpoint = max;
-        hprintln!("Set max_endpoint to {}", max).unwrap();
+        // hprintln!("Set max_endpoint to {}", max).unwrap();
 
 
         interrupt::free(|cs| {
@@ -273,14 +273,10 @@ impl<PINS: Send+Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
             let devcmdstat = usb0_regs.devcmdstat.read();
             let intstat = usb0_regs.intstat.read();
 
-            // hprintln!("in poll, EP0OUT NBYTES is {}",
-            //         read_endpoint!(endpoint_list, ep_regs, EP0OUT, NBYTES),
-            //         ).unwrap();
-
             if devcmdstat.dres_c().bit_is_set() {
                 usb0_regs.devcmdstat.modify(|_, w| w.dres_c().clear_bit());
                 // devcmdstatregs.istr.write(|w| unsafe { w.bits(0xffff) }.reset().clear_bit() );
-                hprintln!("RESET demanded").unwrap();
+                // hprintln!("RESET demanded").unwrap();
                 PollResult::Reset
 
             // TODO: Resume, Suspend handling
@@ -296,37 +292,88 @@ impl<PINS: Send+Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
                 // First handle endpoint 0 (the only control endpoint)
                 // hprintln!("intstat = {:x}", intstat.bits()).unwrap();
                 if intstat.ep0out().bit_is_set() {
+                    // dbg!(usb0_regs.intstat.read().dev_int().bit_is_set());
+                    // dbg!(usb0_regs.inten.read().ep_int_en().bits());
+                    // dbg!(usb0_regs.inten.read().frame_int_en().bit_is_set());
+                    // dbg!(usb0_regs.inten.read().dev_int_en().bit_is_set());
+                    // hprintln!("EP0OUT interrupt").unwrap();
+                    dbg!(usb0_regs.intstat.read().ep0out().bit_is_set());
                     usb0_regs.intstat.modify(|_, w| w.ep0out().set_bit());
+                    dbg!(usb0_regs.intstat.read().ep0out().bit_is_set());
+                    // dbg!(usb0_regs.intstat.read().dev_int().bit_is_set());
                     // hprintln!("intstat after clearing ep0out = {:x}", intstat.bits()).unwrap();
                     // hprintln!("intstat after clearing ep0out = {:x}", intstat.bits()).unwrap();
                     // dbg!(intstat.dev_int().bit_is_set());
                     if devcmdstat.setup().bit_is_set() {
-                        hprintln!("SETUP token received").unwrap();
-                        dbg!(devcmdstat.setup().bit_is_set());
-                        hprintln!("{:x}", unsafe {
-                            core::ptr::read_volatile(0x2000_0040u32 as *const u32)
-                        } ).unwrap();
+                        // hprintln!("SETUP received").unwrap();
+                        // dbg!(devcmdstat.setup().bit_is_set());
+                        // hprintln!("{:x}", unsafe {
+                        //     core::ptr::read_volatile(0x2000_0040u32 as *const u32)
+                        // } ).unwrap();
                         ep_setup |= bit;
 
                         // Q: need to clear it?
-                        self.endpoints[0].clear_in_out_active_stall(cs, ep_regs);
+                        // self.endpoints[0].clear_in_out_active_stall(cs, ep_regs);
+                        modify_endpoint!(endpoint_list, ep_regs, EP0IN, A: NotActive);
+                        modify_endpoint!(endpoint_list, ep_regs, EP0IN, S: NotStalled);
+                        modify_endpoint!(endpoint_list, ep_regs, EP0OUT, A: NotActive);
+                        modify_endpoint!(endpoint_list, ep_regs, EP0OUT, S: NotStalled);
+                        usb0_regs.intstat.modify(|_, w| w.ep0in().set_bit());
+
                         usb0_regs.devcmdstat.modify(|_, w|
                             w
-                            .setup().clear_bit()
-                            .intonnak_ao().clear_bit()
+                            .intonnak_co().clear_bit()
                             .intonnak_ci().clear_bit()
+                            .setup().clear_bit()
                         );
                         let ep0out_nbytes = read_endpoint!(endpoint_list, ep_regs, EP0OUT, NBYTES);
                         assert!(ep0out_nbytes >= 8);
                         modify_endpoint!(endpoint_list, ep_regs, EP0OUT, NBYTES: (ep0out_nbytes - 8));
 
+                        // get SETUP, implement lowerright corner of ep0 OUT "flowchart"
+                        let mut setup = [0u8; 8];
+                        self.endpoints[0].peak(&mut setup, usb0_regs, ep_regs);
+                        let host_read = (setup[0] >> 7) != 0;
+
+                        if host_read {
+                            // write_endpoint!(endpoint_list, ep_regs, EP0IN, A: Active);
+                            // hmm... has a *
+                            write_endpoint!(endpoint_list, ep_regs, EP0IN, S: NotStalled);
+                            usb0_regs.devcmdstat.modify(|_, w|
+                                w
+                                // i *think* the idea is to allow the host to abort
+                                // the IN transfer, assume has no influence on device functionality
+                                .intonnak_co().set_bit()
+                                .intonnak_ci().clear_bit()
+                            );
+                        } else {
+                            use core::convert::TryInto;
+                            let recv_length = u16::from_le_bytes(setup[6..].try_into().unwrap());
+                            if recv_length != 0 {
+                                write_endpoint!(endpoint_list, ep_regs, EP0OUT, A: NotActive);
+                                write_endpoint!(endpoint_list, ep_regs, EP0OUT, S: Stalled);
+                                write_endpoint!(endpoint_list, ep_regs, EP0IN, A: Active);
+                                write_endpoint!(endpoint_list, ep_regs, EP0IN, S: Stalled);
+                            } else {
+                                write_endpoint!(endpoint_list, ep_regs, EP0OUT, A: Active);
+                                // hmm... has a *
+                                // write_endpoint!(endpoint_list, ep_regs, EP0OUT, S: Stalled);
+                                usb0_regs.devcmdstat.modify(|_, w|
+                                    w
+                                    .intonnak_co().clear_bit()
+                                    .intonnak_ci().set_bit()
+                                );
+                            }
+                        }
+
                         // TODO: handle OUT and IN
                     } else {
-                        hprintln!("EP0OUT received").unwrap();
+                        // hprintln!("non-SETUP received").unwrap();
                         ep_out |= bit;
                     }
                 }
                 if intstat.ep0in().bit_is_set() {
+                    // hprintln!("EP0IN received").unwrap();
                     usb0_regs.intstat.modify(|_, w| w.ep0in().set_bit());
                     ep_in_complete |= bit;
                 }
@@ -388,7 +435,7 @@ impl<PINS: Send+Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
             return Err(UsbError::InvalidEndpoint);
         }
 
-        hprintln!("want to write {:?}", buf).unwrap();
+        // hprintln!("want to write {:?}", buf).unwrap();
         interrupt::free(|cs| {
             let usb0_regs = self.usb0_regs.borrow(cs);
             let ep_regs = self.ep_regs.borrow(cs);
@@ -398,7 +445,7 @@ impl<PINS: Send+Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
     }
 
     fn read(&self, ep_addr: EndpointAddress, buf: &mut [u8]) -> Result<usize> {
-        hprintln!("usb-bus reading").unwrap();
+        // hprintln!("usb-bus reading").unwrap();
         if !ep_addr.is_out() {
             return Err(UsbError::InvalidEndpoint);
         }
@@ -412,7 +459,7 @@ impl<PINS: Send+Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
     }
 
     fn set_stalled(&self, ep_addr: EndpointAddress, stalled: bool) {
-        hprintln!("set_stalled only implemented for control!").unwrap();
+        // hprintln!("set_stalled only implemented for control!").unwrap();
         interrupt::free(|cs| {
             let usb0_regs = self.usb0_regs.borrow(cs);
             let epl = self.ep_regs.borrow(cs);
@@ -440,7 +487,7 @@ impl<PINS: Send+Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
     }
 
     fn is_stalled(&self, ep_addr: EndpointAddress) -> bool {
-        hprintln!("is_stalled only implemented for control!").unwrap();
+        // hprintln!("is_stalled only implemented for control!").unwrap();
         interrupt::free(|cs| {
             let usb0_regs = self.usb0_regs.borrow(cs);
             let epl = self.ep_regs.borrow(cs);

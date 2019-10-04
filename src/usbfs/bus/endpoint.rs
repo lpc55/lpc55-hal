@@ -93,7 +93,7 @@ impl Endpoint {
         // hardware modifies the NBytes and Offset entries,
         // need to change them back periodically
         let i = self.index as usize;
-        hprintln!("configuring endpoint {}", i).unwrap();
+        // hprintln!("configuring endpoint {}", i).unwrap();
         let out_buf = self.out_buf.as_ref().unwrap().borrow(cs);
         if i == 0 {
             // we re-use out_buf for setup packets, which have size 8
@@ -116,7 +116,7 @@ impl Endpoint {
             modify_endpoint!(endpoint_list, epl, SETUP, ADDROFF: out_addroff);
 
         } else {
-            hprintln!("rest_out_buf not implemented for non-control endpoints").unwrap();
+            // hprintln!("rest_out_buf not implemented for non-control endpoints").unwrap();
         }
     }
 
@@ -143,7 +143,7 @@ impl Endpoint {
         // hardware modifies the NBytes and Offset entries,
         // need to change them back periodically
         let i = self.index as usize;
-        hprintln!("configuring endpoint {}", i).unwrap();
+        // hprintln!("configuring endpoint {}", i).unwrap();
         let in_buf = self.in_buf.as_ref().unwrap().borrow(cs);
         if i == 0 {
             modify_endpoint!(endpoint_list, epl, EP0IN, NBYTES: 0);
@@ -152,7 +152,7 @@ impl Endpoint {
             // let in_addroff = (in_buf_addr >> 6) & 0x7ff;
             let in_addroff = self.buf_addroff(in_buf, cs, epl);
             modify_endpoint!(endpoint_list, epl, EP0IN, ADDROFF: in_addroff);
-            modify_endpoint!(endpoint_list, epl, EP0IN, A: Active);
+            // modify_endpoint!(endpoint_list, epl, EP0IN, A: Active);
         } else {
             hprintln!("rest_in_buf not implemented for non-control endpoints").unwrap();
         }
@@ -175,7 +175,7 @@ impl Endpoint {
     // }
 
     pub fn clear_in_out_active_stall(&self, cs: &CriticalSection, epl: &EndpointListInstance) {
-        hprintln!("clearing IN/OUT active/stall").unwrap();
+        // hprintln!("clearing IN/OUT active/stall").unwrap();
         // NB: according to UM, need to clear Active bit(s) for EP0
         // (while in general software shouldn't do anything about it)
         // assert!(read_endpoint!(endpoint_list, epl, EP0IN, A == NotActive));
@@ -203,7 +203,7 @@ impl Endpoint {
         let ep_type = match self.ep_type {
             Some(t) => t,
             None => {
-                hprintln!("not configuring endpoint {}", self.index).unwrap();
+                // hprintln!("not configuring endpoint {}", self.index).unwrap();
                 return
             },
         };
@@ -214,7 +214,7 @@ impl Endpoint {
         assert!(ep_type != EndpointType::Isochronous);
 
         let i = self.index as usize;
-        hprintln!("configuring endpoint {}", i).unwrap();
+        // hprintln!("configuring endpoint {}", i).unwrap();
         if i == 0 {
             assert!(ep_type == EndpointType::Control);
 
@@ -227,9 +227,9 @@ impl Endpoint {
             // modify_endpoint!(epl, epl, SETUP, A: 1);
             modify_endpoint!(epl, epl, EP0OUT, A: 1);
 
-            hprintln!("in configure, EP0OUT NBYTES is {}",
-                    read_endpoint!(endpoint_list, epl, EP0OUT, NBYTES),
-                    ).unwrap();
+            // hprintln!("in configure, EP0OUT NBYTES is {}",
+            //         read_endpoint!(endpoint_list, epl, EP0OUT, NBYTES),
+            //         ).unwrap();
 
         } else {
             assert!(ep_type != EndpointType::Control);
@@ -263,6 +263,7 @@ impl Endpoint {
     }
 
     pub fn write(&self, buf: &[u8], usb0: &USB0, epl: &EndpointListInstance) -> Result<usize> {
+
         interrupt::free(|cs| {
             let in_buf = self.in_buf.as_ref().unwrap().borrow(cs);
 
@@ -277,9 +278,24 @@ impl Endpoint {
 //                 _ => {},
 //             };
 
-            hprintln!("write = {:?}", buf).unwrap();
+            // hprintln!("write = {:?}, {}", buf, buf.len()).unwrap();
             in_buf.write(buf);
             self.reset_in_buf(cs, epl);
+            write_endpoint!(endpoint_list, epl, EP0IN, NBYTES: buf.len() as u32);
+            // hprintln!("intermediately NBYTES {}, Active {}",
+            //           read_endpoint!(endpoint_list, epl, EP0IN, NBYTES),
+            //           read_endpoint!(endpoint_list, epl, EP0IN, A == Active),
+            //         ).unwrap();
+            write_endpoint!(endpoint_list, epl, EP0IN, A: Active);
+            // return Err(UsbError::BufferOverflow);
+            // hprintln!("ending with NBYTES {}, Active {}",
+            //           read_endpoint!(endpoint_list, epl, EP0IN, NBYTES),
+            //           read_endpoint!(endpoint_list, epl, EP0IN, A == Active),
+            //         ).unwrap();
+            // only for EP0...
+            if buf.len() == 0 || buf.len() == 8 {
+                // write_endpoint!(endpoint_list, epl, EP0OUT, A: Active);
+            }
 
 //             self.descr().count_tx.set(buf.len() as u16 as UsbAccessType);
 
@@ -289,18 +305,28 @@ impl Endpoint {
         })
     }
 
+    /// SUPER DANGEROUS, FIXME
+    pub fn peak(&self, buf: &mut [u8], usb0: &USB0, epl: &EndpointListInstance) {
+        interrupt::free(|cs| {
+            let out_buf = self.out_buf.as_ref().unwrap().borrow(cs);
+            // let i = self.index as usize;
+            // if i == 0 {
+            out_buf.read(buf);
+        });
+    }
+
     pub fn read(&self, buf: &mut [u8], usb0: &USB0, epl: &EndpointListInstance) -> Result<usize> {
         interrupt::free(|cs| {
             let out_buf = self.out_buf.as_ref().unwrap().borrow(cs);
 
             let i = self.index as usize;
-            hprintln!("reading endpoint {}", i).unwrap();
+            // hprintln!("reading endpoint {}", i).unwrap();
 
             // sometimes, when we're lucky, we get:
             // [128, 6, 0, 1, 0, 0, 64, 0]
             // this is: GET_DESCRIPTOR for DEVICE
 
-            dbg!(usb0.devcmdstat.read().setup().bit_is_set());
+            // dbg!(usb0.devcmdstat.read().setup().bit_is_set());
             if i == 0 {
                 // out_buf.read(&mut buf[0..8]);
                 // hprintln!("received a setup packet: {:?}", &buf[..8]).unwrap();
@@ -321,11 +347,12 @@ impl Endpoint {
                 // hprintln!("gosh were we too slow for the setup packet?").unwrap();
                 // let nbytes =
                 // hprintln!("read not implemented for non-setup endpoint 0").unwrap();
+
                 let nbytes = read_endpoint!(endpoint_list, epl, EP0OUT, NBYTES) as usize;
                 let count = (out_buf.len() - nbytes) as usize;
-                hprintln!("there are 0x{:x} bytes to read", count).unwrap();
+                // hprintln!("there are 0x{:x} bytes to read", count).unwrap();
                 out_buf.read(&mut buf[..count]);
-                hprintln!("read = {:?}", &buf[..count]).unwrap();
+                // hprintln!("read = {:?}", &buf[..count]).unwrap();
                 self.reset_out_buf(cs, epl);
                 return Ok(count)
                 // }

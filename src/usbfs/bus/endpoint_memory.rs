@@ -46,10 +46,9 @@ impl EndpointBuffer {
         let addr = unsafe { EP_MEM_PTR.add(offset) };
 
         let mem = unsafe { slice::from_raw_parts_mut(addr, size) };
-        use cortex_m_semihosting::hprintln;
         unsafe {
         //     hprintln!("EP mem addr {:p}", &EP_MEMORY[0]).unwrap();
-            hprintln!("allocated buffer at 0x{:p} with offset 0x{:x}", addr, offset ).unwrap();
+            // hprintln!("allocated buffer at 0x{:p} with offset 0x{:x}", addr, offset ).unwrap();
         }
 
         Self(mem)
@@ -114,16 +113,16 @@ impl EndpointMemoryAllocator {
         // Otherwise, need to change this
 
         let ep_mem_addr = unsafe { EP_MEM_PTR as usize };
-        dbg!(self.next_free_offset);
+        // dbg!(self.next_free_offset);
         let next_free_addr = ep_mem_addr + self.next_free_offset;
-        hprintln!("ep_mem_addr 0x{:x}, next_free_addr 0x{:x}", ep_mem_addr, next_free_addr).unwrap();
+        // hprintln!("ep_mem_addr 0x{:x}, next_free_addr 0x{:x}", ep_mem_addr, next_free_addr).unwrap();
 
         let addr =
             if next_free_addr & 0x3f > 0 {
-                dbg!("would not be 64 byte aligned");
+                // dbg!("would not be 64 byte aligned");
                 (next_free_addr & !0x3f) + 64
             } else {
-                dbg!("is 64 byte aligned");
+                // dbg!("is 64 byte aligned");
                 next_free_addr
             };
         let offset = addr - ep_mem_addr;
@@ -132,7 +131,7 @@ impl EndpointMemoryAllocator {
             return Err(UsbError::EndpointMemoryOverflow);
         }
         self.next_free_offset = offset + size;
-        hprintln!("allocating at offset 0x{:x}, so address 0x{:x}", offset, addr).unwrap();
+        // hprintln!("allocating at offset 0x{:x}, so address 0x{:x}", offset, addr).unwrap();
         Ok(EndpointBuffer::new(offset, size))
     }
 

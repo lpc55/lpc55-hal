@@ -32,7 +32,8 @@ type RawEndpointList = [u8; ENDPOINT_LIST_SIZE];
 ///
 /// This structure *must* be 256 byte aligned, hence the corresponding
 /// `EPLISTSTART` register `.bits()` method takes `address >> 8` as input.
-#[repr(align(256))]
+// #[repr(align(256))]
+#[repr(C)]
 pub struct EndpointList {
     pub EP0OUT: Register<u32>,
     pub SETUP: Register<u32>,
@@ -197,6 +198,7 @@ pub mod EP0OUT {
         // pub mod R {
         //     pub const NotActive: u32 = 0b0;
         // }
+        pub mod R {}
         pub mod W {}
         pub mod RW {
             pub const NotActive: u32 = 0b0;
@@ -280,8 +282,8 @@ pub mod EP0OUT {
     pub mod NBYTES {
         pub const offset: u32 = 11;
         // 15 bits wide
-        // pub const mask: u32 = ((1 << 16) - 1) << offset;
-        pub const mask: u32 = 0x7fff800;
+        pub const mask: u32 = ((1 << 16) - 1) << offset;
+        // pub const mask: u32 = 0x7fff800;
         pub mod R {}
         pub mod W {}
         pub mod RW {}

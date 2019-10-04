@@ -73,6 +73,31 @@ impl Iocon<init_state::Enabled> {
         }
     }
 
+    pub fn get_pio_0_8_config(&self) -> u32 {
+        self.raw.pio0_8.read().bits()
+    }
+
+    pub fn get_pio_0_8_func(&self) -> u8 {
+        self.raw.pio0_8.read().func().bits()
+    }
+
+    pub fn set_pio_0_8_swo_func(&self) {
+        self.raw.pio0_8.modify(|_, w| w.func().alt4());
+    }
+
+    pub fn get_pio_0_10_config(&self) -> u32 {
+        self.raw.pio0_10.read().bits()
+    }
+
+    pub fn get_pio_0_10_func(&self) -> u8 {
+        self.raw.pio0_10.read().func().bits()
+    }
+
+    pub fn set_pio_0_10_swo_func(&self) {
+        self.raw.pio0_10.modify(|_, w| w.func().alt6());
+    }
+
+
     pub fn get_pio_0_22_config(&self) -> u32 {
         self.raw.pio0_22.read().bits()
     }

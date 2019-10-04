@@ -92,6 +92,9 @@ macro_rules! reg_read {
     ($peripheral:ident, $register:ident, $field:ident) => {
         unsafe { &(*hal::raw::$peripheral::ptr()) }.$register.read().$field().bits()
     };
+    ($peripheral:ident, $register:ident) => {
+        unsafe { &(*hal::raw::$peripheral::ptr()) }.$register.read().bits()
+    };
 }
 
 // #[macro_export]

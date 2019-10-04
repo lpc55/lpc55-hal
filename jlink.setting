@@ -29,7 +29,7 @@ WorkRAMSize = 0x00
 WorkRAMAddr = 0x00
 RAMUsageLimit = 0x00
 [SWO]
-SWOLogFile=""
+SWOLogFile="swo.log"
 [MEM]
 RdOverrideOrMask = 0x00
 RdOverrideAndMask = 0xFFFFFFFF

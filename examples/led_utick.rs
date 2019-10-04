@@ -11,6 +11,15 @@ use cortex_m_rt::entry;
 use hal::{gpio::Level, prelude::*};
 use lpc55s6x_hal as hal;
 
+// macro_rules! kitt {
+//     ($( $led:ident ),+ ) => ({
+//         $led.set_low().unwrap();
+//         utick.start(1_000_000u32);
+//         utick.blocking_wait();
+//         $led.set_high().unwrap();
+//     }, *);
+// }
+
 #[entry]
 fn main() -> ! {
     let dp = hal::raw::Peripherals::take().unwrap();
@@ -44,6 +53,7 @@ fn main() -> ! {
         .into_output(Level::High);
 
     loop {
+        // kitt!(red, green, blue);
         red.set_low().unwrap();
         utick.start(1_000_000u32);
         // block!(utick.wait()).unwrap();

@@ -19,6 +19,8 @@ use hal::usbfs::bus::UsbBus;
 
 #[entry]
 fn main() -> ! {
+    // let x: [u16; 3] = [1,2,3];
+    // let y = [1,2,3]::<[u16; 3]>;
     let dp = hal::raw::Peripherals::take().unwrap();
     let iocon = hal::iocon::wrap(dp.IOCON);
     let mut syscon = hal::syscon::wrap(dp.SYSCON);
@@ -72,6 +74,7 @@ fn main() -> ! {
         .product("Demo Demo Demo")
         .serial_number("2019")
         // .device_class(USB_CLASS_CDC)
+        .max_packet_size_0(64)
         .build();
 
     dbg!("main loop");

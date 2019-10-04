@@ -8,3 +8,4 @@ core
 **/*.o
 **/*.a
 /jlink-fw-sw
+.idea/
