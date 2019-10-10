@@ -280,9 +280,9 @@ pub mod EP0OUT {
     /// unused buffer space, hence:
     /// - received number of bytes = programmed value - remaining NBytes
     pub mod NBYTES {
-        pub const offset: u32 = 11;
-        // 15 bits wide
-        pub const mask: u32 = ((1 << 16) - 1) << offset;
+        pub const offset: u32 = 16;
+        // 10 bits wide
+        pub const mask: u32 = ((1 << 10) - 1) << offset;
         // pub const mask: u32 = 0x7fff800;
         pub mod R {}
         pub mod W {}
@@ -296,8 +296,8 @@ pub mod EP0OUT {
     /// - General case (e.g. isochronous 200 byte packet): increment by floor(packet size in bytes / 64);
     pub mod ADDROFF {
         pub const offset: u32 = 0;
-        // 11 bits wide
-        pub const mask: u32 = ((1 << 12) - 1) << offset;
+        // 16 bits wide
+        pub const mask: u32 = ((1 << 16) - 1) << offset;
         pub mod R {}
         pub mod W {}
         pub mod RW {}
@@ -380,27 +380,6 @@ pub mod register {
             unsafe { write_volatile(self.register.get(), val) }
         }
     }
-
-    // TODO: decide whether to purge the `nosync` feature,
-    // or re-enable these UnsafeRegisters
-    //
-    // pub struct UnsafeRegister<T> {
-    //     register: UnsafeCell<T>,
-    // }
-
-    // impl<T: Copy> UnsafeRegister<T> {
-    //     /// Reads the value of the register.
-    //     #[inline(always)]
-    //     pub unsafe fn read(&self) -> T {
-    //         read_volatile(self.register.get())
-    //     }
-
-    //     /// Writes a new value to the register.
-    //     #[inline(always)]
-    //     pub unsafe fn write(&self, val: T) {
-    //         write_volatile(self.register.get(), val)
-    //     }
-    // }
 
     // Example:
     // ```

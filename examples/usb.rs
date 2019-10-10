@@ -40,8 +40,10 @@ fn main() -> ! {
     reg_modify!(SYSCON, mainclksela, sel, enum_0x0); // FRO 12 MHz, was enum_0x3
     // either 48 MHz (div = 1, flashtim = 4) or 96 MHz (div = 0, flashtim = 8)
     // dbg!(reg_read!(SYSCON, fmccr, flashtim));
-    reg_modify!(SYSCON, fmccr, flashtim, flashtim4); // This is actually the reset value
-    unsafe { dbg_reg_modify!(SYSCON, ahbclkdiv, div, 1u8) }; // This is actually the reset value
+    // reg_modify!(SYSCON, fmccr, flashtim, flashtim4); // This is actually the reset value
+    // unsafe { reg_modify!(SYSCON, ahbclkdiv, div, 1u8) }; // This is actually the reset value
+    reg_modify!(SYSCON, fmccr, flashtim, flashtim8); // This is actually the reset value
+    unsafe { reg_modify!(SYSCON, ahbclkdiv, div, 0u8) }; // This is actually the reset value
     while reg_read!(SYSCON, ahbclkdiv, reqflag, is_ongoing) {}
     reg_modify!(SYSCON, mainclksela, sel, enum_0x3); // FRO 96 MHz
 
@@ -59,8 +61,10 @@ fn main() -> ! {
 
     // Switch USB0 to "device" mode (default is "host")
     reg_modify!(SYSCON, ahbclkctrl2, usb0_hosts, enable);
+    // dbg!(reg_read!(USBFSH, portmode, dev_enable));
     reg_modify!(USBFSH, portmode, dev_enable, set_bit);
-    reg_modify!(SYSCON, ahbclkctrl2, usb0_hosts, enable);
+    // dbg!(reg_read!(USBFSH, portmode, dev_enable));
+    reg_modify!(SYSCON, ahbclkctrl2, usb0_hosts, disable);
 
     // Turn on USB1 SRAM
     reg_modify!(SYSCON, ahbclkctrl2, usb1_ram, enable);
@@ -70,51 +74,17 @@ fn main() -> ! {
     // let mut serial = SerialPort::new(&usb_bus);
 
     let mut usb_dev = UsbDeviceBuilder::new(&usb_bus, UsbVidPid(0x1209, 0xcc1d))
-        .manufacturer("yamnord")
+        .manufacturer("nickray")
         .product("Demo Demo Demo")
         .serial_number("2019")
-        // .device_class(USB_CLASS_CDC)
         .max_packet_size_0(64)
         .build();
 
-    dbg!("main loop");
+    // dbg!("main loop");
     loop {
-        // if !usb_dev.poll(&mut [&mut serial]) {
         if !usb_dev.poll(&mut []) {
             continue;
         }
-
-    //     let mut buf = [0u8; 64];
-
-    //     match serial.read(&mut buf) {
-    //         Ok(count) if count > 0 => {
-    //             red_led.set_low().unwrap(); // Turn on
-
-    //             // Echo back in upper case
-    //             for c in buf[0..count].iter_mut() {
-    //                 if 0x61 <= *c && *c <= 0x7a {
-    //                     *c &= !0x20;
-    //                 }
-    //             }
-
-    //             let mut write_offset = 0;
-    //             while write_offset < count {
-    //                 match serial.write(&buf[write_offset..count]) {
-    //                     Ok(len) if len > 0 => {
-    //                         write_offset += len;
-    //                     },
-    //                     _ => {},
-    //                 }
-    //             }
-    //         }
-    //         _ => {}
-    //     }
-
-    //     red_led.set_high().unwrap(); // Turn off
     }
 
-    // dbg!("wfi");
-    // loop {
-    //     asm::wfi();
-    // }
 }
