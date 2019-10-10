@@ -29,10 +29,20 @@ lpc55s6x-pac = "0.0.5"
 nb = "0.1"
 nom = { version = "^5", default-features = false }
 # usb-device = "0.2.3"
-usb-device = { path = "../usb-device" }
+# usb-device = { path = "../usb-device", features = ["quirk-set-address-before-status"] }
+# usb-device = { path = "../usb-device" }
+# usbd-serial = "0.1"
 vcell = "0.1.2"
 void = { version = "1", default-features = false }
-usbd-serial = "0.1.0"
+
+[dependencies.usbd-serial]
+git = "https://github.com/nickray/usbd-serial"
+branch = "quirk-set-address-before-status"
+
+[dependencies.usb-device]
+git = "https://github.com/nickray/usb-device"
+branch = "quirk-set-address-before-status"
+features = ["quirk-set-address-before-status"]
 
 [dev-dependencies]
 aes-soft = "0.3"

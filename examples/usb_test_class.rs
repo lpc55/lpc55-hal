@@ -2,6 +2,7 @@
 #![no_std]
 
 extern crate panic_semihosting;
+use cortex_m::asm;
 use cortex_m_rt::entry;
 use cortex_m_semihosting::{dbg, hprintln};
 
@@ -10,16 +11,15 @@ use hal::prelude::*;
 #[allow(unused_imports)]
 use lpc55s6x_hal as hal;
 
-use hal::{reg_read, reg_modify};
+use hal::{reg_read, reg_modify, dbg_reg_modify};
 
-use usbd_serial::SerialPort;
+use usbd_serial::{SerialPort, USB_CLASS_CDC};
 use usb_device::device::{UsbDeviceBuilder, UsbVidPid};
+use usb_device::test_class::TestClass;
 use hal::usbfs::bus::UsbBus;
 
 #[entry]
 fn main() -> ! {
-    // let x: [u16; 3] = [1,2,3];
-    // let y = [1,2,3]::<[u16; 3]>;
     let dp = hal::raw::Peripherals::take().unwrap();
     let iocon = hal::iocon::wrap(dp.IOCON);
     let mut syscon = hal::syscon::wrap(dp.SYSCON);
@@ -70,53 +70,17 @@ fn main() -> ! {
 
     // let usb_bus = UsbBus::new(dp.USB0, (usb0_vbus,));
     let usb_bus = UsbBus::new(usbfsd, ());
-    let mut serial = SerialPort::new(&usb_bus);
 
-    let mut usb_dev = UsbDeviceBuilder::new(&usb_bus, UsbVidPid(0x1209, 0xcc1d))
-        .manufacturer("nickray")
-        .product("Demo Demo Demo")
-        .serial_number("2019-10-10")
-        .device_release(0x0123)
-        // using default of 8 seems to work now
-        // .max_packet_size_0(64)
-        // .device_class(USB_CLASS_CDC)
-        .build();
+    let mut test = TestClass::new(&usb_bus);
+
+    let mut usb_dev = { test.make_device(&usb_bus) };
 
     // dbg!("main loop");
     loop {
         // if !usb_dev.poll(&mut []) {
-        if !usb_dev.poll(&mut [&mut serial]) {
-            continue;
+        if usb_dev.poll(&mut [&mut test]) {
+            test.poll();
         }
-
-        let mut buf = [0u8; 64];
-
-        match serial.read(&mut buf) {
-            Ok(count) if count > 0 => {
-                hprintln!("received some data on the serial port!").ok();
-                red_led.set_low().ok(); // Turn on
-
-                // Echo back in upper case
-                for c in buf[0..count].iter_mut() {
-                    if 0x61 <= *c && *c <= 0x7a {
-                        *c &= !0x20;
-                    }
-                }
-
-                let mut write_offset = 0;
-                while write_offset < count {
-                    match serial.write(&buf[write_offset..count]) {
-                        Ok(len) if len > 0 => {
-                            write_offset += len;
-                        },
-                        _ => {},
-                    }
-                }
-            }
-            _ => {}
-        }
-
-        red_led.set_high().ok(); // Turn off
     }
 
 }

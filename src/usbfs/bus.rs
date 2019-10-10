@@ -24,12 +24,9 @@ use crate::raw::USB0;
 use crate::usbfs::device::UsbFsDev;
 use crate::states::init_state;
 
-use cortex_m_semihosting::{dbg, hprintln};
+use cortex_m_semihosting::{/*dbg,*/ hprintln};
 
-use crate::{
-    read_endpoint, write_endpoint, modify_endpoint,
-    reg_read, reg_modify,
-};
+use crate::{read_endpoint, modify_endpoint};
 
 // TODO: fixme
 pub trait UsbPins: Send { }
@@ -160,11 +157,11 @@ impl<PINS: Send+Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
             for (index, ep) in self.endpoints.iter().enumerate() {
                 if ep.is_out_buf_set() || ep.is_in_buf_set() {
                     max = index;
-                    if index == 0 {
-                        ep.reset_in_buf(cs, epl);
-                        ep.reset_setup_buf(cs, epl);
-                        ep.reset_out_buf(cs, epl);
-                    }
+
+                    // these are guarded against `None.unwrap()` internally
+                    ep.reset_out_buf(cs, epl);
+                    ep.reset_in_buf(cs, epl);
+                    ep.reset_setup_buf(cs, epl);
                 }
             }
             self.max_endpoint = max;
@@ -231,7 +228,6 @@ impl<PINS: Send+Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
     }
 
     fn set_device_address(&self, addr: u8) {
-        hprintln!("setting device address {}", addr).unwrap();
         interrupt::free(|cs| {
             unsafe { self.usb_regs.borrow(cs).devcmdstat.modify(|_, w| w.dev_addr().bits(addr)) };
         });
@@ -248,7 +244,6 @@ impl<PINS: Send+Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
             if devcmdstat.read().dres_c().bit_is_set() {
                 devcmdstat.modify(|_, w| w.dres_c().set_bit());
                 assert!(devcmdstat.read().dres_c().bit_is_clear());
-                hprintln!("RESET").ok();
                 return PollResult::Reset
             }
 
@@ -266,21 +261,11 @@ impl<PINS: Send+Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
             let intstat_r = usb.intstat.read();
 
             // First handle endpoint 0 (the only control endpoint)
-            // if intstat_r.ep0out().bit_is_set() {
-            //     if devcmdstat_r.setup().bit_is_set() {
-            //         // hprintln!("SETUP detected").unwrap();
-            //         ep_setup |= bit;
-            //     } else {
-            //         // hprintln!("EP0OUT detected").unwrap();
-            //         ep_out |= bit;
-            //     }
-            // }
             if intstat_r.ep0out().bit_is_set() {
                 ep_out |= bit;
             }
 
             if devcmdstat_r.setup().bit_is_set() {
-                // hprintln!("SETUP detected").unwrap();
                 ep_setup |= bit;
             }
 
@@ -288,29 +273,47 @@ impl<PINS: Send+Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
                 intstat.modify(|_, w| w.ep0in().set_bit());
                 assert!(intstat.read().ep0in().bit_is_clear());
                 ep_in_complete |= bit;
-                // hprintln!("completed EP0IN, err {}", usb.info.read().err_code().bits()).unwrap();
+
+                // EP0 needs manual toggling of Active bits
                 modify_endpoint!(endpoint_list, epl, EP0IN, A: NotActive);
                 // prevents OUT-DATA-NAK
                 modify_endpoint!(endpoint_list, epl, EP0OUT, A: Active);
-                // let err_code = usb.info.read().err_code().bits();
-                // if err_code > 0 {
-                //     hprintln!("err_code {}", err_code).unwrap();
-                //     usb.info.modify(|_, w| w.err_code().no_error());
-                // }
             }
 
+            let mut i = 0;
             for ep in &self.endpoints[1..=self.max_endpoint] {
+                bit <<= 1;
+                i += 1;
+
+                // hprintln!("polling ep {}", i);
+
                 // TODO: implement these endpoints
-                // bit <<= 1;
+                let ep_out_offset = i << 1;
+                let ep_in_offset = ep_out_offset + 1;
+
+                let ep_out_int = ((intstat_r.bits() >> ep_out_offset) & 0x1) != 0;
+                if ep_out_int {
+                    ep_out |= bit;
+                    // hprintln!("OUT on EP {}", i).ok();
+                };
+
+                let ep_in_int = ((intstat_r.bits() >> ep_in_offset) & 0x1) != 0;
+                if ep_in_int {
+                    ep_in_complete |= bit;
+                    let intstat_r = usb.intstat.read();
+                    // clear it
+                    unsafe { usb.intstat.write(|w| w.bits(intstat_r.bits() | (1u32 << ep_in_offset))) };
+                    // hprintln!("IN-COMPLETE on EP {}", i).ok();
+                };
+                // hprintln!("...done polling ep {}", i);
             }
 
-            if ep_out != 0 || ep_in_complete != 0 || ep_setup != 0 {
+            if (ep_out | ep_in_complete | ep_setup) != 0 {
                 // double-checking
                 // maybe unneccessary to ever look at INTSTAT.DEV_INT
                 // assert!(intstat_r.dev_int().bit_is_set());
                 // intstat.modify(|_, w| w.dev_int().set_bit());
                 // assert!(usb.intstat.read().dev_int().bit_is_clear());
-                // TODO: need to set EP0IN to A: NotActive?
 
                 PollResult::Data { ep_out, ep_in_complete, ep_setup }
             } else {
@@ -342,7 +345,7 @@ impl<PINS: Send+Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
 
     fn set_stalled(&self, ep_addr: EndpointAddress, stalled: bool) {
         interrupt::free(|cs| {
-            let usb = self.usb_regs.borrow(cs);
+            // let usb = self.usb_regs.borrow(cs);
             let epl = self.epl_regs.borrow(cs);
 
             if self.is_stalled(ep_addr) == stalled {
@@ -360,7 +363,7 @@ impl<PINS: Send+Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
 
     fn is_stalled(&self, ep_addr: EndpointAddress) -> bool {
         interrupt::free(|cs| {
-            let usb = self.usb_regs.borrow(cs);
+            // let usb = self.usb_regs.borrow(cs);
             let epl = self.epl_regs.borrow(cs);
 
             match ep_addr.direction() {

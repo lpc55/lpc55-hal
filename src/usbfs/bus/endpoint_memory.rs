@@ -1,4 +1,5 @@
-use core::{slice, mem};
+use core::slice;
+use core::cmp::min;
 use vcell::VolatileCell;
 use crate::usbfs::bus::constants::{
     UsbAccessType,
@@ -43,16 +44,15 @@ impl EndpointBuffer {
         Self(mem)
     }
 
-    pub fn read(&self, mut buf: &mut [u8]) {
+    pub fn read(&self, buf: &mut [u8]) {
         // use iterators?
-        // check that buf.len() < self.0.len()?
-        for i in 0..buf.len() {
+        for i in 0..min(buf.len(), self.0.len()) {
             buf[i] = self.0[i].get();
         }
     }
 
-    pub fn write(&self, mut buf: &[u8]) {
-        for i in 0..buf.len() {
+    pub fn write(&self, buf: &[u8]) {
+        for i in 0..min(buf.len(), self.0.len()) {
             self.0[i].set(buf[i]);
         }
     }

@@ -17,7 +17,7 @@ pub const DA_BUF_ADDR: u32 = 0x4000_0000;  // 4MB = increments of 0x40_0000
 pub const DA_BUF: u32 = (DA_BUF_ADDR >> 22);  // = 0x100
 pub const ENDPOINT_LIST_SIZE: usize = 80;
 
-type RawEndpointList = [u8; ENDPOINT_LIST_SIZE];
+// type RawEndpointList = [u8; ENDPOINT_LIST_SIZE];
 
 /// TODO: using names for everything (e.g. `EP3IN1`) does not
 /// seem very usable. On the other hand, this appraoch doesn't
