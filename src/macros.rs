@@ -4,22 +4,61 @@
 // TODO: is the trait thing maybe better after all? boilerplate is bad...
 
 #[macro_export]
-macro_rules! wrap_peripheral {
-    ($hal_name:ident, $pac_name:ident, $arg_name:ident) => {
+macro_rules! wrap_always_on_peripheral {
+    ($hal_name:ident, $pac_name:ident) => {
+        use crate::raw;
         // /// Entry point to the $hal_name API
         pub struct $hal_name {
             raw: raw::$pac_name,
         }
 
-        pub fn wrap($arg_name: raw::$pac_name) -> $hal_name {
-            $hal_name::new($arg_name)
+        pub fn wrap(raw: raw::$pac_name) -> $hal_name {
+            $hal_name::new(raw)
+        }
+
+        impl core::convert::From<raw::$pac_name> for $hal_name {
+            fn from(raw: raw::$pac_name) -> Self {
+                $hal_name::new(raw)
+            }
         }
 
         impl $hal_name {
-            pub fn new($arg_name: raw::$pac_name) -> Self {
-                $hal_name { raw: $arg_name }
+            pub fn new(raw: raw::$pac_name) -> Self {
+                $hal_name { raw }
             }
 
+            pub fn release(self) -> raw::$pac_name {
+                self.raw
+            }
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! wrap_stateful_peripheral {
+    ($hal_name:ident, $pac_name:ident) => {
+        pub struct $hal_name<State = init_state::Unknown> {
+            pub(crate) raw: raw::$pac_name,
+            pub _state: State,
+        }
+
+        impl core::convert::From<raw::$pac_name> for $hal_name {
+            fn from(raw: raw::$pac_name) -> Self {
+                $hal_name::new(raw)
+            }
+        }
+
+
+        impl $hal_name {
+            pub fn new(raw: raw::$pac_name) -> Self {
+                $hal_name {
+                    raw,
+                    _state: init_state::Unknown,
+                }
+            }
+        }
+
+        impl $hal_name {
             pub fn release(self) -> raw::$pac_name {
                 self.raw
             }
@@ -66,14 +105,14 @@ macro_rules! reg_write {
 
 #[macro_export]
 macro_rules! reg_modify {
-    ($peripheral:ident, $register:ident, $field:ident, $what:ident) => {
-        unsafe { &(*hal::raw::$peripheral::ptr()) }.$register.modify(|_, w| w.$field().$what())
+    ($hal:ident, $peripheral:ident, $register:ident, $field:ident, $what:ident) => {
+        unsafe { &(*$hal::raw::$peripheral::ptr()) }.$register.modify(|_, w| w.$field().$what())
     };
     // want to keep this macro use "unsafe" so code does not use the `bits`
     // version unaware, particularly when a `what` version would be available
-    ($peripheral:ident, $register:ident, $field:ident, $value:expr) => {
+    ($hal:ident, $peripheral:ident, $register:ident, $field:ident, $value:expr) => {
         // unsafe { &(*hal::raw::$peripheral::ptr()).$register.modify(|_, w| w.$field().bits($value)) }
-        unsafe { &(*hal::raw::$peripheral::ptr()) }.$register.modify(|_, w| w.$field().bits($value))
+        unsafe { &(*$hal::raw::$peripheral::ptr()) }.$register.modify(|_, w| w.$field().bits($value))
     };
 }
 

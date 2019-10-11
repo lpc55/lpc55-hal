@@ -8,9 +8,9 @@ pub fn wrap(iocon: raw::IOCON) -> Iocon {
     Iocon::new(iocon)
 }
 
-impl Iocon {
-    pub fn release(self) -> raw::IOCON {
-        self.raw
+impl core::convert::From<raw::IOCON> for Iocon<init_state::Unknown> {
+    fn from(raw: raw::IOCON) -> Self {
+        Iocon::new(raw)
     }
 }
 
@@ -24,12 +24,21 @@ impl Iocon {
 /// PMU.
 ///
 /// [module documentation]: index.html
-pub struct Iocon<State = init_state::Enabled> {
+pub struct Iocon<State = init_state::Unknown> {
     raw: raw::IOCON,
     _state: State,
 }
 
-impl Iocon<init_state::Disabled> {
+impl Iocon<init_state::Unknown> {
+    pub(crate) fn new(iocon: raw::IOCON) -> Self {
+        Iocon {
+            raw: iocon,
+            _state: init_state::Unknown,
+        }
+    }
+}
+
+impl<State> Iocon<State> {
     /// Enable IO pin configuration
     ///
     /// Turn on the clock for a disabled Iocon, enabling it.
@@ -40,15 +49,6 @@ impl Iocon<init_state::Disabled> {
 
         Iocon {
             raw: self.raw,
-            _state: init_state::Enabled(()),
-        }
-    }
-}
-
-impl Iocon<init_state::Enabled> {
-    pub(crate) fn new(iocon: raw::IOCON) -> Self {
-        Iocon {
-            raw: iocon,
             _state: init_state::Enabled(()),
         }
     }
@@ -73,6 +73,12 @@ impl Iocon<init_state::Enabled> {
         }
     }
 
+    pub fn release(self) -> raw::IOCON {
+        self.raw
+    }
+}
+
+impl Iocon<init_state::Enabled> {
     pub fn get_pio_0_8_config(&self) -> u32 {
         self.raw.pio0_8.read().bits()
     }

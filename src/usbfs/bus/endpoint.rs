@@ -17,6 +17,8 @@ use crate::{
 use crate::raw::USB0;
 // use cortex_m_semihosting::{dbg, hprintln};
 // use vcell::VolatileCell;
+//
+use core::sync::atomic::{compiler_fence, Ordering};
 
 
 // macro_rules! dbgx {
@@ -228,6 +230,8 @@ impl Endpoint {
             self.reset_in_buf(cs, epl);
             in_buf.write(buf);
 
+            compiler_fence(Ordering::SeqCst);
+
             if i == 0 {
                 modify_endpoint!(endpoint_list, epl, EP0IN,
                     NBYTES: buf.len() as u32,
@@ -372,6 +376,7 @@ impl Endpoint {
 
                 // unsafe { usb.intstat.write(|w| w.bits(intstat_r.bits() | (1u32 << ep_out_offset))) };
                 unsafe { usb.intstat.write(|w| w.bits(1u32 << ep_out_offset)) };
+                compiler_fence(Ordering::SeqCst);
                 self.reset_out_buf(cs, epl);
 
                 Ok(count)

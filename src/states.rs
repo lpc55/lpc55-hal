@@ -1,22 +1,32 @@
 /// Contains types that encode the state of hardware initialization
 ///
-/// The types in this module are used by structs representing peripherals or
-/// other hardware components, to encode the initialization state of the
-/// underlying hardware as part of the type.
+/// The default state of peripherals is `Unknown`, which is not
+/// quite zero cost, but since we may have been jumped to from a
+/// bootloader, we can't rely on reset state as per user manual.
 ///
-/// The default state in peripherals using this is usually set to Enabled,
-/// to allow APIs consuming it to enforce this less verbosely.
+/// The exception are peripherals which are "always on", such as `Syscon`.
 pub mod init_state {
+    /// Indicates that the state of the peripheral is not known
+    pub struct Unknown;
+
     /// Indicates that the hardware component is enabled
     ///
     /// This usually indicates that the hardware has been initialized and can be
     /// used for its intended purpose. Contains an optional payload that APIs
     /// can use to keep data that is only available while enabled.
+    ///
     pub struct Enabled<T = ()>(pub T);
 
     /// Indicates that the hardware component is disabled
     pub struct Disabled;
 }
+
+pub mod usbfs_mode {
+    pub struct Unknown;
+    pub struct Device;
+    pub struct Host;
+}
+
 
 pub mod gpio {
     pub mod direction {

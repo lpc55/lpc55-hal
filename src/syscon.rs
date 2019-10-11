@@ -18,10 +18,10 @@
 
 use cortex_m_semihosting::dbg;
 
-use crate::raw;
+// use crate::raw;
 use crate::{clock, states::init_state};
 
-crate::wrap_peripheral!(Syscon, SYSCON, syscon);
+crate::wrap_always_on_peripheral!(Syscon, SYSCON);
 
 impl Syscon {
     // TODO: relocate
@@ -205,7 +205,7 @@ impl_clock_control!(raw::GINT0, gint, ahbclkctrl0);
 impl_clock_control!(raw::PINT, pint, ahbclkctrl0);
 
 impl_clock_control!(raw::USB0, usb0_dev, ahbclkctrl1);
-impl_clock_control!(raw::USBFSH, usb0_hosts, ahbclkctrl2);
+impl_clock_control!(raw::USBFSH, usb0_hosts, ahbclkctrl2);  // well what about usb0_hostm?
 impl_clock_control!(raw::UTICK0, utick, ahbclkctrl1);
 
 impl_clock_control!(raw::ANACTRL, analog_ctrl, ahbclkctrl2);

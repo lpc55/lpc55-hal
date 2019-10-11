@@ -5,33 +5,16 @@
 //! We are mostly concerned with power to analog peripherals.
 //!
 
-use crate::raw;
-use crate::wrap_peripheral;
+// use crate::raw;
 
-// use crate::states::init_state;
-
-// /// Entry point to the PMC API
-// pub struct Pmc {
-//     raw: raw::PMC,
-// }
-
-// pub fn wrap(pmc: raw::PMC) -> Pmc {
-//     Pmc::new(pmc)
-// }
-
-// impl Pmc {
-//     pub fn release(self) -> raw::PMC {
-//         self.raw
+// // use core::convert::From;
+// impl core::convert::From<raw::PMC> for Pmc {
+//     fn from(raw: raw::PMC) -> Self {
+//         Pmc::new(raw)
 //     }
 // }
 
-// impl Pmc {
-//     pub fn new(pmc: raw::PMC) -> Self {
-//         Pmc { raw: pmc }
-//     }
-// }
-
-wrap_peripheral!(Pmc, PMC, pmc);
+crate::wrap_always_on_peripheral!(Pmc, PMC);
 
 impl Pmc {
     /// Enables the power for a peripheral or other hardware component

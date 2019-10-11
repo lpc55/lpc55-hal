@@ -16,7 +16,6 @@ pub mod rng;
 pub mod sleep;
 pub mod syscon;
 pub mod usbfs;
-// pub mod usbfsh;
 pub mod utick;
 
 #[macro_use]
@@ -31,16 +30,20 @@ pub mod prelude;
 pub mod states;
 use states::init_state;
 
-///
+/// All the HAL peripherals
+pub use {
+    anactrl::Anactrl,
+    gpio::Gpio,
+    iocon::Iocon,
+    pmc::Pmc,
+    syscon::Syscon,
+    usbfs::Usbfs,
+    usbfs::EnabledUsbfsDevice,
+};
+
 /// This is the entry point to the HAL API. Before you can do anything else, you
 /// need to get an instance of this struct via [`Peripherals::take`] or
 /// [`Peripherals::steal`].
-///
-/// The HAL API tracks the state of peripherals at compile-time, to prevent
-/// potential bugs before the program can even run. Many parts of this
-/// documentation call this "type state". The peripherals available in this
-/// struct are set to their initial state (i.e. their state after a system
-/// reset). See user manual, section 5.6.14.
 ///
 /// # Safe Use of the API
 ///
@@ -63,28 +66,29 @@ use states::init_state;
 #[allow(non_snake_case)]
 pub struct Peripherals {
     /// Analog control
-    pub ANACTRL: anactrl::AnaCtrl,
+    pub anactrl: anactrl::Anactrl,
 
     /// General-purpose I/O (GPIO)
     ///
-    /// The GPIO peripheral is enabled by default.
-    /// TODO: do *not* rely on this
-    pub GPIO: gpio::Gpio<init_state::Disabled>,
+    pub gpio: gpio::Gpio, // <init_state::Unknown>,
 
     /// I/O configuration
-    pub IOCON: iocon::Iocon<init_state::Enabled>,
+    pub iocon: iocon::Iocon, // <init_state::Unknown>,
 
     /// Power configuration
-    pub PMC: pmc::Pmc,
+    pub pmc: pmc::Pmc,
 
     /// System configuration
-    pub SYSCON: syscon::Syscon,
+    pub syscon: syscon::Syscon,
 
-    /// USB full-speed device
-    pub USBFSD: usbfs::device::UsbFsDev<init_state::Disabled>,
+    // /// USB full-speed device
+    // pub USBFSD: usbfs::device::UsbFsDev<init_state::Disabled>,
 
-    /// USB full-speed host
-    pub USBFSH: usbfs::host::UsbFsHost<init_state::Disabled>,
+    // /// USB full-speed host
+    // pub USBFSH: usbfs::host::UsbFsHost<init_state::Disabled>,
+
+    // USB full-speed device or host
+    pub usbfs: usbfs::Usbfs,
 
     /// Micro-Tick Timer
     pub UTICK: utick::Utick<init_state::Disabled>,
@@ -160,46 +164,6 @@ impl Peripherals {
         ))
     }
 
-    /// Steal the peripherals
-    ///
-    /// This function returns an instance of `Peripherals`, whether or not such
-    /// an instance exists somewhere else. This is highly unsafe, as it can lead
-    /// to conflicting access of the hardware, mismatch between actual hardware
-    /// state and peripheral state as tracked by this API at compile-time, and
-    /// in general a full nullification of all safety guarantees that this API
-    /// would normally make.
-    ///
-    /// If at all possible, you should always prefer `Peripherals::take` to this
-    /// method. The only legitimate use of this API is code that can't access
-    /// `Peripherals` the usual way, like a panic handler, or maybe temporary
-    /// debug code in an interrupt handler.
-    ///
-    /// # Safety
-    ///
-    /// This method returns an instance of `Peripherals` that might conflict
-    /// with either other instances of `Peripherals` that exist in the program,
-    /// or other means of accessing the hardware. This is only sure, if you make
-    /// sure of the following:
-    /// 1. No other code can access the hardware at the same time.
-    /// 2. You don't change the hardware state in any way that could invalidate
-    ///    the type state of other `Peripherals` instances.
-    /// 3. The type state in your `Peripherals` instance matches the actual
-    ///    state of the hardware.
-    ///
-    /// Items 1. and 2. are really tricky, so it is recommended to avoid any
-    /// situations where they apply, and restrict the use of this method to
-    /// situations where the program has effectively ended and the hardware will
-    /// be reset right after (like a panic handler).
-    ///
-    /// Item 3. applies to all uses of this method, and is generally very tricky
-    /// to get right. The best way to achieve that is probably to force the API
-    /// into a type state that allows you to execute operations that are known
-    /// to put the hardware in a safe state. Like forcing the type state for a
-    /// peripheral API to the "disabled" state, then enabling it, to make sure
-    /// it is enabled, regardless of wheter it was enabled before.
-    ///
-    /// Since there are no means within this API to forcibly change type state,
-    /// you will need to resort to something like [`core::mem::transmute`].
     pub unsafe fn steal() -> Self {
         Self::new(raw::Peripherals::steal(), raw::CorePeripherals::steal())
     }
@@ -207,15 +171,16 @@ impl Peripherals {
     fn new(p: raw::Peripherals, cp: raw::CorePeripherals) -> Self {
         Peripherals {
             // HAL peripherals
-            ANACTRL: anactrl::wrap(p.ANACTRL),
+            anactrl: Anactrl::from(p.ANACTRL),
             // NOTE(unsafe) The init state of the gpio peripheral is enabled,
             // thus it's safe to create an already initialized gpio port
-            GPIO: gpio::wrap(p.GPIO),
-            IOCON: iocon::wrap(p.IOCON),
-            PMC: pmc::wrap(p.PMC),
-            SYSCON: syscon::wrap(p.SYSCON),
-            USBFSD: usbfs::device::wrap(p.USB0),
-            USBFSH: usbfs::host::wrap(p.USBFSH),
+            gpio: Gpio::from(p.GPIO),
+            iocon: Iocon::from(p.IOCON),
+            pmc: Pmc::from(p.PMC),
+            syscon: syscon::wrap(p.SYSCON),
+            // USBFSD: usbfs::device::wrap(p.USB0),
+            // USBFSH: usbfs::host::wrap(p.USBFSH),
+            usbfs: Usbfs::from((p.USB0, p.USBFSH)),
             UTICK: utick::wrap(p.UTICK0),
 
             // Raw peripherals
@@ -234,6 +199,31 @@ impl Peripherals {
             SYST: cp.SYST,
         }
     }
+}
+
+impl core::convert::From<(raw::Peripherals, raw::CorePeripherals)> for Peripherals {
+    fn from(raw: (raw::Peripherals, raw::CorePeripherals)) -> Self {
+        Peripherals::new(raw.0, raw.1)
+    }
+}
+
+// fn init() -> Peripherals {
+//     Peripherals::from((
+//         raw::CorePeripherals::take().unwrap(),
+//         raw::Peripherals::take().unwrap(),
+//     ))
+// }
+
+/// This is the main (monolithic) entry point to the HAL.
+///
+/// If you are using RTFM, prefer using `hal::<Peripheral>::from(<raw_peripheral>)`
+/// as needed.
+pub fn new() -> Peripherals {
+    let hal_peripherals = Peripherals::from((
+        raw::Peripherals::take().expect("raw device peripherals already taken elsewhere"),
+        raw::CorePeripherals::take().expect("raw core peripherals already taken elsewhere"),
+    ));
+    hal_peripherals
 }
 
 pub fn get_cycle_count() -> u32 {

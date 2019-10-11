@@ -1,17 +1,10 @@
-use crate::{
-    // pmc,
-    raw,
-    // states::init_state,
-    // syscon,
-    wrap_peripheral,
-    // wrap_peripheral_with_state,
-};
+// use crate::{ raw,};
 
 // UM says:
 // NOTE: The clock to analog controller module is enabled during boot time
 // by the boot loader and it should always stay enabled
 // wrap_peripheral_with_state!(UsbFsHost, USBFSH, usbfsh);
-wrap_peripheral!(AnaCtrl, ANACTRL, anactrl);
+crate::wrap_always_on_peripheral!(Anactrl, ANACTRL);
 
 // impl UsbFsHost<init_state::Disabled> {
 //     pub fn enabled(
@@ -44,7 +37,7 @@ wrap_peripheral!(AnaCtrl, ANACTRL, anactrl);
 //     }
 // }
 
-impl AnaCtrl {
+impl Anactrl {
     pub fn latch_fro_hf_to_usbfs(&mut self) {
         // "If this bit is set and the USB peripheral is enabled into full-speed
         // device mode, the USB block will provide FRO clock adjustments to

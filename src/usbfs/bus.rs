@@ -20,8 +20,7 @@ use usb_device::{Result, UsbDirection, UsbError};
 use usb_device::endpoint::{EndpointType, EndpointAddress};
 use usb_device::bus::{UsbBusAllocator, PollResult};
 use crate::raw::USB0;
-use crate::usbfs::device::UsbFsDev;
-use crate::states::init_state;
+use crate::usbfs::EnabledUsbfsDevice;
 
 use cortex_m_semihosting::{/*dbg,*/ hprintln};
 
@@ -56,12 +55,13 @@ pub struct UsbBus<PINS> {
 impl<PINS: UsbPins+Sync> UsbBus<PINS> {
     /// Constructs a new USB peripheral driver.
     // pub fn new(usb0: USB0, _pins: PINS) -> UsbBusAllocator<Self> {
-    pub fn new(usbfs: UsbFsDev<init_state::Enabled>, _pins: PINS) -> UsbBusAllocator<Self> {
+    // pub fn new(usbfs: UsbFsDev<init_state::Enabled>, _pins: PINS) -> UsbBusAllocator<Self> {
+    pub fn new(usbfsd: EnabledUsbfsDevice, _pins: PINS) -> UsbBusAllocator<Self> {
         use self::constants::NUM_ENDPOINTS;
 
         // TODO: "attach" or allocate the EndpointList
         let bus = UsbBus {
-            usb_regs: Mutex::new(usbfs.release()),
+            usb_regs: Mutex::new(usbfsd.release().0), // TODO: use names
             epl_regs: Mutex::new(endpoint_list::attach().unwrap()),
             ep_allocator: EndpointMemoryAllocator::new(),
             max_endpoint: 0,
