@@ -1,6 +1,6 @@
 use core::mem;
 use core::cmp::min;
-use cortex_m::interrupt::{self, Mutex, CriticalSection};
+use cortex_m::interrupt::{Mutex, CriticalSection};
 use usb_device::{Result, UsbError};
 use usb_device::endpoint::EndpointType;
 // use crate::usbfs::bus::constants::{
@@ -15,7 +15,7 @@ use crate::{
     read_endpoint_i, /*write_endpoint_i,*/ modify_endpoint_i,
 };
 use crate::raw::USB0;
-use cortex_m_semihosting::{dbg, hprintln};
+// use cortex_m_semihosting::{dbg, hprintln};
 // use vcell::VolatileCell;
 
 
@@ -63,12 +63,16 @@ impl Endpoint {
         }
     }
 
+    pub fn index(&self) -> u8 {self.index }
+
     pub fn ep_type(&self) -> Option<EndpointType> { self.ep_type }
 
     pub fn set_ep_type(&mut self, ep_type: EndpointType) { self.ep_type = Some(ep_type); }
 
     pub fn buf_addroff(&self, buf: &EndpointBuffer) -> u32 {
+        // need to be 64 byte aligned
         assert!(buf.addr() & ((1 << 6) - 1) == 0);
+        // the bits above 21:6 are stored in databufstart
         ((buf.addr() >> 6) & ((1 << 16) - 1)) as u32
     }
 
@@ -84,20 +88,28 @@ impl Endpoint {
         // hardware modifies the NBytes and Offset entries, need to change them back periodically
 
         if !self.is_out_buf_set() { return; };
-        // hprintln!("attempting reset out buf {}", self.index).ok();
         let buf = self.out_buf.as_ref().unwrap().borrow(cs);
         let addroff = self.buf_addroff(buf);
         let len = buf.len() as u32;
+        let i = self.index as usize;
 
-        modify_endpoint!(endpoint_list, epl, EP0OUT,
-            NBYTES: len,
-            ADDROFF: addroff,
-            // A: NotActive,
-            A: Active,
-            // D: Enabled,  // marked as R (i assume for reserved) for EP0
-            S: NotStalled
-        );
-        // hprintln!("...done attempting reset out buf {}", self.index).ok();
+        if i == 0 {
+            modify_endpoint!(endpoint_list, epl, EP0OUT,
+                NBYTES: len,
+                ADDROFF: addroff,
+                A: Active,
+                // D: Enabled,  // marked as R (i assume for reserved) for EP0
+                S: NotStalled
+            );
+        } else {
+            modify_endpoint_i!(endpoint_list, epl, i, 0, 0,
+                NBYTES: len,
+                ADDROFF: addroff,
+                A: Active,
+                D: Enabled,
+                S: NotStalled
+            );
+        }
     }
 
     // SETUP
@@ -132,13 +144,27 @@ impl Endpoint {
         let addroff = self.buf_addroff(buf);
         // let len = buf.len() as u32;
 
-        modify_endpoint!(endpoint_list, epl, EP0IN,
-            NBYTES: 0u32,
-            ADDROFF: addroff,
-            A: NotActive,
-            // D: Enabled,  // marked as R (i assume for reserved) for EP0
-            S: NotStalled
-        );
+        let i = self.index as usize;
+        if i == 0 {
+            modify_endpoint!(endpoint_list, epl, EP0IN,
+                NBYTES: 0u32,
+                ADDROFF: addroff,
+                A: NotActive,
+                D: Enabled,  // marked as R (i assume for reserved) for EP0
+                S: NotStalled
+            );
+        } else {
+            // hprintln!("resetting IN buf for ep {}", self.index).ok();
+            // hprintln!("before: 0x{:x}", read_endpoint_i!(endpoint_list, epl, i, 1, 0)).ok();
+            modify_endpoint_i!(endpoint_list, epl, i, 1, 0,
+                NBYTES: 0u32,
+                ADDROFF: addroff,
+                // A: NotActive,  // can't set NotActive for EP > 0
+                D: Enabled,
+                S: NotStalled
+            );
+            // hprintln!("after: 0x{:x}", read_endpoint_i!(endpoint_list, epl, i, 1, 0)).ok();
+        }
         // hprintln!("...done attempting reset in buf {}", self.index).ok();
     }
 
@@ -156,10 +182,10 @@ impl Endpoint {
         // assert!(self.index == 0);
         // assert!(ep_type == EndpointType::Control);
 
-        // usb.intstat.modify(|_, w| w.ep0out().set_bit());
-        // assert!(usb.intstat.read().ep0out().bit_is_clear());
-        // usb.intstat.modify(|_, w| w.ep0in().set_bit());
-        // assert!(usb.intstat.read().ep0in().bit_is_clear());
+        usb.intstat.modify(|_, w| w.ep0out().set_bit());
+        assert!(usb.intstat.read().ep0out().bit_is_clear());
+        usb.intstat.modify(|_, w| w.ep0in().set_bit());
+        assert!(usb.intstat.read().ep0in().bit_is_clear());
 
         self.reset_out_buf(cs, epl);
         if self.index == 0 {
@@ -169,64 +195,80 @@ impl Endpoint {
     }
 
     pub fn write(&self, buf: &[u8], cs: &CriticalSection, usb: &USB0, epl: &EndpointListInstance) -> Result<usize> {
-        // hprintln!("write {}B", buf.len());
-        interrupt::free(|cs| {
+        // Already have a critical section
+        // interrupt::free(|cs| {
             // let devcmdstat_r = usb.devcmdstat.read();
             // let intstat_r = usb.intstat.read();
 
-            let i = self.index;
+            let i = self.index as usize;
+
+            if !self.is_in_buf_set() {
+                // hprintln!("tried to write before setting IN buffer").ok();
+                return Err(UsbError::WouldBlock);
+            }
 
             let in_buf = self.in_buf.as_ref().unwrap().borrow(cs);
 
             if buf.len() > in_buf.capacity() {
+                // hprintln!("BufferOverflow in write/IN").ok();
                 return Err(UsbError::BufferOverflow);
             }
 
+            if usb.devcmdstat.read().setup().bit_is_set() {
+                // hprintln!("woops, want to write but setup bit is set").ok();
+            }
+
+            if i > 0 && read_endpoint_i!(endpoint_list, epl, i, 1, 0, A == Active) {
+                // NB: With this test in place, `bench_bulk_read` from
+                // TestClass fails.
+                //
+                // hprintln!("can't write yet, EP {} IN still active", i).ok();
+                // return Err(UsbError::WouldBlock);
+            }
             self.reset_in_buf(cs, epl);
             in_buf.write(buf);
 
             if i == 0 {
                 modify_endpoint!(endpoint_list, epl, EP0IN,
-                    NBYTES: buf.len() as u32
-                );
-
-                modify_endpoint!(endpoint_list, epl, EP0IN,
+                    NBYTES: buf.len() as u32,
                     A: Active
                 );
             } else {
-                modify_endpoint_i!(endpoint_list, epl, i as usize, 1, 0,
-                    NBYTES: buf.len() as u32
-                );
-
-                modify_endpoint_i!(endpoint_list, epl, i as usize, 1, 0,
+                modify_endpoint_i!(endpoint_list, epl, i, 1, 0,
+                    NBYTES: buf.len() as u32,
                     A: Active
                 );
             }
 
             // case of ACK in response to CtrlWriteNoDataStage
             // otherwise seems we don't catch the next SETUP packet
-            if (i == 0) && (buf.len() == 0) {
-                modify_endpoint!(endpoint_list, epl, EP0OUT, A: Active);
+            if (i == 0) && buf.is_empty() {
+                // modify_endpoint!(endpoint_list, epl, EP0OUT, A: Active);
+                self.reset_out_buf(cs, epl);
             }
             // hprintln!("wrote {:#x?}", buf).ok();
             // hprintln!("wrote {}B", buf.len()).unwrap();
             Ok(buf.len())
-        })
+        // })
     }
 
     pub fn read(&self, buf: &mut [u8], cs: &CriticalSection, usb: &USB0, epl: &EndpointListInstance) -> Result<usize> {
-        // hprintln!("read at most {}B", buf.len()).unwrap();
-        interrupt::free(|cs| {
+        // Already have a critical section
+        // interrupt::free(|cs| {
             let devcmdstat_r = usb.devcmdstat.read();
             let intstat_r = usb.intstat.read();
 
-            let i = self.index;
+            let i = self.index as usize;
+
+            if !self.is_out_buf_set() {
+                // hprintln!("tried to read before setting OUT buffer").ok();
+                return Err(UsbError::WouldBlock);
+            }
+
             if i == 0 {
-                if !intstat_r.ep0out().bit_is_set() {
-                    if !devcmdstat_r.setup().bit_is_set() {
-                        hprintln!("nothing to read").unwrap();
-                        return Err(UsbError::WouldBlock);
-                    }
+                if !(intstat_r.ep0out().bit_is_set() || devcmdstat_r.setup().bit_is_set()) {
+                    // hprintln!("nothing to read").unwrap();
+                    return Err(UsbError::WouldBlock);
                     // hprintln!("seemingly nothing to read, but got SETUP").unwrap();
                 }
 
@@ -234,19 +276,27 @@ impl Endpoint {
                     // hprintln!("setup").unwrap();
                     // assert!(intstat_r.ep0out().bit_is_set());  // de-activated, see above
 
+                    if !self.is_setup_buf_set() {
+                        // hprintln!("tried to read before setting OUT buffer").ok();
+                        return Err(UsbError::WouldBlock);
+                    }
+
                     let setup_buf = self.setup_buf.as_ref().unwrap().borrow(cs);
+                    if buf.len() < 8 {
+                        // hprintln!("so strange, trying to read less than 8 bytes from SETUP").ok();
+                        // hprintln!("passed read buf len = {}", buf.len()).ok();
+                        return Err(UsbError::WouldBlock);
+                    }
+                    // assert!(buf.len() >= 8);
                     setup_buf.read(&mut buf[..8]);
 
-                    // need any of these?
-                    // self.reset_in_buf(cs, epl);
-                    // self.reset_setup_buf(cs, epl);
-                    // self.reset_out_buf(cs, epl);
-
-                    // if usb.intstat.read().ep0out().bit_is_set() {
+                    if usb.intstat.read().ep0out().bit_is_set() {
                         usb.intstat.modify(|_, w| w.ep0out().set_bit());
                         assert!(usb.intstat.read().ep0out().bit_is_clear());
-                    // }
+                    }
 
+                    // UM is admant to clear all these bits *before*
+                    // clearing the DEVCMDSTAT.SETUP bit
                     modify_endpoint!(endpoint_list, epl, EP0OUT,
                         A: NotActive,
                         S: NotStalled
@@ -266,6 +316,11 @@ impl Endpoint {
                     // modify_endpoint!(endpoint_list, epl, EP0OUT,
                     //     A: Active
                     // );
+                    // if buf[7] == 0 {
+                    //     hprintln!("CtrlWriteNoDataStage").ok();
+                    //     self.reset_out_buf(cs, epl);
+                    // }
+                    self.reset_out_buf(cs, epl);
 
                     // hprintln!("read setup").unwrap();
                     Ok(8)
@@ -274,12 +329,6 @@ impl Endpoint {
                     let out_buf = self.out_buf.as_ref().unwrap().borrow(cs);
                     let nbytes = read_endpoint!(endpoint_list, epl, EP0OUT, NBYTES) as usize;
                     let count = min((out_buf.len() - nbytes) as usize, buf.len());
-
-                    // if count == 0 {
-                    //     hprintln!("received ZLP").unwrap();
-                    // } else {
-                    //     hprintln!("received count = {}, len = {}, nbytes = {}", count, out_buf.len(), nbytes).ok();
-                    // }
 
                     out_buf.read(&mut buf[..count]);
 
@@ -299,26 +348,35 @@ impl Endpoint {
             } else {
 
                 // need an ergonomic way to map i to register field
-                let ep_out_offset = i << 1;
+                let ep_out_offset = 2*i;
                 let ep_out_int = ((intstat_r.bits() >> ep_out_offset) & 0x1) != 0;
 
                 if !ep_out_int {
+                    // hprintln!("pseudo-unmotivated read").ok();
+                    return Err(UsbError::WouldBlock);
+                }
+
+                if read_endpoint_i!(endpoint_list, epl, i, 0, 0, A == Active) {
+                    // hprintln!("can't read yet, EP {} OUT still active", i).ok();
                     return Err(UsbError::WouldBlock);
                 }
 
                 let out_buf = self.out_buf.as_ref().unwrap().borrow(cs);
                 let nbytes = read_endpoint_i!(endpoint_list, epl, i as usize, 0, 0, NBYTES) as usize;
+
                 let count = min((out_buf.len() - nbytes) as usize, buf.len());
+                // hprintln!("nbytes = {}, out_buf.len = {}, count = {}",
+                //           nbytes, out_buf.len(), count).ok();
 
                 out_buf.read(&mut buf[..count]);
 
+                // unsafe { usb.intstat.write(|w| w.bits(intstat_r.bits() | (1u32 << ep_out_offset))) };
+                unsafe { usb.intstat.write(|w| w.bits(1u32 << ep_out_offset)) };
                 self.reset_out_buf(cs, epl);
-
-                unsafe { usb.intstat.write(|w| w.bits(intstat_r.bits() | (1u32 << ep_out_offset))) };
 
                 Ok(count)
             }
-        })
+        // })
     }
 
 }
@@ -331,7 +389,7 @@ impl EndpointTypeExt for EndpointType {
     fn bits(self) -> u8 {
         // recall, EndpointType is enum(Control, Isochronous, Bulk, Interrupt)
         const BITS: [u8; 4] = [0b01, 0b10, 0b00, 0b11];
-        return BITS[self as usize];
+        BITS[self as usize]
     }
 }
 

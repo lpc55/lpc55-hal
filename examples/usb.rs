@@ -3,7 +3,7 @@
 
 extern crate panic_semihosting;
 use cortex_m_rt::entry;
-use cortex_m_semihosting::{dbg, hprintln};
+// use cortex_m_semihosting::{dbg, hprintln};
 
 #[allow(unused_imports)]
 use hal::prelude::*;
@@ -18,8 +18,6 @@ use hal::usbfs::bus::UsbBus;
 
 #[entry]
 fn main() -> ! {
-    // let x: [u16; 3] = [1,2,3];
-    // let y = [1,2,3]::<[u16; 3]>;
     let dp = hal::raw::Peripherals::take().unwrap();
     let iocon = hal::iocon::wrap(dp.IOCON);
     let mut syscon = hal::syscon::wrap(dp.SYSCON);
@@ -78,7 +76,7 @@ fn main() -> ! {
         .serial_number("2019-10-10")
         .device_release(0x0123)
         // using default of 8 seems to work now
-        // .max_packet_size_0(64)
+        .max_packet_size_0(64)
         // .device_class(USB_CLASS_CDC)
         .build();
 
@@ -93,13 +91,13 @@ fn main() -> ! {
 
         match serial.read(&mut buf) {
             Ok(count) if count > 0 => {
-                hprintln!("received some data on the serial port!").ok();
+                // hprintln!("received some data on the serial port: {:?}", &buf[..count]).ok();
                 red_led.set_low().ok(); // Turn on
 
                 // Echo back in upper case
                 for c in buf[0..count].iter_mut() {
-                    if 0x61 <= *c && *c <= 0x7a {
-                        *c &= !0x20;
+                    if (0x61 <= *c && *c <= 0x7a) || (0x41 <= *c && *c <= 0x5a) {
+                        *c ^= 0x20;
                     }
                 }
 
@@ -112,6 +110,8 @@ fn main() -> ! {
                         _ => {},
                     }
                 }
+
+                // hprintln!("wrote it back").ok();
             }
             _ => {}
         }

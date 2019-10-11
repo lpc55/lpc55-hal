@@ -2,19 +2,15 @@
 #![no_std]
 
 extern crate panic_semihosting;
-use cortex_m::asm;
 use cortex_m_rt::entry;
-use cortex_m_semihosting::{dbg, hprintln};
 
 #[allow(unused_imports)]
 use hal::prelude::*;
 #[allow(unused_imports)]
 use lpc55s6x_hal as hal;
 
-use hal::{reg_read, reg_modify, dbg_reg_modify};
+use hal::{reg_read, reg_modify};
 
-use usbd_serial::{SerialPort, USB_CLASS_CDC};
-use usb_device::device::{UsbDeviceBuilder, UsbVidPid};
 use usb_device::test_class::TestClass;
 use hal::usbfs::bus::UsbBus;
 
@@ -24,16 +20,9 @@ fn main() -> ! {
     let iocon = hal::iocon::wrap(dp.IOCON);
     let mut syscon = hal::syscon::wrap(dp.SYSCON);
     let mut pmc = hal::pmc::wrap(dp.PMC);
-    let mut gpio = hal::gpio::wrap(dp.GPIO).enabled(&mut syscon);
 
     // BOARD_InitPins
     iocon.configure_pio_0_22_as_usb0_vbus();
-    let pins = hal::pins::Pins::take().unwrap();
-    // let usb0_vbus = pins.pio0_22;
-    let mut red_led = pins
-        .pio1_6
-        .into_gpio_pin(&mut gpio)
-        .into_output(hal::gpio::Level::High); // start turned off
 
     // Setup clocking
     reg_modify!(SYSCON, mainclksela, sel, enum_0x0); // FRO 12 MHz, was enum_0x3

@@ -11,7 +11,6 @@ use endpoint_memory::{
 
 pub mod endpoint_list;
 
-
 // move this into a submodule `bus` again?
 
 use core::marker::PhantomData;
@@ -26,7 +25,7 @@ use crate::states::init_state;
 
 use cortex_m_semihosting::{/*dbg,*/ hprintln};
 
-use crate::{read_endpoint, modify_endpoint};
+use crate::{read_endpoint, modify_endpoint, read_endpoint_i};
 
 // TODO: fixme
 pub trait UsbPins: Send { }
@@ -84,6 +83,11 @@ impl<PINS: UsbPins+Sync> UsbBus<PINS> {
 
 
 impl<PINS: Send+Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
+
+    // override the default (contrary to USB spec),
+    // as describe in the user manual
+    const QUIRK_SET_ADDRESS_BEFORE_STATUS: bool = true;
+
     fn alloc_ep(
         &mut self,
         ep_dir: UsbDirection,
@@ -93,7 +97,7 @@ impl<PINS: Send+Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
         _interval: u8) -> Result<EndpointAddress>
     {
         // let index = ep_addr.expect("implicit ep addresses not supported");
-        for index in ep_addr.map(|a| a.index()..a.index()+1).unwrap_or(1..self::constants::NUM_ENDPOINTS) {
+        for index in ep_addr.map(|a| a.index()..a.index() + 1).unwrap_or(1..self::constants::NUM_ENDPOINTS) {
             let ep = &mut self.endpoints[index];
 
             match ep.ep_type() {
@@ -106,18 +110,11 @@ impl<PINS: Send+Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
                 UsbDirection::Out if !ep.is_out_buf_set() => {
                     let size = max_packet_size;
                     let buffer = self.ep_allocator.allocate_buffer(size as _)?;
-                    // hprintln!(
-                    //     "alloc_ep allocated {}B for OUT buffer {} at {:x}",
-                    //     size, index, buffer.addr(),
-                    // ).ok();
                     ep.set_out_buf(buffer);
+                    assert!(ep.is_out_buf_set());
 
                     if index == 0 {
                         let setup = self.ep_allocator.allocate_buffer(8)?;
-                        // hprintln!(
-                        //     "alloc_ep allocated {}B for SETUP buffer {} at {:x}",
-                        //     size, index, setup.addr(),
-                        // ).ok();
                         ep.set_setup_buf(setup);
                     }
 
@@ -127,10 +124,6 @@ impl<PINS: Send+Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
                 UsbDirection::In if !ep.is_in_buf_set() => {
                     let size = max_packet_size;
                     let buffer = self.ep_allocator.allocate_buffer(size as _)?;
-                    // hprintln!(
-                    //     "alloc_ep allocated {}B for IN buffer {} at {:x}",
-                    //     size, index, buffer.addr(),
-                    // ).ok();
                     ep.set_in_buf(buffer);
 
                     return Ok(EndpointAddress::from_parts(index, ep_dir));
@@ -147,8 +140,6 @@ impl<PINS: Send+Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
     }
 
     fn enable(&mut self) {
-        // hprintln!("enabling usb bus").unwrap();
-
         interrupt::free(|cs| {
             let usb = self.usb_regs.borrow(cs);
             let epl = self.epl_regs.borrow(cs);
@@ -159,9 +150,11 @@ impl<PINS: Send+Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
                     max = index;
 
                     // these are guarded against `None.unwrap()` internally
-                    ep.reset_out_buf(cs, epl);
-                    ep.reset_in_buf(cs, epl);
-                    ep.reset_setup_buf(cs, epl);
+                    // but they are not set yet here
+                    // assert!(ep.is_out_buf_set());
+                    // ep.reset_out_buf(cs, epl);
+                    // ep.reset_in_buf(cs, epl);
+                    // ep.reset_setup_buf(cs, epl);
                 }
             }
             self.max_endpoint = max;
@@ -207,6 +200,11 @@ impl<PINS: Send+Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
             usb.devcmdstat.modify(|_, w| w
                 .dev_en().set_bit()
                 .dcon().set_bit()
+                // if this bit is not set, it seems like we sometimes
+                // miss an OUT interrupt, e.g. for CDC-ACM
+                // TODO: figure out if there's a logic error
+                .intonnak_ao().set_bit()
+                // .intonnak_ai().set_bit()
             );
         });
     }
@@ -224,6 +222,11 @@ impl<PINS: Send+Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
             for ep in self.endpoints.iter() {
                 ep.configure(cs, usb, epl);
             }
+
+            // // clear all interrupts
+            // unsafe {
+            //     usb.intstat.modify(|_, w| w.bits(!0));
+            // }
         });
     }
 
@@ -275,27 +278,32 @@ impl<PINS: Send+Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
                 ep_in_complete |= bit;
 
                 // EP0 needs manual toggling of Active bits
+                // Weeelll interesting, not changing this makes no difference
                 modify_endpoint!(endpoint_list, epl, EP0IN, A: NotActive);
                 // prevents OUT-DATA-NAK
                 modify_endpoint!(endpoint_list, epl, EP0OUT, A: Active);
             }
 
-            let mut i = 0;
+            // let mut i = 0;
             for ep in &self.endpoints[1..=self.max_endpoint] {
                 bit <<= 1;
-                i += 1;
-
-                // hprintln!("polling ep {}", i);
+                let i = ep.index();
 
                 // TODO: implement these endpoints
-                let ep_out_offset = i << 1;
-                let ep_in_offset = ep_out_offset + 1;
+                let ep_out_offset = 2*i;
+                let ep_in_offset = 2*i + 1;
 
                 let ep_out_int = ((intstat_r.bits() >> ep_out_offset) & 0x1) != 0;
                 if ep_out_int {
                     ep_out |= bit;
                     // hprintln!("OUT on EP {}", i).ok();
-                };
+                } else {
+                    let nbytes = read_endpoint_i!(endpoint_list, epl, i as usize, 0, 0, NBYTES) as usize;
+                    if (nbytes > 0) && (nbytes != 64) {
+                        // hprintln!("man, missed an interrupt! {}", nbytes).ok();
+                        // ep_out |= bit;
+                    }
+                }
 
                 let ep_in_int = ((intstat_r.bits() >> ep_in_offset) & 0x1) != 0;
                 if ep_in_int {
@@ -304,17 +312,11 @@ impl<PINS: Send+Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
                     // clear it
                     unsafe { usb.intstat.write(|w| w.bits(intstat_r.bits() | (1u32 << ep_in_offset))) };
                     // hprintln!("IN-COMPLETE on EP {}", i).ok();
+                    // ep.reset_in_buf(cs, epl);
                 };
-                // hprintln!("...done polling ep {}", i);
             }
 
             if (ep_out | ep_in_complete | ep_setup) != 0 {
-                // double-checking
-                // maybe unneccessary to ever look at INTSTAT.DEV_INT
-                // assert!(intstat_r.dev_int().bit_is_set());
-                // intstat.modify(|_, w| w.dev_int().set_bit());
-                // assert!(usb.intstat.read().dev_int().bit_is_clear());
-
                 PollResult::Data { ep_out, ep_in_complete, ep_setup }
             } else {
                 PollResult::None
@@ -348,6 +350,8 @@ impl<PINS: Send+Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
             // let usb = self.usb_regs.borrow(cs);
             let epl = self.epl_regs.borrow(cs);
 
+            // hprintln!("to do some stalling {}, direction {:?}",
+            //           stalled, ep_addr.direction()).ok();
             if self.is_stalled(ep_addr) == stalled {
                 return
             }

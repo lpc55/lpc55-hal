@@ -74,7 +74,7 @@ fn zero(instance: &Instance) {
 #[inline]
 fn new(addr: u32) -> Instance {
     let instance = Instance {
-        addr: addr,
+        addr,
         _marker: PhantomData,
     };
     zero(&instance);
@@ -426,7 +426,7 @@ pub mod register {
         ( $periph:path, $instance:expr, $i:expr, $dir:expr, $buffer:expr, $( $field:ident ),+ ) => {{
             #[allow(unused_imports)]
             use $periph::*;
-            let j = ($i << 2) + ($dir << 1) + $buffer;
+            let j = (($i - 1) << 2) + ($dir << 1) + $buffer;
             let val = (*$instance).EP[j].read();
             ( $({
                 #[allow(unused_imports)]
@@ -439,13 +439,13 @@ pub mod register {
             use $periph::*;
             #[allow(unused_imports)]
             use $periph::{EP::$field::{mask, offset, R::*, RW::*}};
-            let j = ($i << 2) + ($dir << 1) + $buffer;
+            let j = (($i - 1) << 2) + ($dir << 1) + $buffer;
             (((*$instance).EP[j].read() & mask) >> offset) $($cmp)*
         }};
         ( $periph:path, $instance:expr, $i:expr, $dir:expr, $buffer:expr ) => {{
             #[allow(unused_imports)]
             use $periph::{*};
-            let j = ($i << 2) + ($dir << 1) + $buffer;
+            let j = (($i - 1) << 2) + ($dir << 1) + $buffer;
             (*$instance).EP[j].read()
         }};
     }
@@ -508,7 +508,7 @@ pub mod register {
         ( $periph:path, $instance:expr, $i:expr, $dir:expr, $buffer:expr, $( $field:ident : $value:expr ),+ ) => {{
             #[allow(unused_imports)]
             use $periph::{*};
-            let j = ($i << 2) + ($dir << 1) + $buffer;
+            let j = (($i - 1) << 2) + ($dir << 1) + $buffer;
             #[allow(unused_imports)]
             (*$instance).EP[j].write(
                 ((*$instance).EP[j].read() & !( $({ use $periph::{EP::$field::mask}; mask }) | * ))
@@ -517,7 +517,7 @@ pub mod register {
         ( $periph:path, $instance:expr, $i:expr, $dir:expr, $buffer:expr, $fn:expr ) => {{
             #[allow(unused_imports)]
             use $periph::*;
-            let j = ($i << 2) + ($dir << 1) + $buffer;
+            let j = (($i - 1) << 2) + ($dir << 1) + $buffer;
             (*$instance).EP[j].write($fn((*$instance).EP[j].read()));
         }};
     }

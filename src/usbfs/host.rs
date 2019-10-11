@@ -31,7 +31,7 @@ impl<State> UsbFsHost<State> {
     pub fn is_enabled(&self, pmc: &pmc::Pmc, syscon: &syscon::Syscon) -> bool {
         syscon.is_clock_enabled(&self.raw) && pmc.is_powered(&self.raw)
     }
-    pub fn is_device_enabled(&mut self) -> bool {
+    pub fn is_device_enabled(&self) -> bool {
         self.raw.portmode.read().dev_enable().bit()
     }
 }

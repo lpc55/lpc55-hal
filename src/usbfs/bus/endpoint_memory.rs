@@ -9,7 +9,7 @@ use crate::usbfs::bus::constants::{
 };
 use usb_device::{Result, UsbError};
 
-use cortex_m_semihosting::{dbg, hprintln};
+// use cortex_m_semihosting::{dbg, hprintln};
 
 // It seems the USB peripheral is flexible about which SRAM to use.
 // - On the one hand, the USB HS has no access to regular SRAM, and
@@ -74,6 +74,10 @@ impl EndpointBuffer {
     pub fn len(&self) -> usize {
         self.0.len()
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.0.len() == 0
+    }
 }
 
 pub struct EndpointMemoryAllocator {
@@ -109,5 +113,11 @@ impl EndpointMemoryAllocator {
 
         // hprintln!("allocating at offset 0x{:x}, so address 0x{:x}", offset, addr).unwrap();
         Ok(EndpointBuffer::new(offset, size))
+    }
+}
+
+impl Default for EndpointMemoryAllocator {
+    fn default() -> Self {
+        EndpointMemoryAllocator::new()
     }
 }
