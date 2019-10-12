@@ -1,3 +1,5 @@
+use core::marker::PhantomData;
+
 /// Contains types that encode the state of hardware initialization
 ///
 /// The default state of peripherals is `Unknown`, which is not
@@ -6,8 +8,11 @@
 ///
 /// The exception are peripherals which are "always on", such as `Syscon`.
 pub mod init_state {
+    pub trait InitState {}
+
     /// Indicates that the state of the peripheral is not known
     pub struct Unknown;
+    impl InitState for Unknown {}
 
     /// Indicates that the hardware component is enabled
     ///
@@ -16,16 +21,57 @@ pub mod init_state {
     /// can use to keep data that is only available while enabled.
     ///
     pub struct Enabled<T = ()>(pub T);
+    impl InitState for Enabled {}
 
     /// Indicates that the hardware component is disabled
     pub struct Disabled;
+    impl InitState for Disabled {}
 }
 
 pub mod usbfs_mode {
+    pub trait UsbfsMode {}
+
     pub struct Unknown;
+    impl UsbfsMode for Unknown {}
     pub struct Device;
+    impl UsbfsMode for Device {}
     pub struct Host;
+    impl UsbfsMode for Host {}
 }
+
+pub mod clock_state {
+    pub trait ClockState {}
+
+    pub struct Configurable;
+    impl ClockState for Configurable {}
+
+    pub struct Frozen;
+    impl ClockState for Frozen {}
+}
+
+/// Using generics for this seems quite painful
+pub mod main_clock {
+    pub enum MainClock {
+        Unknown,
+        Fro12MHz,
+        Fro96MHz,
+    }
+    // pub trait MainClock {}
+
+    // pub struct Unknown;
+    // impl MainClock for Unknown {}
+
+    // pub struct Fro12Mhz;
+    // impl MainClock for Fro12Mhz {}
+
+    // pub struct Fro96Mhz;
+    // impl MainClock for Fro96Mhz {}
+}
+
+/// Application can only obtain this token from
+/// a frozen Clocks (clock-tree configuration) for
+/// which USB clocks have been configured properly.
+pub struct ValidUsbClockToken {pub(crate) __: PhantomData<()>}
 
 
 pub mod gpio {

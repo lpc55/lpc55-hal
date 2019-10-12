@@ -8,6 +8,7 @@ pub extern crate lpc55s6x_pac as raw;
 
 pub mod anactrl;
 pub mod clock;
+pub mod clocks;
 pub mod gpio;
 pub mod iocon;
 pub mod pins;
@@ -219,11 +220,10 @@ impl core::convert::From<(raw::Peripherals, raw::CorePeripherals)> for Periphera
 /// If you are using RTFM, prefer using `hal::<Peripheral>::from(<raw_peripheral>)`
 /// as needed.
 pub fn new() -> Peripherals {
-    let hal_peripherals = Peripherals::from((
+    Peripherals::from((
         raw::Peripherals::take().expect("raw device peripherals already taken elsewhere"),
         raw::CorePeripherals::take().expect("raw core peripherals already taken elsewhere"),
-    ));
-    hal_peripherals
+    ))
 }
 
 pub fn get_cycle_count() -> u32 {

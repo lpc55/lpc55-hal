@@ -9,7 +9,7 @@ macro_rules! wrap_always_on_peripheral {
         use crate::raw;
         // /// Entry point to the $hal_name API
         pub struct $hal_name {
-            raw: raw::$pac_name,
+            pub(crate) raw: raw::$pac_name,
         }
 
         pub fn wrap(raw: raw::$pac_name) -> $hal_name {

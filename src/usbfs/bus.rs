@@ -68,8 +68,11 @@ impl<PINS: UsbPins+Sync> UsbBus<PINS> {
             endpoints: unsafe {
                 let mut endpoints: [Endpoint; NUM_ENDPOINTS] = mem::uninitialized();
 
-                for i in 0..NUM_ENDPOINTS {
-                    endpoints[i] = Endpoint::new(i as u8);
+                // for i in 0..NUM_ENDPOINTS {
+                //     endpoints[i] = Endpoint::new(i as u8);
+                // }
+                for (i, endpoint) in endpoints.iter_mut().enumerate() {
+                    *endpoint = Endpoint::new(i as u8);
                 }
 
                 endpoints
@@ -96,7 +99,7 @@ impl<PINS: Send+Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
         max_packet_size: u16,
         _interval: u8) -> Result<EndpointAddress>
     {
-        // let index = ep_addr.expect("implicit ep addresses not supported");
+        // well this is clever but is it readable
         for index in ep_addr.map(|a| a.index()..a.index() + 1).unwrap_or(1..self::constants::NUM_ENDPOINTS) {
             let ep = &mut self.endpoints[index];
 

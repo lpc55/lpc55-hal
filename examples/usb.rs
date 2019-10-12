@@ -10,7 +10,7 @@ use hal::prelude::*;
 #[allow(unused_imports)]
 use lpc55s6x_hal as hal;
 
-use hal::{reg_read, reg_modify};
+// use hal::{reg_read, reg_modify};
 
 use usbd_serial::SerialPort;
 use usb_device::device::{UsbDeviceBuilder, UsbVidPid};
@@ -58,36 +58,22 @@ fn main() -> ! {
         .into_output(hal::gpio::Level::High); // start turned off
 
     // Setup clocking
-    reg_modify!(hal, SYSCON, mainclksela, sel, enum_0x0); // FRO 12 MHz, was enum_0x3
-    // either 48 MHz (div = 1, flashtim = 4) or 96 MHz (div = 0, flashtim = 8)
-    // dbg!(reg_read!(SYSCON, fmccr, flashtim));
-    // reg_modify!(SYSCON, fmccr, flashtim, flashtim4); // This is actually the reset value
-    // unsafe { reg_modify!(SYSCON, ahbclkdiv, div, 1u8) }; // This is actually the reset value
-    reg_modify!(hal, SYSCON, fmccr, flashtim, flashtim8); // This is not the reset value
-    unsafe { reg_modify!(hal, SYSCON, ahbclkdiv, div, 0u8) }; // This is not the reset value
-    while reg_read!(SYSCON, ahbclkdiv, reqflag, is_ongoing) {}
-    reg_modify!(hal, SYSCON, mainclksela, sel, enum_0x3); // FRO 96 MHz
+    let clocks = hal::clocks::Clocks::take().expect("Clocks already taken")
+        .use_fro96mhz_as_main(&mut syscon)
+        // try commenting this out
+        .configure_usb(&mut syscon)
+        .freeze()
+    ;
 
-    // Configure USB0 main clock
-    // reg_modify!(SYSCON, usb0clkdiv, halt, halt);
-    unsafe { reg_modify!(hal, SYSCON, usb0clkdiv, div, 1u8) };
-    reg_modify!(hal, SYSCON, usb0clkdiv, halt, run); // <-- toootally don't forget this ~groans~
-    reg_modify!(hal, SYSCON, usb0clksel, sel, enum_0x0); // FRO 96 MHz
-    while reg_read!(SYSCON, usb0clkdiv, reqflag, is_ongoing) {}  // never stops for div=1 *before* selecting it
+    // does not work
+    // let token = hal::states::ValidUsbClockToken{_private: core::marker::PhantomData};
+    let token = clocks.valid_usb_clock_token().expect("Clocks are not configured appropriately for USB");
 
-    // // Turn on USB0 PHY
-    // reg_modify!(PMC, pdruncfg0, pden_usbfsphy, poweredon);
-    // reg_modify!(SYSCON, ahbclkctrl1, usb0_dev, enable);
-
-    // // Switch USB0 to "device" mode (default is "host")
-    // reg_modify!(SYSCON, ahbclkctrl2, usb0_hosts, enable);
-    // reg_modify!(USBFSH, portmode, dev_enable, set_bit);
-    // reg_modify!(SYSCON, ahbclkctrl2, usb0_hosts, disable);
-
-    // // Turn on USB1 SRAM
-    // reg_modify!(SYSCON, ahbclkctrl2, usb1_ram, enable);
-
-    let usbfsd = hal.usbfs.enabled_as_device(&mut pmc, &mut syscon);
+    let usbfsd = hal.usbfs.enabled_as_device(
+        &mut pmc,
+        &mut syscon,
+        token,
+    );
 
     // let usb_bus = UsbBus::new(peripherals.USB0, (usb0_vbus,));
     let usb_bus = UsbBus::new(usbfsd, ());

@@ -45,15 +45,22 @@ impl EndpointBuffer {
     }
 
     pub fn read(&self, buf: &mut [u8]) {
-        // use iterators?
-        for i in 0..min(buf.len(), self.0.len()) {
-            buf[i] = self.0[i].get();
+        // for i in 0..min(buf.len(), self.0.len()) {
+        //     buf[i] = self.0[i].get();
+        // }
+        let count = min(buf.len(), self.0.len());
+        for (i, entry) in buf.iter_mut().enumerate().take(count) {
+            *entry = self.0[i].get();
         }
     }
 
     pub fn write(&self, buf: &[u8]) {
-        for i in 0..min(buf.len(), self.0.len()) {
-            self.0[i].set(buf[i]);
+        // for i in 0..min(buf.len(), self.0.len()) {
+        //     self.0[i].set(buf[i]);
+        // }
+        let count = min(buf.len(), self.0.len());
+        for (i, entry) in buf.iter().enumerate().take(count) {
+            self.0[i].set(*entry);
         }
     }
 

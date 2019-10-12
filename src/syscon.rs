@@ -16,7 +16,7 @@
 //     // UARTCLKDIV, UARTFRGDIV, UARTFRGMULT,
 // };
 
-use cortex_m_semihosting::dbg;
+// use cortex_m_semihosting::dbg;
 
 // use crate::raw;
 use crate::{clock, states::init_state};
@@ -58,86 +58,90 @@ impl Syscon {
 /// TODO: do this systematically
 /// By default, fro_12m is enabled in MAINCLKSELA
 impl Syscon {
-    pub fn get_main_clk(&self) -> u8 {
-        self.raw.mainclksela.read().sel().bits()
-    }
+    // pub fn get_main_clk(&self) -> u8 {
+    //     self.raw.mainclksela.read().sel().bits()
+    // }
 
-    pub fn get_num_wait_states(&self) -> u8 {
-        self.raw.fmccr.read().flashtim().bits()
-    }
+    // pub fn get_num_wait_states(&self) -> u8 {
+    //     self.raw.fmccr.read().flashtim().bits()
+    // }
 
-    pub fn set_num_wait_states(&mut self, num_wait_states: u8) {
-        self.raw.fmccr.modify(|_, w| unsafe { w.flashtim().bits(num_wait_states) } );
-    }
+    // pub fn set_num_wait_states(&mut self, num_wait_states: u8) {
+    //     self.raw.fmccr.modify(|_, w| unsafe { w.flashtim().bits(num_wait_states) } );
+    // }
 
-    pub fn set_ahbclkdiv(&self, div: u8) {
-        assert!(div >= 1);
-        // dbg!(self.raw.ahbclkdiv.read().div().bits());
-        self.raw.ahbclkdiv.modify(unsafe { |_, w| w.div().bits(div - 1) });
-        // dbg!(self.raw.ahbclkdiv.read().div().bits());
-    }
+    // pub fn set_ahbclkdiv(&self, div: u8) {
+    //     assert!(div >= 1);
+    //     // dbg!(self.raw.ahbclkdiv.read().div().bits());
+    //     self.raw.ahbclkdiv.modify(unsafe { |_, w| w.div().bits(div - 1) });
+    //     // dbg!(self.raw.ahbclkdiv.read().div().bits());
+    // }
 
-    pub fn fro_12m_as_main_clk(&mut self) {
-        // TODO: change these names in the PAC to their UM names
-        // e.g. enum_0x0 -> fro_12m etc.
-        self.raw.mainclksela.modify(|_, w| w.sel().enum_0x0());
-    }
+    // pub(crate) fn fro1mhz_as_main_clk(&mut self) {
+    //     self.raw.mainclksela.modify(|_, w| w.sel().enum_0x2());
+    // }
 
-    pub fn fro_hf_as_main_clk(&mut self) {
-        // 1. may have to anactrl_fro192m_ctrl_ena_96mhzclk
+    // pub(crate) fn fro12mz_as_main_clk(&mut self) {
+    //     // TODO: change these names in the PAC to their UM names
+    //     // e.g. enum_0x0 -> fro_12m etc.
+    //     self.raw.mainclksela.modify(|_, w| w.sel().enum_0x0());
+    // }
 
-        // 2. set voltage for 96MHz frequency
+    // pub(crate) fn fro96mhz_as_main_clk(&mut self) {
+    //     // 1. may have to anactrl_fro192m_ctrl_ena_96mhzclk
 
-        // 3. set flash access cycles
-        // formula is min(8, floor(9e-7*freq))
-        // /* see fsl_clock.c, CLOCK_SetFLASHAccessCyclesForFreq */
-        // in this case it's 8
-        let num_wait_states = 8;
-        self.set_num_wait_states(num_wait_states);
+    //     // 2. set voltage for 96MHz frequency
 
-        // TODO: change these names in the PAC to their UM names
-        // e.g. enum_0x0 -> fro_12m etc.
-        self.raw.mainclksela.modify(|_, w| w.sel().enum_0x3());
-        self.raw.mainclkselb.modify(|_, w| w.sel().enum_0x0());
-    }
+    //     // 3. set flash access cycles
+    //     // formula is min(8, floor(9e-7*freq))
+    //     // /* see fsl_clock.c, CLOCK_SetFLASHAccessCyclesForFreq */
+    //     // in this case it's 8
+    //     let num_wait_states = 8;
+    //     self.set_num_wait_states(num_wait_states);
 
-    /// TODO: Check if fro_hf is actually 96Mhz??
-    /// UM ANACTRL.FRO192M_CTRL.ENA_96MHZCLK says the 96Mhz clock
-    /// is disabled by default
-    pub fn fro_hf_as_usbfs_clk(&mut self) {
-        // 96 Mhz via changing main clock and sourcing that
-        // self.fro_hf_as_main_clk();
-        // self.raw.usb0clksel.modify(|_, w| w.sel().enum_0x0());
+    //     // TODO: change these names in the PAC to their UM names
+    //     // e.g. enum_0x0 -> fro_12m etc.
+    //     self.raw.mainclksela.modify(|_, w| w.sel().enum_0x3());
+    //     self.raw.mainclkselb.modify(|_, w| w.sel().enum_0x0());
+    // }
 
-        // Divide by n = 2 to get 48 Mhz (i.e., write (n - 1))
-        dbg!(self.raw.usb0clkdiv.read().div().bits());
-        self.raw
-            .usb0clkdiv
-            .modify(unsafe { |_, w| w.div().bits(0) });
-        dbg!(self.raw.usb0clkdiv.read().div().bits());
-        // Wait until the clock is stable (fsl_clock.c doesn't do this)
-        while self.raw.usb0clkdiv.read().reqflag().is_ongoing() {}
-        dbg!(self.raw.usb0clkdiv.read().div().bits());
+    // /// TODO: Check if fro_hf is actually 96Mhz??
+    // /// UM ANACTRL.FRO192M_CTRL.ENA_96MHZCLK says the 96Mhz clock
+    // /// is disabled by default
+    // pub fn fro_hf_as_usbfs_clk(&mut self) {
+    //     // 96 Mhz via changing main clock and sourcing that
+    //     // self.fro_hf_as_main_clk();
+    //     // self.raw.usb0clksel.modify(|_, w| w.sel().enum_0x0());
 
-        // Directly pick fro_hf as usbfs clock
-        self.raw.usb0clksel.modify(|_, w| w.sel().enum_0x3());
-    }
+    //     // Divide by n = 2 to get 48 Mhz (i.e., write (n - 1))
+    //     dbg!(self.raw.usb0clkdiv.read().div().bits());
+    //     self.raw
+    //         .usb0clkdiv
+    //         .modify(unsafe { |_, w| w.div().bits(0) });
+    //     dbg!(self.raw.usb0clkdiv.read().div().bits());
+    //     // Wait until the clock is stable (fsl_clock.c doesn't do this)
+    //     while self.raw.usb0clkdiv.read().reqflag().is_ongoing() {}
+    //     dbg!(self.raw.usb0clkdiv.read().div().bits());
 
-    pub fn is_enabled_usb0_hostm(&self) -> bool {
-        self.raw.ahbclkctrl2.read().usb0_hostm().is_enable()
-    }
+    //     // Directly pick fro_hf as usbfs clock
+    //     self.raw.usb0clksel.modify(|_, w| w.sel().enum_0x3());
+    // }
 
-    pub fn enable_usb0_hostm(&mut self) {
-        self.raw.ahbclkctrl2.modify(|_, w| w.usb0_hostm().enable());
-    }
+    // pub fn is_enabled_usb0_hostm(&self) -> bool {
+    //     self.raw.ahbclkctrl2.read().usb0_hostm().is_enable()
+    // }
 
-    pub fn is_enabled_usb0_hosts(&self) -> bool {
-        self.raw.ahbclkctrl2.read().usb0_hosts().is_enable()
-    }
+    // pub fn enable_usb0_hostm(&mut self) {
+    //     self.raw.ahbclkctrl2.modify(|_, w| w.usb0_hostm().enable());
+    // }
 
-    pub fn enable_usb0_hosts(&mut self) {
-        self.raw.ahbclkctrl2.modify(|_, w| w.usb0_hosts().enable());
-    }
+    // pub fn is_enabled_usb0_hosts(&self) -> bool {
+    //     self.raw.ahbclkctrl2.read().usb0_hosts().is_enable()
+    // }
+
+    // pub fn enable_usb0_hosts(&mut self) {
+    //     self.raw.ahbclkctrl2.modify(|_, w| w.usb0_hosts().enable());
+    // }
 }
 
 /// Internal trait for controlling peripheral clocks

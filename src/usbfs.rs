@@ -6,7 +6,9 @@ use crate::{
 use crate::states::{
     init_state,
     usbfs_mode,
+    ValidUsbClockToken,
 };
+// use crate::clocks::Clocks;
 
 use crate::reg_modify;
 
@@ -17,7 +19,7 @@ pub use crate::usbfs::bus::UsbBus;
 
 
 // Main struct
-pub struct Usbfs<State = init_state::Unknown, Mode = usbfs_mode::Unknown> {
+pub struct Usbfs<State: init_state::InitState = init_state::Unknown, Mode: usbfs_mode::UsbfsMode = usbfs_mode::Unknown> {
     pub(crate) raw_fsd: raw::USB0,
     pub(crate) raw_fsh: raw::USBFSH,
     _state: State,
@@ -38,7 +40,7 @@ impl Usbfs {
     }
 }
 
-impl<State, Mode> Usbfs<State, Mode> {
+impl<State: init_state::InitState, Mode: usbfs_mode::UsbfsMode> Usbfs<State, Mode> {
     pub fn release(self) -> (raw::USB0, raw::USBFSH) {
         (self.raw_fsd, self.raw_fsh)
     }
@@ -47,7 +49,9 @@ impl<State, Mode> Usbfs<State, Mode> {
         mut self,
         pmc: &mut pmc::Pmc,
         syscon: &mut syscon::Syscon,
+        _valid_usb_clock: ValidUsbClockToken,
     ) -> EnabledUsbfsDevice {
+
         // turn on USB0 PHY
         pmc.power_on(&mut self.raw_fsd);
 
@@ -96,7 +100,7 @@ impl EnabledUsbfsDevice {
     }
 }
 
-impl<State> Usbfs<State, usbfs_mode::Device> {
+impl<State: init_state::InitState> Usbfs<State, usbfs_mode::Device> {
     pub fn disabled(
         mut self,
         pmc: &mut pmc::Pmc,
