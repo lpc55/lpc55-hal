@@ -22,7 +22,7 @@ use usb_device::bus::{UsbBusAllocator, PollResult};
 use crate::raw::USB0;
 use crate::usbfs::EnabledUsbfsDevice;
 
-use cortex_m_semihosting::{/*dbg,*/ hprintln};
+// use cortex_m_semihosting::{/*dbg,*/ hprintln};
 
 use crate::{read_endpoint, modify_endpoint, read_endpoint_i};
 
@@ -385,7 +385,7 @@ impl<PINS: Send+Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
     }
 
     fn suspend(&self) {
-        hprintln!("suspend not implemented!").unwrap();
+        // hprintln!("suspend not implemented!").unwrap();
         // interrupt::free(|cs| {
         //      self.regs.borrow(cs).cntr.modify(|_, w| w
         //         .fsusp().set_bit()
@@ -394,7 +394,7 @@ impl<PINS: Send+Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
     }
 
     fn resume(&self) {
-        hprintln!("resume not implemented!").unwrap();
+        // hprintln!("resume not implemented!").unwrap();
         // interrupt::free(|cs| {
         //     self.regs.borrow(cs).cntr.modify(|_, w| w
         //         .fsusp().clear_bit()

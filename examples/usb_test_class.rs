@@ -2,6 +2,7 @@
 #![no_std]
 
 extern crate panic_semihosting;
+// extern crate panic_halt;
 use cortex_m_rt::entry;
 
 #[allow(unused_imports)]
@@ -11,12 +12,14 @@ use lpc55s6x_hal as hal;
 
 use usb_device::test_class::TestClass;
 use hal::usbfs::bus::UsbBus;
+use hal::clocks;
 
 #[entry]
 fn main() -> ! {
 
     let hal = hal::new();
 
+    let mut anactrl = hal.anactrl;
     let mut syscon = hal.syscon;
     let mut pmc = hal.pmc;
     let iocon = hal.iocon.enabled(&mut syscon);
@@ -25,16 +28,23 @@ fn main() -> ! {
 
     iocon.disabled(&mut syscon); // perfectionist ;)
 
-    let clocks = hal::clocks::Clocks::take().expect("Clocks already taken")
-        .use_fro96mhz_as_main(&mut syscon)
-        // try commenting this out
-        .configure_usb(&mut syscon)
-        .freeze()
-    ;
+    let clocks = hal::clocks::ClockRequirements::default()
+        // .fro96mhz_main_clock()
+        .system_freq(12.mhz())
+        .support_usbfs()
+        .configure(&mut anactrl, &mut pmc, &mut syscon)
+        .expect("Clock configuration failed");
 
-    let token = clocks.valid_usb_clock_token().expect("Clocks are not configured appropriately for USB");
+    // cortex_m_semihosting::hprintln!("{:?}", clocks).ok();
 
-    let usbfsd = hal.usbfs.enabled_as_device(&mut pmc, &mut syscon, token);
+    let token = clocks.support_usbfs_token().expect(
+        "Fro96MHz is not enabled or CPU freq below 12MHz, both of which the USB needs");
+
+    let usbfsd = hal.usbfs.enabled_as_device(
+        &mut anactrl,
+        &mut pmc,
+        &mut syscon,
+        token);
 
     let usb_bus = UsbBus::new(usbfsd, ());
     let mut test = TestClass::new(&usb_bus);

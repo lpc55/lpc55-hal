@@ -225,7 +225,7 @@ impl Endpoint {
                 // TestClass fails.
                 //
                 // hprintln!("can't write yet, EP {} IN still active", i).ok();
-                // return Err(UsbError::WouldBlock);
+                return Err(UsbError::WouldBlock);
             }
             self.reset_in_buf(cs, epl);
             in_buf.write(buf);

@@ -39,6 +39,7 @@ pub mod usbfs_mode {
     impl UsbfsMode for Host {}
 }
 
+// this should be called clock-tree or similar
 pub mod clock_state {
     pub trait ClockState {}
 
@@ -51,8 +52,9 @@ pub mod clock_state {
 
 /// Using generics for this seems quite painful
 pub mod main_clock {
+    #[derive(Copy, Clone, Debug)]
     pub enum MainClock {
-        Unknown,
+        // Unknown,
         Fro12MHz,
         Fro96MHz,
     }
@@ -71,7 +73,8 @@ pub mod main_clock {
 /// Application can only obtain this token from
 /// a frozen Clocks (clock-tree configuration) for
 /// which USB clocks have been configured properly.
-pub struct ValidUsbClockToken {pub(crate) __: PhantomData<()>}
+pub struct ClocksSupportUsbfsToken {pub(crate) __: PhantomData<()>}
+// pub struct ValidUsbClockToken {pub(crate) __: PhantomData<()>}
 
 
 pub mod gpio {

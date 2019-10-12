@@ -42,11 +42,12 @@ fn main() -> ! {
     let hal = hal::new();
     // let hal2 = hal::new();  // panics...
 
-    let mut syscon = hal.syscon;
+    let mut anactrl = hal.anactrl;
     let mut pmc = hal.pmc;
+    let mut syscon = hal.syscon;
 
-    let iocon = hal.iocon.enabled(&mut syscon);
     let mut gpio = hal.gpio.enabled(&mut syscon);
+    let iocon = hal.iocon.enabled(&mut syscon);
 
     // BOARD_InitPins
     iocon.configure_pio_0_22_as_usb0_vbus();
@@ -57,19 +58,17 @@ fn main() -> ! {
         .into_gpio_pin(&mut gpio)
         .into_output(hal::gpio::Level::High); // start turned off
 
-    // Setup clocking
-    let clocks = hal::clocks::Clocks::take().expect("Clocks already taken")
-        .use_fro96mhz_as_main(&mut syscon)
-        // try commenting this out
-        .configure_usb(&mut syscon)
-        .freeze()
-    ;
+    let clocks = hal::clocks::ClockRequirements::default()
+        .system_freq(48.mhz())
+        .support_usbfs()
+        .configure(&mut anactrl, &mut pmc, &mut syscon)
+        .expect("Clock configuration failed");
 
-    // does not work
-    // let token = hal::states::ValidUsbClockToken{_private: core::marker::PhantomData};
-    let token = clocks.valid_usb_clock_token().expect("Clocks are not configured appropriately for USB");
+    let token = clocks.support_usbfs_token().expect(
+        "Fro96MHz is not enabled or CPU freq below 12MHz, both of which the USB needs");
 
     let usbfsd = hal.usbfs.enabled_as_device(
+        &mut anactrl,
         &mut pmc,
         &mut syscon,
         token,
@@ -96,11 +95,13 @@ fn main() -> ! {
             continue;
         }
 
-        let mut buf = [0u8; 64];
+        let mut buf = [0u8; 512];
 
         match serial.read(&mut buf) {
             Ok(count) if count > 0 => {
+                assert!(count == 1);
                 // hprintln!("received some data on the serial port: {:?}", &buf[..count]).ok();
+                // cortex_m_semihosting::hprintln!("received:\n{}", core::str::from_utf8(&buf[..count]).unwrap()).ok();
                 red_led.set_low().ok(); // Turn on
 
                 // Echo back in upper case

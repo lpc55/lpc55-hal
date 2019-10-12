@@ -19,7 +19,7 @@ circle-ci = { repository = "nickray/lpc55s6x-hal" }
 [dependencies]
 bare-metal = "0.2"
 cortex-m = "0.6"
-cortex-m-semihosting = "0.3"
+# cortex-m-semihosting = "0.3"
 embedded-hal = { version = "0.2", features = ["unproven"] }
 
 lpc55s6x-pac = "0.0.5"
