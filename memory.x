@@ -12,10 +12,11 @@ MEMORY
   /* SRAM2 : ORIGIN = 0x20020000, LENGTH = 64K */
   /* SRAM3 : ORIGIN = 0x20030000, LENGTH = 64K */
 
-  /* USB1's SRAM can also be used */
-  /* But it's easier to set this origin and length */
-  /* as constants in code, instead of pulling it */
-  /* through from this linker file */
+  /* CASPER SRAM regions */
+  /* SRAMX0: ORIGIN = 0x1400_0000, LENGTH = 4K /1* to 0x1400_0FFF *1/ */
+  /* SRAMX1: ORIGIN = 0x1400_4000, LENGTH = 4K /1* to 0x1400_4FFF *1/ */
+
+  /* USB1 SRAM regin */
   /* USB1_SRAM : ORIGIN = 0x40100000, LENGTH = 16K */
 
   /* To define our own USB RAM section in one regular */

@@ -7,6 +7,7 @@ use embedded_hal as hal;
 pub extern crate lpc55s6x_pac as raw;
 
 pub mod anactrl;
+pub mod casper;
 pub mod clock;
 pub mod clocks;
 pub mod gpio;
@@ -34,6 +35,7 @@ use states::init_state;
 /// All the HAL peripherals
 pub use {
     anactrl::Anactrl,
+    casper::Casper,
     gpio::Gpio,
     iocon::Iocon,
     pmc::Pmc,
@@ -69,8 +71,10 @@ pub struct Peripherals {
     /// Analog control
     pub anactrl: anactrl::Anactrl,
 
+    /// Cryptographic Accelerator and Signal Processing Engine with RAM sharing
+    pub casper: casper::Casper,
+
     /// General-purpose I/O (GPIO)
-    ///
     pub gpio: gpio::Gpio, // <init_state::Unknown>,
 
     /// I/O configuration
@@ -173,6 +177,7 @@ impl Peripherals {
         Peripherals {
             // HAL peripherals
             anactrl: Anactrl::from(p.ANACTRL),
+            casper: Casper::from(p.CASPER),
             // NOTE(unsafe) The init state of the gpio peripheral is enabled,
             // thus it's safe to create an already initialized gpio port
             gpio: Gpio::from(p.GPIO),

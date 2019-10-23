@@ -24,7 +24,7 @@ use crate::usbfs::EnabledUsbfsDevice;
 
 // use cortex_m_semihosting::{/*dbg,*/ hprintln};
 
-use crate::{read_endpoint, modify_endpoint, read_endpoint_i};
+use crate::{read_endpoint, modify_endpoint, read_endpoint_i, read_out_endpoint_i, read_in_endpoint_i};
 
 // TODO: fixme
 pub trait UsbPins: Send { }
@@ -61,21 +61,20 @@ impl<PINS: UsbPins+Sync> UsbBus<PINS> {
 
         // TODO: "attach" or allocate the EndpointList
         let bus = UsbBus {
-            usb_regs: Mutex::new(usbfsd.release().0), // TODO: use names
+            usb_regs: Mutex::new(usbfsd.release().0),
             epl_regs: Mutex::new(endpoint_list::attach().unwrap()),
             ep_allocator: EndpointMemoryAllocator::new(),
             max_endpoint: 0,
-            endpoints: unsafe {
-                let mut endpoints: [Endpoint; NUM_ENDPOINTS] = mem::uninitialized();
+            endpoints: {
+                let mut endpoints: [mem::MaybeUninit<Endpoint>; NUM_ENDPOINTS] = unsafe {
+                    mem::MaybeUninit::uninit().assume_init()
+                };
 
-                // for i in 0..NUM_ENDPOINTS {
-                //     endpoints[i] = Endpoint::new(i as u8);
-                // }
                 for (i, endpoint) in endpoints.iter_mut().enumerate() {
-                    *endpoint = Endpoint::new(i as u8);
+                    *endpoint = mem::MaybeUninit::new(Endpoint::new(i as u8));
                 }
 
-                endpoints
+                unsafe { mem::transmute::<_, [Endpoint; NUM_ENDPOINTS]>(endpoints) }
             },
             pins: PhantomData,
         };
@@ -168,46 +167,22 @@ impl<PINS: Send+Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
                 usb.databufstart.modify(
                     |_, w| w.da_buf().bits(databufstart)
                 );
-                // hprintln!(
-                //     "databufstart: 0x{:x}, wrote 0x{:x}",
-                //     EP_MEM_PTR as usize,
-                //     usb.databufstart.read().da_buf().bits(),
-                // ).unwrap();
             };
 
             // EPLISTSTART
             unsafe {
                 let epliststart = epl.addr;
                 // needs to be 256 byte aligned
-                // assert!(epliststart & (256 - 1) == 0); // or epliststart as u8 == 0?
                 assert!(epliststart as u8 == 0);
                 usb.epliststart.modify(
                     |_, w| w.ep_list().bits(epliststart >> 8)
                 );
-                // hprintln!(
-                //     "epliststart: 0x{:x}, wrote 0x{:x}",
-                //     epliststart,
-                //     usb.epliststart.read().ep_list().bits(),
-                // ).unwrap();
             }
-
-            // let intstat = usb.intstat.read();
-            // let devcmdstat = usb.devcmdstat.read();
-
-            // dbg!(intstat.dev_int().bit_is_set());
-            // dbg!(intstat.ep0out().bit_is_set());
-            // dbg!(intstat.ep0in().bit_is_set());
-            // dbg!(devcmdstat.setup().bit_is_set());
 
             // ENABLE + CONNECT
             usb.devcmdstat.modify(|_, w| w
                 .dev_en().set_bit()
                 .dcon().set_bit()
-                // if this bit is not set, it seems like we sometimes
-                // miss an OUT interrupt, e.g. for CDC-ACM
-                // TODO: figure out if there's a logic error
-                .intonnak_ao().set_bit()
-                // .intonnak_ai().set_bit()
             );
         });
     }
@@ -218,24 +193,22 @@ impl<PINS: Send+Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
             let usb = self.usb_regs.borrow(cs);
             let epl = self.epl_regs.borrow(cs);
 
-            unsafe {
-                usb.devcmdstat.modify(|_, w| w.dev_addr().bits(0));
-            }
+            usb.devcmdstat.modify(|_, w| unsafe { w.dev_addr().bits(0) } );
 
             for ep in self.endpoints.iter() {
                 ep.configure(cs, usb, epl);
             }
 
-            // // clear all interrupts
-            // unsafe {
-            //     usb.intstat.modify(|_, w| w.bits(!0));
-            // }
+            // clear all interrupts
+            usb.intstat.write(|w| unsafe { w.bits(!0) } );
         });
     }
 
     fn set_device_address(&self, addr: u8) {
         interrupt::free(|cs| {
-            unsafe { self.usb_regs.borrow(cs).devcmdstat.modify(|_, w| w.dev_addr().bits(addr)) };
+            self.usb_regs.borrow(cs).devcmdstat.modify(|_, w| unsafe {
+                w.dev_addr().bits(addr)
+            });
         });
     }
 
@@ -268,54 +241,51 @@ impl<PINS: Send+Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
 
             // First handle endpoint 0 (the only control endpoint)
             if intstat_r.ep0out().bit_is_set() {
-                ep_out |= bit;
-            }
-
-            if devcmdstat_r.setup().bit_is_set() {
-                ep_setup |= bit;
+                if devcmdstat_r.setup().bit_is_set() {
+                    ep_setup |= bit;
+                } else { 
+                    ep_out |= bit;
+                }
             }
 
             if intstat_r.ep0in().bit_is_set() {
-                intstat.modify(|_, w| w.ep0in().set_bit());
+                intstat.write(|w| w.ep0in().set_bit());
                 assert!(intstat.read().ep0in().bit_is_clear());
                 ep_in_complete |= bit;
 
                 // EP0 needs manual toggling of Active bits
                 // Weeelll interesting, not changing this makes no difference
                 modify_endpoint!(endpoint_list, epl, EP0IN, A: NotActive);
+                // BELOW SEEMS NO LONGER NECESSARY!
                 // prevents OUT-DATA-NAK
-                modify_endpoint!(endpoint_list, epl, EP0OUT, A: Active);
+                // modify_endpoint!(endpoint_list, epl, EP0OUT, A: Active);
             }
 
-            // let mut i = 0;
+            // non-CONTROL
             for ep in &self.endpoints[1..=self.max_endpoint] {
                 bit <<= 1;
-                let i = ep.index();
+                let i = ep.index() as usize;
 
                 // TODO: implement these endpoints
                 let ep_out_offset = 2*i;
-                let ep_in_offset = 2*i + 1;
-
                 let ep_out_int = ((intstat_r.bits() >> ep_out_offset) & 0x1) != 0;
+                let ep_out_not_active = read_out_endpoint_i!(endpoint_list, epl, i, A == NotActive);
                 if ep_out_int {
                     ep_out |= bit;
-                    // hprintln!("OUT on EP {}", i).ok();
-                } else {
-                    let nbytes = read_endpoint_i!(endpoint_list, epl, i as usize, 0, 0, NBYTES) as usize;
-                    if (nbytes > 0) && (nbytes != 64) {
-                        // hprintln!("man, missed an interrupt! {}", nbytes).ok();
-                        // ep_out |= bit;
-                    }
+                    assert!(ep_out_not_active);
                 }
 
+                let ep_in_offset = 2*i + 1;
                 let ep_in_int = ((intstat_r.bits() >> ep_in_offset) & 0x1) != 0;
-                if ep_in_int {
+                // WHYY is this sometimes still active?
+                let ep_not_active = read_in_endpoint_i!(endpoint_list, epl, i, A == NotActive);
+                if ep_in_int && ep_not_active {
                     ep_in_complete |= bit;
-                    let intstat_r = usb.intstat.read();
                     // clear it
-                    unsafe { usb.intstat.write(|w| w.bits(intstat_r.bits() | (1u32 << ep_in_offset))) };
-                    // hprintln!("IN-COMPLETE on EP {}", i).ok();
-                    // ep.reset_in_buf(cs, epl);
+                    unsafe { usb.intstat.write(|w| w.bits(1u32 << ep_in_offset)) };
+                    assert!(
+                        read_in_endpoint_i!(endpoint_list, epl, i, A == NotActive)
+                    );
                 };
             }
 
@@ -333,7 +303,6 @@ impl<PINS: Send+Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
         interrupt::free(|cs| {
             let usb = self.usb_regs.borrow(cs);
             let epl = self.epl_regs.borrow(cs);
-
             self.endpoints[ep_addr.index()].read(buf, cs, usb, epl)
         })
     }
@@ -350,36 +319,32 @@ impl<PINS: Send+Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
 
     fn set_stalled(&self, ep_addr: EndpointAddress, stalled: bool) {
         interrupt::free(|cs| {
-            // let usb = self.usb_regs.borrow(cs);
             let epl = self.epl_regs.borrow(cs);
 
-            // hprintln!("to do some stalling {}, direction {:?}",
-            //           stalled, ep_addr.direction()).ok();
-            if self.is_stalled(ep_addr) == stalled {
-                return
-            }
+            if self.is_stalled(ep_addr) == stalled { return }
 
             match (stalled, ep_addr.direction()) {
-                (true, UsbDirection::In) => modify_endpoint!(endpoint_list, epl, EP0IN, S: Stalled),
-                (true, UsbDirection::Out) => modify_endpoint!(endpoint_list, epl, EP0OUT, S: Stalled),
-                (false, UsbDirection::In) => modify_endpoint!(endpoint_list, epl, EP0IN, S: NotStalled),
-                (false, UsbDirection::Out) => modify_endpoint!(endpoint_list, epl, EP0OUT, S: NotStalled),
+                (true, UsbDirection::In) => 
+                    modify_endpoint!(endpoint_list, epl, EP0IN, S: Stalled),
+                (true, UsbDirection::Out) =>
+                    modify_endpoint!(endpoint_list, epl, EP0OUT, S: Stalled),
+                (false, UsbDirection::In) => 
+                    modify_endpoint!(endpoint_list, epl, EP0IN, S: NotStalled),
+                (false, UsbDirection::Out) => 
+                    modify_endpoint!(endpoint_list, epl, EP0OUT, S: NotStalled),
             };
         });
     }
 
     fn is_stalled(&self, ep_addr: EndpointAddress) -> bool {
         interrupt::free(|cs| {
-            // let usb = self.usb_regs.borrow(cs);
             let epl = self.epl_regs.borrow(cs);
 
             match ep_addr.direction() {
-                UsbDirection::In => {
-                    return read_endpoint!(endpoint_list, epl, EP0IN, S == Stalled)
-                },
-                UsbDirection::Out => {
-                    return read_endpoint!(endpoint_list, epl, EP0OUT, S == Stalled)
-                },
+                UsbDirection::In => 
+                    read_endpoint!(endpoint_list, epl, EP0IN, S == Stalled),
+                UsbDirection::Out =>
+                    read_endpoint!(endpoint_list, epl, EP0OUT, S == Stalled),
             }
         })
     }
@@ -402,3 +367,4 @@ impl<PINS: Send+Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
         // });
     }
 }
+

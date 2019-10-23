@@ -105,73 +105,6 @@ pub unsafe fn steal() -> Instance {
     }
 }
 
-// #[cfg(not(feature = "nosync"))]
-// #[inline]
-// pub fn raw_attach(addr: Option<u32>) -> Option<Instance> {
-//     cortex_m::interrupt::free(|_| unsafe {
-//         if ENDPOINT_LIST_ATTACHED {
-//             None
-//         } else {
-//             ENDPOINT_LIST_ATTACHED = true;
-//             let addr = addr.unwrap_or(USB1_SRAM_ADDR);
-//             Some(new(addr))
-//         }
-//     })
-// }
-
-// #[cfg(not(feature = "nosync"))]
-// #[inline]
-// pub fn attach(buf: &RawEndpointList) -> Option<Instance> {
-//     use cortex_m_semihosting::{dbg, hprintln};
-//     cortex_m::interrupt::free(|_| unsafe {
-//         if ENDPOINT_LIST_ATTACHED {
-//             None
-//         } else {
-//             ENDPOINT_LIST_ATTACHED = true;
-//             hprintln!("buf[0] = {:x}, buf[1] = {:x}", buf[0], buf[1]).unwrap();
-//             // let buf_addr = &buf as *const _ as u32;
-//             let buf_addr = buf as *const _ as u32;
-//             hprintln!("addr inside `attach` = {:x}", buf_addr).unwrap();
-//             Some(new(buf_addr))
-//         }
-//     })
-// }
-
-// #[cfg(not(feature = "nosync"))]
-// #[inline]
-// /// Well well well, we should return the raw endpoint list
-// /// if it was passed in externally...
-// pub fn detach(instance: Instance) {
-//     cortex_m::interrupt::free(|_| unsafe {
-//         if ENDPOINT_LIST_ATTACHED  {
-//             ENDPOINT_LIST_ATTACHED = false;
-//         } else {
-//             panic!("Detached an endpoint list that was never attached.");
-//         }
-//     });
-// }
-
-// #[cfg(not(feature = "nosync"))]
-// #[inline]
-// pub unsafe fn steal(addr: Option<u32>) -> Instance {
-//     ENDPOINT_LIST_ATTACHED = true;
-//     new(addr.unwrap_or(USB1_SRAM_ADDR))
-// }
-
-// pub struct ResetValues {
-//     EP0OUT: u32,
-//     SETUP: u32,
-//     EP0IN: u32,
-//     EP: [u32; 4*5],
-// }
-
-// pub const reset: ResetValues = ResetValues {
-//     EP0OUT: 0x0000_0000,
-//     SETUP: 0x0000_0000,
-//     EP0IN: 0x0000_0000,
-//     EP: [0x0000_0000; 4*5],
-// };
-
 /// Endpoint 0 IN register
 pub mod EP0OUT {
 
@@ -422,6 +355,64 @@ pub mod register {
     // EPi IN buffer 1
     // using out = 0, in = 1
     #[macro_export]
+    macro_rules! read_out_endpoint_i {
+        ( $periph:path, $instance:expr, $i:expr, $( $field:ident ),+ ) => {{
+            #[allow(unused_imports)]
+            use $periph::*;
+            let j = (($i - 1) << 2);
+            let val = (*$instance).EP[j].read();
+            ( $({
+                #[allow(unused_imports)]
+                use $periph::{EP::$field::{mask, offset, R::*, RW::*}};
+                (val & mask) >> offset
+            }) , *)
+        }};
+        ( $periph:path, $instance:expr, $i:expr, $field:ident $($cmp:tt)* ) => {{
+            #[allow(unused_imports)]
+            use $periph::*;
+            #[allow(unused_imports)]
+            use $periph::{EP::$field::{mask, offset, R::*, RW::*}};
+            let j = (($i - 1) << 2);
+            (((*$instance).EP[j].read() & mask) >> offset) $($cmp)*
+        }};
+        ( $periph:path, $instance:expr, $i:expr) => {{
+            #[allow(unused_imports)]
+            use $periph::{*};
+            let j = (($i - 1) << 2);
+            (*$instance).EP[j].read()
+        }};
+    }
+
+    #[macro_export]
+    macro_rules! read_in_endpoint_i {
+        ( $periph:path, $instance:expr, $i:expr, $( $field:ident ),+ ) => {{
+            #[allow(unused_imports)]
+            use $periph::*;
+            let j = (($i - 1) << 2) + 2;
+            let val = (*$instance).EP[j].read();
+            ( $({
+                #[allow(unused_imports)]
+                use $periph::{EP::$field::{mask, offset, R::*, RW::*}};
+                (val & mask) >> offset
+            }) , *)
+        }};
+        ( $periph:path, $instance:expr, $i:expr,$field:ident $($cmp:tt)* ) => {{
+            #[allow(unused_imports)]
+            use $periph::*;
+            #[allow(unused_imports)]
+            use $periph::{EP::$field::{mask, offset, R::*, RW::*}};
+            let j = (($i - 1) << 2) + 2;
+            (((*$instance).EP[j].read() & mask) >> offset) $($cmp)*
+        }};
+        ( $periph:path, $instance:expr, $i:expr) => {{
+            #[allow(unused_imports)]
+            use $periph::{*};
+            let j = (($i - 1) << 2) + 2;
+            (*$instance).EP[j].read()
+        }};
+    }
+
+    #[macro_export]
     macro_rules! read_endpoint_i {
         ( $periph:path, $instance:expr, $i:expr, $dir:expr, $buffer:expr, $( $field:ident ),+ ) => {{
             #[allow(unused_imports)]
@@ -449,6 +440,26 @@ pub mod register {
             (*$instance).EP[j].read()
         }};
     }
+    
+    #[macro_export]
+    macro_rules! modify_endpoint_i {
+        ( $periph:path, $instance:expr, $i:expr, $dir:expr, $buffer:expr, $( $field:ident : $value:expr ),+ ) => {{
+            #[allow(unused_imports)]
+            use $periph::{*};
+            let j = (($i - 1) << 2) + ($dir << 1) + $buffer;
+            #[allow(unused_imports)]
+            (*$instance).EP[j].write(
+                ((*$instance).EP[j].read() & !( $({ use $periph::{EP::$field::mask}; mask }) | * ))
+                | $({ use $periph::{EP::$field::{mask, offset, W::*, RW::*}}; ($value << offset) & mask }) | *);
+        }};
+        ( $periph:path, $instance:expr, $i:expr, $dir:expr, $buffer:expr, $fn:expr ) => {{
+            #[allow(unused_imports)]
+            use $periph::*;
+            let j = (($i - 1) << 2) + ($dir << 1) + $buffer;
+            (*$instance).EP[j].write($fn((*$instance).EP[j].read()));
+        }};
+    }
+
 
     #[macro_export]
     macro_rules! write_endpoint {
@@ -467,24 +478,24 @@ pub mod register {
         }};
     }
 
-    #[macro_export]
-    macro_rules! write_endpoint_i {
-        ( $periph:path, $instance:expr, $i:expr, $dir:expr, $buffer:expr, $( $field:ident : $value:expr ),+ ) => {{
-            #[allow(unused_imports)]
-            use $periph::*;
-            let j = ($i << 2) + ($dir << 1) + $buffer;
-            #[allow(unused_imports)]
-            (*$instance).EP[j].write(
-                $({ use $periph::{EP::$field::{mask, offset, W::*, RW::*}}; ($value << offset) & mask }) | *
-            );
-        }};
-        ( $periph:path, $instance:expr, $i:expr, $dir:expr, $buffer:expr, $value:expr ) => {{
-            let j = ($i << 2) + ($dir << 1) + $buffer;
-            #[allow(unused_imports)]
-            use $periph::*;
-            (*$instance).EP[j].write($value);
-        }};
-    }
+    // #[macro_export]
+    // macro_rules! write_endpoint_i {
+    //     ( $periph:path, $instance:expr, $i:expr, $dir:expr, $buffer:expr, $( $field:ident : $value:expr ),+ ) => {{
+    //         #[allow(unused_imports)]
+    //         use $periph::*;
+    //         let j = ($i << 2) + ($dir << 1) + $buffer;
+    //         #[allow(unused_imports)]
+    //         (*$instance).EP[j].write(
+    //             $({ use $periph::{EP::$field::{mask, offset, W::*, RW::*}}; ($value << offset) & mask }) | *
+    //         );
+    //     }};
+    //     ( $periph:path, $instance:expr, $i:expr, $dir:expr, $buffer:expr, $value:expr ) => {{
+    //         let j = ($i << 2) + ($dir << 1) + $buffer;
+    //         #[allow(unused_imports)]
+    //         use $periph::*;
+    //         (*$instance).EP[j].write($value);
+    //     }};
+    // }
 
     #[macro_export]
     macro_rules! modify_endpoint {
@@ -500,25 +511,6 @@ pub mod register {
             #[allow(unused_imports)]
             use $periph::*;
             (*$instance).$reg.write($fn((*$instance).$reg.read()));
-        }};
-    }
-
-    #[macro_export]
-    macro_rules! modify_endpoint_i {
-        ( $periph:path, $instance:expr, $i:expr, $dir:expr, $buffer:expr, $( $field:ident : $value:expr ),+ ) => {{
-            #[allow(unused_imports)]
-            use $periph::{*};
-            let j = (($i - 1) << 2) + ($dir << 1) + $buffer;
-            #[allow(unused_imports)]
-            (*$instance).EP[j].write(
-                ((*$instance).EP[j].read() & !( $({ use $periph::{EP::$field::mask}; mask }) | * ))
-                | $({ use $periph::{EP::$field::{mask, offset, W::*, RW::*}}; ($value << offset) & mask }) | *);
-        }};
-        ( $periph:path, $instance:expr, $i:expr, $dir:expr, $buffer:expr, $fn:expr ) => {{
-            #[allow(unused_imports)]
-            use $periph::*;
-            let j = (($i - 1) << 2) + ($dir << 1) + $buffer;
-            (*$instance).EP[j].write($fn((*$instance).EP[j].read()));
         }};
     }
 
