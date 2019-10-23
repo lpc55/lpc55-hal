@@ -359,7 +359,7 @@ pub mod register {
         ( $periph:path, $instance:expr, $i:expr, $( $field:ident ),+ ) => {{
             #[allow(unused_imports)]
             use $periph::*;
-            let j = (($i - 1) << 2);
+            let j = ($i - 1) << 2;
             let val = (*$instance).EP[j].read();
             ( $({
                 #[allow(unused_imports)]
@@ -372,13 +372,13 @@ pub mod register {
             use $periph::*;
             #[allow(unused_imports)]
             use $periph::{EP::$field::{mask, offset, R::*, RW::*}};
-            let j = (($i - 1) << 2);
+            let j = ($i - 1) << 2;
             (((*$instance).EP[j].read() & mask) >> offset) $($cmp)*
         }};
         ( $periph:path, $instance:expr, $i:expr) => {{
             #[allow(unused_imports)]
             use $periph::{*};
-            let j = (($i - 1) << 2);
+            let j = ($i - 1) << 2;
             (*$instance).EP[j].read()
         }};
     }
@@ -440,7 +440,7 @@ pub mod register {
             (*$instance).EP[j].read()
         }};
     }
-    
+
     #[macro_export]
     macro_rules! modify_endpoint_i {
         ( $periph:path, $instance:expr, $i:expr, $dir:expr, $buffer:expr, $( $field:ident : $value:expr ),+ ) => {{

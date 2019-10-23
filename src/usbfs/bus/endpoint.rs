@@ -1,4 +1,3 @@
-use core::mem;
 use core::cmp::min;
 use cortex_m::interrupt::{Mutex, CriticalSection};
 use usb_device::{Result, UsbError};

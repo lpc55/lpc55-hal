@@ -10,6 +10,7 @@ use endpoint_memory::{
 };
 
 pub mod endpoint_list;
+pub mod endpoint_registers;
 
 // move this into a submodule `bus` again?
 
@@ -243,7 +244,7 @@ impl<PINS: Send+Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
             if intstat_r.ep0out().bit_is_set() {
                 if devcmdstat_r.setup().bit_is_set() {
                     ep_setup |= bit;
-                } else { 
+                } else {
                     ep_out |= bit;
                 }
             }
@@ -324,13 +325,13 @@ impl<PINS: Send+Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
             if self.is_stalled(ep_addr) == stalled { return }
 
             match (stalled, ep_addr.direction()) {
-                (true, UsbDirection::In) => 
+                (true, UsbDirection::In) =>
                     modify_endpoint!(endpoint_list, epl, EP0IN, S: Stalled),
                 (true, UsbDirection::Out) =>
                     modify_endpoint!(endpoint_list, epl, EP0OUT, S: Stalled),
-                (false, UsbDirection::In) => 
+                (false, UsbDirection::In) =>
                     modify_endpoint!(endpoint_list, epl, EP0IN, S: NotStalled),
-                (false, UsbDirection::Out) => 
+                (false, UsbDirection::Out) =>
                     modify_endpoint!(endpoint_list, epl, EP0OUT, S: NotStalled),
             };
         });
@@ -341,7 +342,7 @@ impl<PINS: Send+Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
             let epl = self.epl_regs.borrow(cs);
 
             match ep_addr.direction() {
-                UsbDirection::In => 
+                UsbDirection::In =>
                     read_endpoint!(endpoint_list, epl, EP0IN, S == Stalled),
                 UsbDirection::Out =>
                     read_endpoint!(endpoint_list, epl, EP0OUT, S == Stalled),
