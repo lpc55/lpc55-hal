@@ -1,25 +1,23 @@
-use core::cmp::min;
-use cortex_m::interrupt::{Mutex, CriticalSection};
-use usb_device::{Result, UsbError};
-use usb_device::endpoint::EndpointType;
-// use crate::usbfs::bus::constants::{
-//     UsbAccessType,
-// };
-// use crate::target::{UsbRegisters, usb, UsbAccessType};
-use crate::usbfs::bus::endpoint_memory::{EndpointBuffer, /*BufferDescriptor, EndpointMemoryAllocator*/};
-use super::endpoint_list;
-use super::endpoint_list::Instance as EndpointListInstance;
-use crate::{
-    read_endpoint, /*write_endpoint,*/ modify_endpoint,
-    read_endpoint_i, /*write_endpoint_i,*/ modify_endpoint_i,
-    read_out_endpoint_i,
-    read_in_endpoint_i,
+use core::{
+    cmp::min,
+    sync::atomic::{
+        compiler_fence, Ordering,
+    },
 };
+
+use cortex_m::interrupt::{Mutex, CriticalSection};
+
+use usb_device::{
+    Result,
+    UsbError,
+    endpoint::EndpointType,
+};
+use crate::usbfs::bus::endpoint_memory::{EndpointBuffer, /*BufferDescriptor, EndpointMemoryAllocator*/};
+use super::endpoint_registers;
+use super::endpoint_registers::Instance as EndpointRegistersInstance;
 use crate::raw::USB0;
 // use cortex_m_semihosting::{dbg, hprintln};
-// use vcell::VolatileCell;
-//
-use core::sync::atomic::{compiler_fence, Ordering};
+
 
 
 // macro_rules! dbgx {
@@ -72,11 +70,11 @@ impl Endpoint {
 
     pub fn set_ep_type(&mut self, ep_type: EndpointType) { self.ep_type = Some(ep_type); }
 
-    pub fn buf_addroff(&self, buf: &EndpointBuffer) -> u32 {
+    pub fn buf_addroff(&self, buf: &EndpointBuffer) -> u16 {
         // need to be 64 byte aligned
         assert!(buf.addr() & ((1 << 6) - 1) == 0);
         // the bits above 21:6 are stored in databufstart
-        ((buf.addr() >> 6) & ((1 << 16) - 1)) as u32
+        (buf.addr() >> 6) as u16
     }
 
     // OUT
@@ -87,30 +85,29 @@ impl Endpoint {
         // self.reset_out_buf();
     }
 
-    pub fn reset_out_buf(&self, cs: &CriticalSection, epl: &EndpointListInstance) {
+    pub fn reset_out_buf(&self, cs: &CriticalSection, epl: &EndpointRegistersInstance) {
         // hardware modifies the NBytes and Offset entries, need to change them back periodically
 
         if !self.is_out_buf_set() { return; };
         let buf = self.out_buf.as_ref().unwrap().borrow(cs);
         let addroff = self.buf_addroff(buf);
-        let len = buf.len() as u32;
+        let len = buf.len() as u16;
         let i = self.index as usize;
 
         if i == 0 {
-            modify_endpoint!(endpoint_list, epl, EP0OUT,
-                NBYTES: len,
-                ADDROFF: addroff,
-                A: Active,
-                // D: Enabled,  // marked as R (i assume for reserved) for EP0
-                S: NotStalled
+            epl.eps[0].ep_out[0].modify(|_, w| w
+                .nbytes().bits(len)
+                .addroff().bits(addroff)
+                .a().active()
+                .s().not_stalled()
             );
         } else {
-            modify_endpoint_i!(endpoint_list, epl, i, 0, 0,
-                NBYTES: len,
-                ADDROFF: addroff,
-                A: Active,
-                D: Enabled,
-                S: NotStalled
+            epl.eps[i].ep_out[0].modify(|_, w| w
+                .nbytes().bits(len)
+                .addroff().bits(addroff)
+                .a().active()
+                .d().enabled()
+                .s().not_stalled()
             );
         }
     }
@@ -122,13 +119,14 @@ impl Endpoint {
         self.setup_buf = Some(Mutex::new(buffer));
     }
 
-    pub fn reset_setup_buf(&self, cs: &CriticalSection, epl: &EndpointListInstance) {
+    pub fn reset_setup_buf(&self, cs: &CriticalSection, epl: &EndpointRegistersInstance) {
         // I think this only has to be called once, as hardware never
         // changes ADDROFF
         if !self.is_setup_buf_set() { return; };
         let buf = self.setup_buf.as_ref().unwrap().borrow(cs);
         let addroff = self.buf_addroff(buf);
-        modify_endpoint!(endpoint_list, epl, SETUP, ADDROFF: addroff);
+        // SETUP is "second ep0out buffer" --> ep_out[1]
+        epl.eps[0].ep_out[1].modify(|_, w| w.addroff().bits(addroff));
     }
 
     // IN
@@ -139,7 +137,7 @@ impl Endpoint {
         // self.reset_in_buf();
     }
 
-    pub fn reset_in_buf(&self, cs: &CriticalSection, epl: &EndpointListInstance) {
+    pub fn reset_in_buf(&self, cs: &CriticalSection, epl: &EndpointRegistersInstance) {
         // hardware modifies the NBytes and Offset entries, need to change them back periodically
 
         if !self.is_in_buf_set() { return; };
@@ -151,26 +149,23 @@ impl Endpoint {
 
         let i = self.index as usize;
         if i == 0 {
-            modify_endpoint!(endpoint_list, epl, EP0IN,
-                NBYTES: 0u32,
-                ADDROFF: addroff,
-                A: NotActive,
-                D: Enabled,  // marked as R (i assume for reserved) for EP0
-                S: NotStalled
+            epl.eps[0].ep_in[0].modify(|_, w| w
+                .nbytes().bits(0)
+                .addroff().bits(addroff)
+                .a().not_active()
+                .s().not_stalled()
             );
         } else {
-            // assert!(read_endpoint_i!(endpoint_list, epl, i, 1, 0, A == NotActive));
-            modify_endpoint_i!(endpoint_list, epl, i, 1, 0,
-                NBYTES: 0u32,
-                ADDROFF: addroff,
-                // A: NotActive,  // can't set NotActive for EP > 0
-                D: Enabled,
-                S: NotStalled
+            epl.eps[i].ep_in[0].modify(|_, w| w
+                .nbytes().bits(0)
+                .addroff().bits(addroff)
+                .d().enabled()
+                .s().not_stalled()
             );
         }
     }
 
-    pub fn configure(&self, cs: &CriticalSection, usb: &USB0, epl: &EndpointListInstance) {
+    pub fn configure(&self, cs: &CriticalSection, usb: &USB0, epl: &EndpointRegistersInstance) {
         let ep_type = match self.ep_type {
             Some(t) => t,
             None => { return },
@@ -191,7 +186,7 @@ impl Endpoint {
         self.reset_in_buf(cs, epl);
     }
 
-    pub fn write(&self, buf: &[u8], cs: &CriticalSection, usb: &USB0, epl: &EndpointListInstance) -> Result<usize> {
+    pub fn write(&self, buf: &[u8], cs: &CriticalSection, usb: &USB0, epl: &EndpointRegistersInstance) -> Result<usize> {
         let i = self.index as usize;
 
         if !self.is_in_buf_set() { return Err(UsbError::WouldBlock); }
@@ -206,9 +201,9 @@ impl Endpoint {
         //     // hprintln!("woops, want to write but setup bit is set").ok();
         // }
 
-        if i > 0 && read_endpoint_i!(endpoint_list, epl, i, 1, 0, A == Active) {
+        if i > 0 && epl.eps[i].ep_in[0].read().a().is_active() {
             // NB: With this test in place, `bench_bulk_read` from TestClass fails.
-            // cortex_m_semihosting::hprintln!("can't write yet, EP {} IN still active", i).ok();
+            cortex_m_semihosting::hprintln!("can't write yet, EP {} IN still active", i).ok();
             return Err(UsbError::WouldBlock);
         }
 
@@ -220,26 +215,18 @@ impl Endpoint {
 
         if i == 0 {
             self.reset_in_buf(cs, epl);
-            modify_endpoint!(endpoint_list, epl, EP0IN,
-                NBYTES: buf.len() as u32,
-                A: Active
+            epl.eps[0].ep_in[0].modify(|_, w| w
+                .nbytes().bits(buf.len() as u16)
+                .a().active()
             );
         } else {
-            modify_endpoint_i!(endpoint_list, epl, i, 1, 0,
-                NBYTES: buf.len() as u32,
-                ADDROFF: self.buf_addroff(in_buf),
-                // A: Active,
-                D: Enabled,
-                S: NotStalled
+            epl.eps[i].ep_in[0].modify(|_, w| w
+                .nbytes().bits(buf.len() as u16)
+                .addroff().bits(self.buf_addroff(in_buf))
+                .d().enabled()
+                .s().not_stalled()
+                .a().active()
             );
-            compiler_fence(Ordering::SeqCst);
-            modify_endpoint_i!(endpoint_list, epl, i, 1, 0,
-                A: Active
-            );
-            // modify_endpoint_i!(endpoint_list, epl, i, 1, 0,
-            //     NBYTES: buf.len() as u32,
-            //     A: Active
-            // );
         }
 
         // hprintln!("wrote {:#x?}", buf).ok();
@@ -247,7 +234,7 @@ impl Endpoint {
         Ok(buf.len())
     }
 
-    pub fn read(&self, buf: &mut [u8], cs: &CriticalSection, usb: &USB0, epl: &EndpointListInstance) -> Result<usize> {
+    pub fn read(&self, buf: &mut [u8], cs: &CriticalSection, usb: &USB0, epl: &EndpointRegistersInstance) -> Result<usize> {
         let devcmdstat_r = usb.devcmdstat.read();
         let intstat_r = usb.intstat.read();
 
@@ -278,12 +265,8 @@ impl Endpoint {
                 usb.intstat.write(|w| w.ep0out().set_bit());
 
                 // UM insists: clear all these bits *before* clearing DEVCMDSTAT.SETUP
-                modify_endpoint!(endpoint_list, epl, EP0OUT,
-                    A: NotActive, S: NotStalled
-                );
-                modify_endpoint!(endpoint_list, epl, EP0IN,
-                    A: NotActive, S: NotStalled
-                );
+                epl.eps[0].ep_out[0].modify(|_, w| w.a().not_active().s().not_stalled());
+                epl.eps[0].ep_in[0].modify(|_, w| w.a().not_active().s().not_stalled());
 
                 usb.intstat.write(|w| w.ep0in().set_bit());
                 assert!(usb.intstat.read().ep0in().bit_is_clear());
@@ -297,7 +280,7 @@ impl Endpoint {
 
             } else {
                 let out_buf = self.out_buf.as_ref().unwrap().borrow(cs);
-                let nbytes = read_endpoint!(endpoint_list, epl, EP0OUT, NBYTES) as usize;
+                let nbytes = epl.eps[0].ep_out[0].read().nbytes().bits() as usize;
                 let count = min((out_buf.len() - nbytes) as usize, buf.len());
 
                 out_buf.read(&mut buf[..count]);
@@ -327,16 +310,16 @@ impl Endpoint {
                 return Err(UsbError::WouldBlock);
             }
 
-            if read_out_endpoint_i!(endpoint_list, epl, i, A == Active) {
+            if epl.eps[i].ep_out[0].read().a().is_active() {
                 // hprintln!("can't read yet, EP {} OUT still active", i).ok();
                 return Err(UsbError::WouldBlock);
             }
 
             let out_buf = self.out_buf.as_ref().unwrap().borrow(cs);
-            let nbytes = read_out_endpoint_i!(endpoint_list, epl, i, NBYTES) as usize;
+            let nbytes = epl.eps[i].ep_out[0].read().nbytes().bits() as usize;
 
             let count = min((out_buf.len() - nbytes) as usize, buf.len());
-            // hprintln!("nbytes = {}, out_buf.len = {}, count = {}",
+            // cortex_m_semihosting::hprintln!("nbytes = {}, out_buf.len = {}, count = {}",
             //           nbytes, out_buf.len(), count).ok();
 
             out_buf.read(&mut buf[..count]);

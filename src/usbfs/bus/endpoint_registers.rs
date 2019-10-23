@@ -55,12 +55,21 @@ pub unsafe fn steal() -> Instance {
     }
 }
 
-fn reset(instance: &Instance) {
-    (*instance).ep0out.reset();
-    (*instance).setup.reset();
-    (*instance).ep0in.reset();
-    (*instance).__.reset();
+// fn reset(instance: &Instance) {
+//     (*instance).ep0out.reset();
+//     (*instance).setup.reset();
+//     (*instance).ep0in.reset();
+//     (*instance).__.reset();
 
+//     for ep in (*instance).eps.iter() {
+//         ep.ep_out[0].reset();
+//         ep.ep_out[1].reset();
+//         ep.ep_in[0].reset();
+//         ep.ep_in[1].reset();
+//     }
+// }
+
+fn reset(instance: &Instance) {
     for ep in (*instance).eps.iter() {
         ep.ep_out[0].reset();
         ep.ep_out[1].reset();
@@ -69,20 +78,33 @@ fn reset(instance: &Instance) {
     }
 }
 
+// NOTE: It would be cleaner to use this approach, since the rule
+// for access are different for control vs non-control, and SETUP
+// is special-cased.
+// But then the indices into RegisterBlock.eps need to be offset
+// by 1, which is annoying.
+// TODO: Consider using a union.
+
+// #[doc = r"Register block"]
+// #[repr(C)]
+// pub struct RegisterBlock {
+//     // logical control endpoint
+//     pub ep0out: EPR,
+//     pub setup: EPR,
+//     pub ep0in: EPR,
+//     pub __: EPR,
+//     // logical non-control endpoints (four)
+//     pub eps: [EP; 4],
+// }
 
 #[doc = r"Register block"]
 #[repr(C)]
 pub struct RegisterBlock {
-    // logical control endpoint
-    pub ep0out: EPR,
-    pub setup: EPR,
-    pub ep0in: EPR,
-    pub __: EPR,
-    // logical non-control endpoints (four)
-    pub eps: [EP; 4],
+    // TODO: Consider turning this struct into a newtype with dereferencing
+    pub eps: [EP; 5],
 }
 
-#[doc = "logical non-control endpoint register"]
+#[doc = "logical endpoint register"]
 #[repr(C)]
 pub struct EP {
     // double-buffered, for single-buffered use only first
@@ -97,7 +119,7 @@ pub struct EPR {
 }
 
 
-pub mod ep {
+pub mod epr {
     impl super::EPR {
         pub fn modify<F>(&self, f: F) where
             for<'w> F: FnOnce(&R, &'w mut W) -> &'w mut W

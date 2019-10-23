@@ -9,23 +9,40 @@ use endpoint_memory::{
     EP_MEM_PTR,
 };
 
-pub mod endpoint_list;
 pub mod endpoint_registers;
 
 // move this into a submodule `bus` again?
 
-use core::marker::PhantomData;
-use core::mem;
-use cortex_m::interrupt::{self, Mutex};
-use usb_device::{Result, UsbDirection, UsbError};
-use usb_device::endpoint::{EndpointType, EndpointAddress};
-use usb_device::bus::{UsbBusAllocator, PollResult};
-use crate::raw::USB0;
-use crate::usbfs::EnabledUsbfsDevice;
+use core::{
+    marker::PhantomData,
+    mem,
+};
+
+use cortex_m::interrupt::{
+    self,
+    Mutex,
+};
+
+use usb_device::{
+    Result,
+    UsbDirection,
+    UsbError,
+    endpoint::{
+        EndpointType,
+        EndpointAddress,
+    },
+    bus::{
+        UsbBusAllocator,
+        PollResult,
+    },
+};
+
+use crate::{
+    raw::USB0,
+    usbfs::EnabledUsbfsDevice,
+};
 
 // use cortex_m_semihosting::{/*dbg,*/ hprintln};
-
-use crate::{read_endpoint, modify_endpoint, read_endpoint_i, read_out_endpoint_i, read_in_endpoint_i};
 
 // TODO: fixme
 pub trait UsbPins: Send { }
@@ -45,7 +62,7 @@ impl UsbPins for () {}
 pub struct UsbBus<PINS> {
     // TODO: use either a RegProxy, or perhaps a UsbFsDev<is::Enabled>
     usb_regs: Mutex<USB0>,
-    epl_regs: Mutex<endpoint_list::Instance>,
+    epl_regs: Mutex<endpoint_registers::Instance>,
     endpoints: [Endpoint; self::constants::NUM_ENDPOINTS],
     ep_allocator: EndpointMemoryAllocator,
     max_endpoint: usize,
@@ -55,15 +72,12 @@ pub struct UsbBus<PINS> {
 
 impl<PINS: UsbPins+Sync> UsbBus<PINS> {
     /// Constructs a new USB peripheral driver.
-    // pub fn new(usb0: USB0, _pins: PINS) -> UsbBusAllocator<Self> {
-    // pub fn new(usbfs: UsbFsDev<init_state::Enabled>, _pins: PINS) -> UsbBusAllocator<Self> {
     pub fn new(usbfsd: EnabledUsbfsDevice, _pins: PINS) -> UsbBusAllocator<Self> {
         use self::constants::NUM_ENDPOINTS;
 
-        // TODO: "attach" or allocate the EndpointList
         let bus = UsbBus {
             usb_regs: Mutex::new(usbfsd.release().0),
-            epl_regs: Mutex::new(endpoint_list::attach().unwrap()),
+            epl_regs: Mutex::new(endpoint_registers::attach().unwrap()),
             ep_allocator: EndpointMemoryAllocator::new(),
             max_endpoint: 0,
             endpoints: {
@@ -143,6 +157,7 @@ impl<PINS: Send+Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
     }
 
     fn enable(&mut self) {
+        cortex_m_semihosting::hprintln!("Enabling UsbBus").ok();
         interrupt::free(|cs| {
             let usb = self.usb_regs.borrow(cs);
             let epl = self.epl_regs.borrow(cs);
@@ -189,6 +204,7 @@ impl<PINS: Send+Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
     }
 
     fn reset(&self) {
+        cortex_m_semihosting::hprintln!("Resetting UsbBus").ok();
         interrupt::free(|cs| {
             // set device address to 0
             let usb = self.usb_regs.borrow(cs);
@@ -206,6 +222,7 @@ impl<PINS: Send+Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
     }
 
     fn set_device_address(&self, addr: u8) {
+        cortex_m_semihosting::hprintln!("Setting UsbBus device address {}", addr).ok();
         interrupt::free(|cs| {
             self.usb_regs.borrow(cs).devcmdstat.modify(|_, w| unsafe {
                 w.dev_addr().bits(addr)
@@ -221,6 +238,7 @@ impl<PINS: Send+Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
             let devcmdstat = &usb.devcmdstat;
             let intstat = &usb.intstat;
 
+            // Bus reset flag?
             if devcmdstat.read().dres_c().bit_is_set() {
                 devcmdstat.modify(|_, w| w.dres_c().set_bit());
                 assert!(devcmdstat.read().dres_c().bit_is_clear());
@@ -237,12 +255,11 @@ impl<PINS: Send+Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
 
             // NB: these are not "reader objects", but the actual value
             // of the registers at time of assignment :))
-            let devcmdstat_r = usb.devcmdstat.read();
-            let intstat_r = usb.intstat.read();
+            let intstat_r = intstat.read();
 
             // First handle endpoint 0 (the only control endpoint)
             if intstat_r.ep0out().bit_is_set() {
-                if devcmdstat_r.setup().bit_is_set() {
+                if devcmdstat.read().setup().bit_is_set() {
                     ep_setup |= bit;
                 } else {
                     ep_out |= bit;
@@ -256,7 +273,8 @@ impl<PINS: Send+Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
 
                 // EP0 needs manual toggling of Active bits
                 // Weeelll interesting, not changing this makes no difference
-                modify_endpoint!(endpoint_list, epl, EP0IN, A: NotActive);
+                // modify_endpoint!(endpoint_list, epl, EP0IN, A: NotActive);
+                epl.eps[0].ep_in[0].modify(|_, w| w.a().not_active());
                 // BELOW SEEMS NO LONGER NECESSARY!
                 // prevents OUT-DATA-NAK
                 // modify_endpoint!(endpoint_list, epl, EP0OUT, A: Active);
@@ -270,7 +288,7 @@ impl<PINS: Send+Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
                 // TODO: implement these endpoints
                 let ep_out_offset = 2*i;
                 let ep_out_int = ((intstat_r.bits() >> ep_out_offset) & 0x1) != 0;
-                let ep_out_not_active = read_out_endpoint_i!(endpoint_list, epl, i, A == NotActive);
+                let ep_out_not_active = epl.eps[i].ep_out[0].read().a().is_not_active();
                 if ep_out_int {
                     ep_out |= bit;
                     assert!(ep_out_not_active);
@@ -279,14 +297,12 @@ impl<PINS: Send+Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
                 let ep_in_offset = 2*i + 1;
                 let ep_in_int = ((intstat_r.bits() >> ep_in_offset) & 0x1) != 0;
                 // WHYY is this sometimes still active?
-                let ep_not_active = read_in_endpoint_i!(endpoint_list, epl, i, A == NotActive);
+                let ep_not_active = epl.eps[i].ep_in[0].read().a().is_not_active();
                 if ep_in_int && ep_not_active {
                     ep_in_complete |= bit;
                     // clear it
-                    unsafe { usb.intstat.write(|w| w.bits(1u32 << ep_in_offset)) };
-                    assert!(
-                        read_in_endpoint_i!(endpoint_list, epl, i, A == NotActive)
-                    );
+                    usb.intstat.write(|w| unsafe { w.bits(1u32 << ep_in_offset) } );
+                    assert!(epl.eps[i].ep_in[0].read().a().is_not_active());
                 };
             }
 
@@ -320,32 +336,25 @@ impl<PINS: Send+Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
 
     fn set_stalled(&self, ep_addr: EndpointAddress, stalled: bool) {
         interrupt::free(|cs| {
-            let epl = self.epl_regs.borrow(cs);
-
             if self.is_stalled(ep_addr) == stalled { return }
 
+            let ep = &self.epl_regs.borrow(cs).eps[ep_addr.index()];
             match (stalled, ep_addr.direction()) {
-                (true, UsbDirection::In) =>
-                    modify_endpoint!(endpoint_list, epl, EP0IN, S: Stalled),
-                (true, UsbDirection::Out) =>
-                    modify_endpoint!(endpoint_list, epl, EP0OUT, S: Stalled),
-                (false, UsbDirection::In) =>
-                    modify_endpoint!(endpoint_list, epl, EP0IN, S: NotStalled),
-                (false, UsbDirection::Out) =>
-                    modify_endpoint!(endpoint_list, epl, EP0OUT, S: NotStalled),
+                (true, UsbDirection::In) => ep.ep_in[0].modify(|_, w| w.s().stalled()),
+                (true, UsbDirection::Out) => ep.ep_out[0].modify(|_, w| w.s().stalled()),
+
+                (false, UsbDirection::In) => ep.ep_in[0].modify(|_, w| w.s().not_stalled()),
+                (false, UsbDirection::Out) => ep.ep_out[0].modify(|_, w| w.s().not_stalled()),
             };
         });
     }
 
     fn is_stalled(&self, ep_addr: EndpointAddress) -> bool {
         interrupt::free(|cs| {
-            let epl = self.epl_regs.borrow(cs);
-
+            let ep = &self.epl_regs.borrow(cs).eps[ep_addr.index()];
             match ep_addr.direction() {
-                UsbDirection::In =>
-                    read_endpoint!(endpoint_list, epl, EP0IN, S == Stalled),
-                UsbDirection::Out =>
-                    read_endpoint!(endpoint_list, epl, EP0OUT, S == Stalled),
+                UsbDirection::In => ep.ep_in[0].read().s().is_stalled(),
+                UsbDirection::Out => ep.ep_out[0].read().s().is_stalled(),
             }
         })
     }
