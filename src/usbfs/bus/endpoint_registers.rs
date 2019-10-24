@@ -1,11 +1,35 @@
 use core::marker::PhantomData;
+use crate::usbfs::bus::constants::NUM_ENDPOINTS;
 
-pub const USB1_SRAM_ADDR: u32 = 0x4010_0000;
+use super::constants::EP_MEM_ADDR;
 static mut ENDPOINT_REGISTERS_ATTACHED: bool = false;
 
 pub struct Instance {
     pub(crate) addr: u32,
     pub(crate) _marker: PhantomData<*const RegisterBlock>,
+}
+
+type EndpointRegisters = [EP; NUM_ENDPOINTS];
+
+#[doc = r"Register block"]
+#[repr(C)]
+pub struct RegisterBlock {
+    // TODO: Consider turning this struct into a newtype with dereferencing
+    pub eps: EndpointRegisters,
+}
+
+#[doc = "logical endpoint register"]
+#[repr(C)]
+pub struct EP {
+    // double-buffered, for single-buffered use only first
+    pub ep_out: [EPR; 2],
+    // double-buffered, for single-buffered use only first
+    pub ep_in: [EPR; 2],
+}
+
+#[doc = "physical endpoint register"]
+pub struct EPR {
+    register: vcell::VolatileCell<u32>,
 }
 
 impl core::ops::Deref for Instance {
@@ -23,17 +47,26 @@ impl Instance {
     pub fn addr(&self) -> u32 {
         self.addr
     }
+
+    fn reset(&mut self) {
+        for ep in self.eps.iter() {
+            ep.ep_out[0].reset();
+            ep.ep_out[1].reset();
+            ep.ep_in[0].reset();
+            ep.ep_in[1].reset();
+        }
+    }
+
 }
 
 fn new(addr: u32) -> Instance {
-    let instance = Instance {
+    let mut instance = Instance {
         addr,
         _marker: PhantomData,
     };
-    reset(&instance);
+    instance.reset();
     instance
 }
-
 
 pub fn attach() -> Option<Instance> {
     cortex_m::interrupt::free(|_| unsafe {
@@ -41,7 +74,7 @@ pub fn attach() -> Option<Instance> {
             None
         } else {
             ENDPOINT_REGISTERS_ATTACHED = true;
-            Some(new(USB1_SRAM_ADDR))
+            Some(new(EP_MEM_ADDR as u32))
         }
     })
 }
@@ -50,31 +83,8 @@ pub fn attach() -> Option<Instance> {
 pub unsafe fn steal() -> Instance {
     ENDPOINT_REGISTERS_ATTACHED = true;
     Instance {
-        addr: USB1_SRAM_ADDR,
+        addr: EP_MEM_ADDR as u32,
         _marker: PhantomData,
-    }
-}
-
-// fn reset(instance: &Instance) {
-//     (*instance).ep0out.reset();
-//     (*instance).setup.reset();
-//     (*instance).ep0in.reset();
-//     (*instance).__.reset();
-
-//     for ep in (*instance).eps.iter() {
-//         ep.ep_out[0].reset();
-//         ep.ep_out[1].reset();
-//         ep.ep_in[0].reset();
-//         ep.ep_in[1].reset();
-//     }
-// }
-
-fn reset(instance: &Instance) {
-    for ep in (*instance).eps.iter() {
-        ep.ep_out[0].reset();
-        ep.ep_out[1].reset();
-        ep.ep_in[0].reset();
-        ep.ep_in[1].reset();
     }
 }
 
@@ -96,27 +106,6 @@ fn reset(instance: &Instance) {
 //     // logical non-control endpoints (four)
 //     pub eps: [EP; 4],
 // }
-
-#[doc = r"Register block"]
-#[repr(C)]
-pub struct RegisterBlock {
-    // TODO: Consider turning this struct into a newtype with dereferencing
-    pub eps: [EP; 5],
-}
-
-#[doc = "logical endpoint register"]
-#[repr(C)]
-pub struct EP {
-    // double-buffered, for single-buffered use only first
-    pub ep_out: [EPR; 2],
-    // double-buffered, for single-buffered use only first
-    pub ep_in: [EPR; 2],
-}
-
-#[doc = "physical endpoint register"]
-pub struct EPR {
-    register: vcell::VolatileCell<u32>,
-}
 
 
 pub mod epr {
@@ -284,15 +273,15 @@ pub mod epr {
 
     #[derive(Clone, Copy, Debug, PartialEq)]
     pub enum SR {
-        NOT_STALLED,
-        STALLED,
+        NotStalled,
+        Stalled,
     }
     impl SR {
         #[inline]
         pub fn bits(&self) -> u8 {
             match *self {
-                SR::NOT_STALLED => 0,
-                SR::STALLED => 1,
+                SR::NotStalled => 0,
+                SR::Stalled => 1,
             }
         }
         #[allow(missing_docs)]
@@ -300,21 +289,21 @@ pub mod epr {
         #[inline]
         pub fn _from(value: bool) -> SR {
             match value {
-                false => SR::NOT_STALLED,
-                true => SR::STALLED,
+                false => SR::NotStalled,
+                true => SR::Stalled,
             }
         }
         pub fn is_not_stalled(&self) -> bool {
-            *self == SR::NOT_STALLED
+            *self == SR::NotStalled
         }
         pub fn is_stalled(&self) -> bool {
-            *self == SR::STALLED
+            *self == SR::Stalled
         }
     }
 
     pub enum SW {
-        NOT_STALLED,
-        STALLED,
+        NotStalled,
+        Stalled,
     }
     impl SW {
         #[allow(missing_docs)]
@@ -322,8 +311,8 @@ pub mod epr {
         #[inline]
         pub fn _bit(&self) -> bool {
             match *self {
-                SW::NOT_STALLED => false,
-                SW::STALLED => true,
+                SW::NotStalled => false,
+                SW::Stalled => true,
             }
         }
     }
@@ -338,11 +327,11 @@ pub mod epr {
         }
         #[inline]
         pub fn not_stalled(self) -> &'a mut W {
-            self.variant(SW::NOT_STALLED)
+            self.variant(SW::NotStalled)
         }
         #[inline]
         pub fn stalled(self) -> &'a mut W {
-            self.variant(SW::STALLED)
+            self.variant(SW::Stalled)
         }
         #[inline]
         pub fn bit(self, value: bool) -> &'a mut W {
@@ -428,15 +417,15 @@ pub mod epr {
 
     #[derive(Clone, Copy, Debug, PartialEq)]
     pub enum AR {
-        NOT_ACTIVE,
-        ACTIVE,
+        NotActive,
+        Active,
     }
     impl AR {
         #[inline]
         pub fn bits(&self) -> u8 {
             match *self {
-                AR::NOT_ACTIVE => 0,
-                AR::ACTIVE => 1,
+                AR::NotActive => 0,
+                AR::Active => 1,
             }
         }
         #[allow(missing_docs)]
@@ -444,21 +433,21 @@ pub mod epr {
         #[inline]
         pub fn _from(value: bool) -> AR {
             match value {
-                false => AR::NOT_ACTIVE,
-                true => AR::ACTIVE,
+                false => AR::NotActive,
+                true => AR::Active,
             }
         }
         pub fn is_not_active(&self) -> bool {
-            *self == AR::NOT_ACTIVE
+            *self == AR::NotActive
         }
         pub fn is_active(&self) -> bool {
-            *self == AR::ACTIVE
+            *self == AR::Active
         }
     }
 
     pub enum AW {
-        NOT_ACTIVE,
-        ACTIVE,
+        NotActive,
+        Active,
     }
     impl AW {
         #[allow(missing_docs)]
@@ -466,8 +455,8 @@ pub mod epr {
         #[inline]
         pub fn _bit(&self) -> bool {
             match *self {
-                AW::NOT_ACTIVE => false,
-                AW::ACTIVE => true,
+                AW::NotActive => false,
+                AW::Active => true,
             }
         }
     }
@@ -482,11 +471,11 @@ pub mod epr {
         }
         #[inline]
         pub fn not_active(self) -> &'a mut W {
-            self.variant(AW::NOT_ACTIVE)
+            self.variant(AW::NotActive)
         }
         #[inline]
         pub fn active(self) -> &'a mut W {
-            self.variant(AW::ACTIVE)
+            self.variant(AW::Active)
         }
         #[inline]
         pub fn bit(self, value: bool) -> &'a mut W {
@@ -558,7 +547,7 @@ pub mod epr {
         #[inline]
         pub fn nbytes(&self) -> NBYTESR {
             let bits = {
-                const MASK: u16 = (1 << 11) - 1;
+                const MASK: u16 = (1 << 10) - 1;
                 const OFFSET: u8 = 16;
                 ((self.bits >> OFFSET) & MASK as u32) as u16
             };
@@ -626,7 +615,7 @@ pub mod epr {
         #[doc = r"Reset value of the register"]
         #[inline]
         pub fn reset_value() -> W {
-            W { bits: 0 }
+            W { bits: 1 << 30 }
         }
         #[doc = r"Writes raw bits to the register"]
         #[inline]

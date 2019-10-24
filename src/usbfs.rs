@@ -53,7 +53,7 @@ impl<State: init_state::InitState, Mode: usbfs_mode::UsbfsMode> Usbfs<State, Mod
         anactrl: &mut anactrl::Anactrl,
         pmc: &mut pmc::Pmc,
         syscon: &mut syscon::Syscon,
-        // lock_fro_to_sof: bool,
+        // lock_fro_to_sof: bool, // we always lock to SOF
         _compatible_clocks: ClocksSupportUsbfsToken,
     ) -> EnabledUsbfsDevice {
 
@@ -138,7 +138,7 @@ impl<State: init_state::InitState> Usbfs<State, usbfs_mode::Device> {
     }
 }
 
-impl core::convert::From<(raw::USB0, raw::USBFSH)> for Usbfs {
+impl From<(raw::USB0, raw::USBFSH)> for Usbfs {
     fn from(raw: (raw::USB0, raw::USBFSH)) -> Self {
         Usbfs::new(raw.0, raw.1)
     }

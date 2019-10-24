@@ -1,40 +1,32 @@
-use core::slice;
-use core::cmp::min;
-use vcell::VolatileCell;
-use crate::usbfs::bus::constants::{
-    UsbAccessType,
-    // EP_MEM_ADDR,
-    EP_MEM_SIZE,
-    NUM_ENDPOINTS,
+use core::{
+    cmp::min,
+    slice,
 };
-use usb_device::{Result, UsbError};
 
-// use cortex_m_semihosting::{dbg, hprintln};
+use usb_device::{
+    Result,
+    UsbError,
+};
+use vcell::VolatileCell;
 
-// It seems the USB peripheral is flexible about which SRAM to use.
+use super::constants::{
+    UsbAccessType,
+    EP_MEM_ADDR,
+    EP_MEM_SIZE,
+    EP_REGISTERS_SIZE,
+};
+
+
+// The USB FS peripheral is flexible about which SRAM to use.
 // - On the one hand, the USB HS has no access to regular SRAM, and
-// must use "USB_SRAM" at 0x40100000 (size 0x4000, 4KB). We can also
+// must use "USB1_SRAM" at 0x4010_0000 (size 0x4000, 4KB). We can also
 // use this for USB FS.
 // - On the other, we could use a stack-allocated or static buffer.
 //   --> do this too later on
 
-// TODO TODO TODO
-// - for the regular SRAM case, instead of manual memory allocation,
-//   just create an array, take the `&'static mut`, and `mem::forget`
-//   the array. This is supposedly one of the intended uses of forget,
-//   and comes in handy here
-// - oops, arrays need to have size known at compile time. MEHHHH
-//
-
 pub struct EndpointBuffer(&'static mut [VolatileCell<UsbAccessType>]);
 
-/// Alternative would be make an explicit choice, and
-/// configure `memory.x` to exclude that region
-static mut EP_MEMORY: [u8; EP_MEM_SIZE] = [0; EP_MEM_SIZE];
-
-pub(crate) static mut EP_MEM_PTR: *mut VolatileCell<UsbAccessType> = unsafe {
-    &EP_MEMORY[0] as *const u8 as *mut u8 as *mut VolatileCell<UsbAccessType>
-};
+const EP_MEM_PTR: *mut VolatileCell<UsbAccessType> = EP_MEM_ADDR as *mut VolatileCell<UsbAccessType>;
 
 
 impl EndpointBuffer {
@@ -66,7 +58,7 @@ impl EndpointBuffer {
 
     pub fn offset(&self) -> usize {
         let buffer_address = self.0.as_ptr() as usize;
-        buffer_address - (unsafe { EP_MEM_PTR as usize } )
+        buffer_address - EP_MEM_PTR as usize
     }
 
     pub fn addr(&self) -> u32 {
@@ -75,10 +67,6 @@ impl EndpointBuffer {
 
     // blee... capacity
     pub fn capacity(&self) -> usize {
-        self.0.len()
-    }
-
-    pub fn len(&self) -> usize {
         self.0.len()
     }
 
@@ -93,17 +81,12 @@ pub struct EndpointMemoryAllocator {
 
 impl EndpointMemoryAllocator {
     pub fn new() -> Self {
-        Self {
-            // keep BufferDescriptors at top
-            // isn't this just NUM_ENDPOINTS * 4 though?
-            // next_free_offset: 0//NUM_ENDPOINTS * 8
-            next_free_offset: NUM_ENDPOINTS * 8
-        }
+        // keep endpoint registers at top
+        Self { next_free_offset: EP_REGISTERS_SIZE }
     }
 
     pub fn allocate_buffer(&mut self, size: usize) -> Result<EndpointBuffer> {
-        let ep_mem_addr = unsafe { EP_MEM_PTR as usize };
-        let next_free_addr = ep_mem_addr + self.next_free_offset;
+        let next_free_addr = EP_MEM_ADDR + self.next_free_offset;
 
         // buffers have to be 64 byte aligned
         let addr = if next_free_addr & 0x3f > 0 {
@@ -112,13 +95,10 @@ impl EndpointMemoryAllocator {
             next_free_addr
         };
 
-        let offset = addr - ep_mem_addr;
-        if offset + size > EP_MEM_SIZE {
-            return Err(UsbError::EndpointMemoryOverflow);
-        }
-        self.next_free_offset = offset + size;
+        let offset = addr - EP_MEM_ADDR;
+        if offset + size > EP_MEM_SIZE { return Err(UsbError::EndpointMemoryOverflow); }
 
-        // hprintln!("allocating at offset 0x{:x}, so address 0x{:x}", offset, addr).unwrap();
+        self.next_free_offset = offset + size;
         Ok(EndpointBuffer::new(offset, size))
     }
 }

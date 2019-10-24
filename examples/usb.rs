@@ -1,7 +1,8 @@
 #![no_main]
 #![no_std]
 
-extern crate panic_semihosting;
+// extern crate panic_semihosting;
+extern crate panic_halt;
 use cortex_m_rt::entry;
 // use cortex_m_semihosting::{dbg, hprintln};
 
@@ -12,7 +13,7 @@ use lpc55s6x_hal as hal;
 
 // use hal::{reg_read, reg_modify};
 
-use usbd_serial::SerialPort;
+use usbd_serial::{CdcAcmClass, SerialPort};
 use usb_device::device::{UsbDeviceBuilder, UsbVidPid};
 use hal::usbfs::bus::UsbBus;
 
@@ -62,10 +63,13 @@ fn main() -> ! {
         .system_freq(48.mhz())
         .support_usbfs()
         .configure(&mut anactrl, &mut pmc, &mut syscon)
-        .expect("Clock configuration failed");
+        .unwrap();
+        // .expect("Clock configuration failed");
 
-    let token = clocks.support_usbfs_token().expect(
-        "Fro96MHz is not enabled or CPU freq below 12MHz, both of which the USB needs");
+    let token = clocks.support_usbfs_token()
+        .unwrap();
+        // .expect(
+        //     "Fro96MHz is not enabled or CPU freq below 12MHz, both of which the USB needs");
 
     let usbfsd = hal.usbfs.enabled_as_device(
         &mut anactrl,
@@ -76,7 +80,8 @@ fn main() -> ! {
 
     // let usb_bus = UsbBus::new(peripherals.USB0, (usb0_vbus,));
     let usb_bus = UsbBus::new(usbfsd, ());
-    let mut serial = SerialPort::new(&usb_bus);
+    // let mut serial = SerialPort::new(&usb_bus);
+    let mut cdc_acm = CdcAcmClass::new(&usb_bus, 8);
 
     let mut usb_dev = UsbDeviceBuilder::new(&usb_bus, UsbVidPid(0x1209, 0xcc1d))
         .manufacturer("nickray")
@@ -89,44 +94,92 @@ fn main() -> ! {
         .build();
 
     // dbg!("main loop");
+    let mut need_zlp = false;
+    let mut buf = [0u8; 8];
+    let mut size = 0;
+    let mut buf_in_use = false;
     loop {
         // if !usb_dev.poll(&mut []) {
-        if !usb_dev.poll(&mut [&mut serial]) {
+        // if !usb_dev.poll(&mut [&mut serial]) {
+        if !usb_dev.poll(&mut [&mut cdc_acm]) {
             continue;
         }
 
-        let mut buf = [0u8; 512];
-
-        match serial.read(&mut buf) {
-            Ok(count) if count > 0 => {
-                assert!(count == 1);
-                // hprintln!("received some data on the serial port: {:?}", &buf[..count]).ok();
-                // cortex_m_semihosting::hprintln!("received:\n{}", core::str::from_utf8(&buf[..count]).unwrap()).ok();
-                red_led.set_low().ok(); // Turn on
-
-                // Echo back in upper case
-                for c in buf[0..count].iter_mut() {
-                    if (0x61 <= *c && *c <= 0x7a) || (0x41 <= *c && *c <= 0x5a) {
-                        *c ^= 0x20;
-                    }
-                }
-
-                let mut write_offset = 0;
-                while write_offset < count {
-                    match serial.write(&buf[write_offset..count]) {
-                        Ok(len) if len > 0 => {
-                            write_offset += len;
-                        },
-                        _ => {},
-                    }
-                }
-
-                // hprintln!("wrote it back").ok();
+        if !(buf_in_use || need_zlp) {
+            match cdc_acm.read_packet(&mut buf) {
+                Ok(count) => {
+                    size = count;
+                    buf_in_use = true;
+                    // dbg!(&buf[..count]);
+                    // if count > 1 {
+                    //     dbg!(count);
+                    // }
+                },
+                _ => {}
             }
-            _ => {}
         }
 
-        red_led.set_high().ok(); // Turn off
+        if buf_in_use {
+            red_led.set_low().ok(); // Turn on
+            match cdc_acm.write_packet(&buf[..size]) {
+                Ok(count) => {
+                    assert!(count == size);
+                    buf_in_use = false;
+                    need_zlp = size == 8;
+                },
+                _ => {}
+            }
+            red_led.set_high().ok(); // Turn off
+        }
+
+        if need_zlp {
+            match cdc_acm.write_packet(&[]) {
+                Ok(count) => {
+                    assert!(count == 0);
+                    need_zlp = false;
+                },
+                _ => {}
+            }
+        }
+
+
+        // let mut buf = [0u8; 512];
+
+        // match serial.read(&mut buf) {
+        //     Ok(count) if count > 0 => {
+        //         assert!(count == 1);
+        //         // hprintln!("received some data on the serial port: {:?}", &buf[..count]).ok();
+        //         // cortex_m_semihosting::hprintln!("received:\n{}", core::str::from_utf8(&buf[..count]).unwrap()).ok();
+        //         red_led.set_low().ok(); // Turn on
+
+        //         // cortex_m_semihosting::hprintln!("read {:?}", &buf[..count]).ok();
+        //         cortex_m_semihosting::hprintln!("read {:?}", count).ok();
+
+        //         // Echo back in upper case
+        //         for c in buf[0..count].iter_mut() {
+        //             if (0x61 <= *c && *c <= 0x7a) || (0x41 <= *c && *c <= 0x5a) {
+        //                 *c ^= 0x20;
+        //             }
+        //         }
+
+        //         let mut write_offset = 0;
+        //         while write_offset < count {
+        //             match serial.write(&buf[write_offset..count]) {
+        //                 Ok(len) if len > 0 => {
+        //                     write_offset += len;
+        //                     cortex_m_semihosting::hprintln!("wrote {:?}", len).ok();
+
+        //                 },
+        //                 _ => {},
+        //             }
+        //         }
+
+        //         // hprintln!("wrote it back").ok();
+        //     }
+        //     _ => {}
+        // }
+
+        // red_led.set_high().ok(); // Turn off
     }
 
 }

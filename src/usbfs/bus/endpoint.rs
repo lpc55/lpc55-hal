@@ -12,35 +12,13 @@ use usb_device::{
     UsbError,
     endpoint::EndpointType,
 };
-use crate::usbfs::bus::endpoint_memory::{EndpointBuffer, /*BufferDescriptor, EndpointMemoryAllocator*/};
-use super::endpoint_registers;
-use super::endpoint_registers::Instance as EndpointRegistersInstance;
+
 use crate::raw::USB0;
-// use cortex_m_semihosting::{dbg, hprintln};
 
-
-
-// macro_rules! dbgx {
-//     () => {
-//         hprintln!("[{}:{}]", file!(), line!()).unwrap();
-//     };
-//     ($val:expr) => {
-//         // Use of `match` here is intentional because it affects the lifetimes
-//         // of temporaries - https://stackoverflow.com/a/48732525/1063961
-//         match $val {
-//             tmp => {
-//                 hprintln!("[{}:{}] {} = {:#x?}",
-//                     file!(), line!(), stringify!($val), &tmp).unwrap();
-//                 tmp
-//             }
-//         }
-//     };
-//     // Trailing comma with single argument is ignored
-//     ($val:expr,) => { dbgx!($val) };
-//     ($($val:expr),+ $(,)?) => {
-//         ($(dbgx!($val)),+,)
-//     };
-// }
+use super::{
+    endpoint_memory::EndpointBuffer,
+    endpoint_registers::Instance as EndpointRegistersInstance,
+};
 
 /// Arbitrates access to the endpoint-specific registers and packet buffer memory.
 #[derive(Default)]
@@ -82,34 +60,24 @@ impl Endpoint {
 
     pub fn set_out_buf(&mut self, buffer: EndpointBuffer) {
         self.out_buf = Some(Mutex::new(buffer));
-        // self.reset_out_buf();
     }
 
     pub fn reset_out_buf(&self, cs: &CriticalSection, epl: &EndpointRegistersInstance) {
         // hardware modifies the NBytes and Offset entries, need to change them back periodically
-
         if !self.is_out_buf_set() { return; };
+
         let buf = self.out_buf.as_ref().unwrap().borrow(cs);
         let addroff = self.buf_addroff(buf);
-        let len = buf.len() as u16;
+        let len = buf.capacity() as u16;
         let i = self.index as usize;
 
-        if i == 0 {
-            epl.eps[0].ep_out[0].modify(|_, w| w
-                .nbytes().bits(len)
-                .addroff().bits(addroff)
-                .a().active()
-                .s().not_stalled()
-            );
-        } else {
-            epl.eps[i].ep_out[0].modify(|_, w| w
-                .nbytes().bits(len)
-                .addroff().bits(addroff)
-                .a().active()
-                .d().enabled()
-                .s().not_stalled()
-            );
-        }
+        epl.eps[i].ep_out[0].modify(|_, w| w
+            .nbytes().bits(len)
+            .addroff().bits(addroff)
+            .a().active()
+            .d().enabled() // technically, marked as R (for reserved?) for EP0
+            .s().not_stalled()
+        );
     }
 
     // SETUP
@@ -120,9 +88,9 @@ impl Endpoint {
     }
 
     pub fn reset_setup_buf(&self, cs: &CriticalSection, epl: &EndpointRegistersInstance) {
-        // I think this only has to be called once, as hardware never
-        // changes ADDROFF
+        // I think this only has to be called once, as hardware never changes ADDROFF
         if !self.is_setup_buf_set() { return; };
+
         let buf = self.setup_buf.as_ref().unwrap().borrow(cs);
         let addroff = self.buf_addroff(buf);
         // SETUP is "second ep0out buffer" --> ep_out[1]
@@ -134,7 +102,6 @@ impl Endpoint {
 
     pub fn set_in_buf(&mut self, buffer: EndpointBuffer) {
         self.in_buf = Some(Mutex::new(buffer));
-        // self.reset_in_buf();
     }
 
     pub fn reset_in_buf(&self, cs: &CriticalSection, epl: &EndpointRegistersInstance) {
@@ -142,12 +109,15 @@ impl Endpoint {
 
         if !self.is_in_buf_set() { return; };
 
-        // hprintln!("attempting reset in buf {}", self.index).ok();
         let buf = self.in_buf.as_ref().unwrap().borrow(cs);
         let addroff = self.buf_addroff(buf);
         // let len = buf.len() as u32;
 
         let i = self.index as usize;
+        if i > 0 {
+            assert!(epl.eps[i].ep_in[0].read().a().is_not_active());
+        }
+
         if i == 0 {
             epl.eps[0].ep_in[0].modify(|_, w| w
                 .nbytes().bits(0)
@@ -174,10 +144,9 @@ impl Endpoint {
         // no support for Isochronous endpoints
         assert!(ep_type != EndpointType::Isochronous);
 
-        usb.intstat.write(|w| w.ep0out().set_bit());
-        assert!(usb.intstat.read().ep0out().bit_is_clear());
-        usb.intstat.write(|w| w.ep0in().set_bit());
-        assert!(usb.intstat.read().ep0in().bit_is_clear());
+        // clear all the interrupts
+        usb.intstat.write(|w| unsafe { w.bits(!0) } );
+        assert!(usb.intstat.read().bits() == 0);
 
         self.reset_out_buf(cs, epl);
         if self.index == 0 {
@@ -187,39 +156,33 @@ impl Endpoint {
     }
 
     pub fn write(&self, buf: &[u8], cs: &CriticalSection, usb: &USB0, epl: &EndpointRegistersInstance) -> Result<usize> {
-        let i = self.index as usize;
-
         if !self.is_in_buf_set() { return Err(UsbError::WouldBlock); }
         let in_buf = self.in_buf.as_ref().unwrap().borrow(cs);
 
         if buf.len() > in_buf.capacity() {
-            cortex_m_semihosting::hprintln!("buffer overflow!").ok();
             return Err(UsbError::BufferOverflow);
         }
 
-        // if usb.devcmdstat.read().setup().bit_is_set() {
-        //     // hprintln!("woops, want to write but setup bit is set").ok();
-        // }
-
-        if i > 0 && epl.eps[i].ep_in[0].read().a().is_active() {
-            // NB: With this test in place, `bench_bulk_read` from TestClass fails.
-            cortex_m_semihosting::hprintln!("can't write yet, EP {} IN still active", i).ok();
-            return Err(UsbError::WouldBlock);
-        }
-
-        // now done below
-        // self.reset_in_buf(cs, epl);
-        in_buf.write(buf);
-
-        compiler_fence(Ordering::SeqCst);
+        let i = self.index as usize;
 
         if i == 0 {
-            self.reset_in_buf(cs, epl);
+            epl.eps[0].ep_in[0].modify(|_, w| w
+                .a().not_active()
+            );
+            in_buf.write(buf);
             epl.eps[0].ep_in[0].modify(|_, w| w
                 .nbytes().bits(buf.len() as u16)
+                .addroff().bits(self.buf_addroff(in_buf))
+                .s().not_stalled()
                 .a().active()
             );
         } else {
+            if epl.eps[i].ep_in[0].read().a().is_active() {
+                // NB: With this test in place, `bench_bulk_read` from TestClass fails.
+                // cortex_m_semihosting::hprintln!("can't write yet, EP {} IN still active", i).ok();
+                return Err(UsbError::WouldBlock);
+            }
+            in_buf.write(buf);
             epl.eps[i].ep_in[0].modify(|_, w| w
                 .nbytes().bits(buf.len() as u16)
                 .addroff().bits(self.buf_addroff(in_buf))
@@ -229,20 +192,67 @@ impl Endpoint {
             );
         }
 
-        // hprintln!("wrote {:#x?}", buf).ok();
-        // cortex_m_semihosting::hprintln!("wrote {}B", buf.len()).unwrap();
         Ok(buf.len())
     }
 
     pub fn read(&self, buf: &mut [u8], cs: &CriticalSection, usb: &USB0, epl: &EndpointRegistersInstance) -> Result<usize> {
-        let devcmdstat_r = usb.devcmdstat.read();
-        let intstat_r = usb.intstat.read();
-
-        let i = self.index as usize;
 
         if !self.is_out_buf_set() { return Err(UsbError::WouldBlock); }
 
-        if i == 0 {
+        let i = self.index as usize;
+
+        if i != 0 {
+            // need an ergonomic way to map i to register field
+            let ep_out_offset = i << 1;
+            let ep_out_mask = 1u32 << ep_out_offset;
+
+            compiler_fence(Ordering::SeqCst);
+            let ep_out_int = (usb.intstat.read().bits() & ep_out_mask) != 0;
+            compiler_fence(Ordering::SeqCst);
+
+            let ep_out_is_active = epl.eps[i].ep_out[0].read().a().is_active();
+
+            if ep_out_int && ep_out_is_active {
+                // cortex_m_semihosting::hprintln!("what the hello, EP {} signals interrupt but it's still active", i).ok();
+            }
+
+            if !ep_out_int || ep_out_is_active {
+                return Err(UsbError::WouldBlock);
+            }
+
+            compiler_fence(Ordering::SeqCst);
+
+            let out_buf = self.out_buf.as_ref().unwrap().borrow(cs);
+            let nbytes = epl.eps[i].ep_out[0].read().nbytes().bits() as usize;
+            compiler_fence(Ordering::SeqCst);
+
+            // let count = min((out_buf.capacity() - nbytes) as usize, buf.len());
+            let count = (out_buf.capacity() - nbytes) as usize;
+
+            out_buf.read(&mut buf[..count]);
+            compiler_fence(Ordering::SeqCst);
+
+            unsafe { usb.intstat.write(|w| w.bits(ep_out_mask)) };
+            compiler_fence(Ordering::SeqCst);
+
+            // self.reset_out_buf(cs, epl);
+            epl.eps[i].ep_out[0].modify(|_, w| w
+                .nbytes().bits(out_buf.capacity() as u16)
+                .addroff().bits(self.buf_addroff(out_buf))
+                .a().active()
+                // .d().enabled()
+                // .s().not_stalled()
+            );
+            compiler_fence(Ordering::SeqCst);
+
+            Ok(count)
+
+
+
+
+        } else  {
+            let intstat_r = usb.intstat.read();
+            let devcmdstat_r = usb.devcmdstat.read();
             if !(intstat_r.ep0out().bit_is_set() || devcmdstat_r.setup().bit_is_set()) {
                 return Err(UsbError::WouldBlock);
             }
@@ -252,15 +262,11 @@ impl Endpoint {
 
                 let setup_buf = self.setup_buf.as_ref().unwrap().borrow(cs);
                 if buf.len() < 8 {
-                    panic!("reading very small SETUP");
-                    return Err(UsbError::WouldBlock);
+                    // this should never occur
+                    return Err(UsbError::BufferOverflow);
                 }
                 setup_buf.read(&mut buf[..8]);
 
-                // if usb.intstat.read().ep0out().bit_is_set() {
-                //     usb.intstat.write(|w| w.ep0out().set_bit());
-                //     assert!(usb.intstat.read().ep0out().bit_is_clear());
-                // }
                 assert!(usb.intstat.read().ep0out().bit_is_set());
                 usb.intstat.write(|w| w.ep0out().set_bit());
 
@@ -281,55 +287,15 @@ impl Endpoint {
             } else {
                 let out_buf = self.out_buf.as_ref().unwrap().borrow(cs);
                 let nbytes = epl.eps[0].ep_out[0].read().nbytes().bits() as usize;
-                let count = min((out_buf.len() - nbytes) as usize, buf.len());
+                let count = min((out_buf.capacity() - nbytes) as usize, buf.len());
 
                 out_buf.read(&mut buf[..count]);
 
                 self.reset_out_buf(cs, epl);
-                // usb.intstat.modify(|_, w| w.ep0out().set_bit());
                 usb.intstat.write(|w| w.ep0out().set_bit());
 
-                // maybe remove this again...
-                // current issue: after (successful) "Get Device Descriptor",
-                // the following "Set Address" fails.
-                // if count == 0 {
-                //     modify_endpoint!(endpoint_list, epl, EP0OUT, A: NotActive);
-                // }
-
-                // dbg!("endof read out, count {}", count);
                 Ok(count)
             }
-        } else {
-
-            // need an ergonomic way to map i to register field
-            let ep_out_offset = 2*i;
-            let ep_out_int = ((intstat_r.bits() >> ep_out_offset) & 0x1) != 0;
-
-            if !ep_out_int {
-                // hprintln!("pseudo-unmotivated read").ok();
-                return Err(UsbError::WouldBlock);
-            }
-
-            if epl.eps[i].ep_out[0].read().a().is_active() {
-                // hprintln!("can't read yet, EP {} OUT still active", i).ok();
-                return Err(UsbError::WouldBlock);
-            }
-
-            let out_buf = self.out_buf.as_ref().unwrap().borrow(cs);
-            let nbytes = epl.eps[i].ep_out[0].read().nbytes().bits() as usize;
-
-            let count = min((out_buf.len() - nbytes) as usize, buf.len());
-            // cortex_m_semihosting::hprintln!("nbytes = {}, out_buf.len = {}, count = {}",
-            //           nbytes, out_buf.len(), count).ok();
-
-            out_buf.read(&mut buf[..count]);
-
-            // unsafe { usb.intstat.write(|w| w.bits(intstat_r.bits() | (1u32 << ep_out_offset))) };
-            unsafe { usb.intstat.write(|w| w.bits(1u32 << ep_out_offset)) };
-            compiler_fence(Ordering::SeqCst);
-            self.reset_out_buf(cs, epl);
-
-            Ok(count)
         }
     }
 
