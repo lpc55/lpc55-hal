@@ -11,11 +11,10 @@ use lpc55s6x_hal as hal;
 
 #[entry]
 fn main() -> ! {
-    let dp = hal::raw::Peripherals::take().unwrap();
+    let hal = hal::new();
 
-    let mut syscon = hal::syscon::wrap(dp.SYSCON);
-
-    let mut gpio = hal::gpio::wrap(dp.GPIO).enabled(&mut syscon);
+    let mut syscon = hal.syscon;
+    let mut gpio = hal.gpio.enabled(&mut syscon);
 
     let pins = hal::pins::Pins::take().unwrap();
 

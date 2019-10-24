@@ -22,14 +22,14 @@ use lpc55s6x_hal as hal;
 
 #[entry]
 fn main() -> ! {
-    let dp = hal::raw::Peripherals::take().unwrap();
-    let mut syscon = hal::syscon::wrap(dp.SYSCON);
-    let mut gpio = hal::gpio::wrap(dp.GPIO).enabled(&mut syscon);
+    let hal = hal::new();
+    let mut syscon = hal.syscon;
+    let mut gpio = hal.gpio.enabled(&mut syscon);
     let pins = hal::pins::Pins::take().unwrap();
     let fro1mhz = hal::syscon::Fro1MhzUtickClock::take()
         .unwrap()
         .enable(&mut syscon);
-    let mut utick = hal::utick::wrap(dp.UTICK0).enabled(&mut syscon, &fro1mhz);
+    let mut utick = hal::utick::Utick::from(hal.UTICK).enabled(&mut syscon, &fro1mhz);
     // let (utick, fro1mhz) = utick.disabled(&mut syscon);
     // let mut utick = utick.enabled(&mut syscon, fro1mhz);
 

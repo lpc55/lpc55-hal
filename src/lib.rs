@@ -207,7 +207,7 @@ impl Peripherals {
     }
 }
 
-impl core::convert::From<(raw::Peripherals, raw::CorePeripherals)> for Peripherals {
+impl From<(raw::Peripherals, raw::CorePeripherals)> for Peripherals {
     fn from(raw: (raw::Peripherals, raw::CorePeripherals)) -> Self {
         Peripherals::new(raw.0, raw.1)
     }

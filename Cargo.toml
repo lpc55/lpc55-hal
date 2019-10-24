@@ -27,7 +27,7 @@ lpc55s6x-pac = "0.0.5"
 # lpc55s6x-ral = { path = "../lpc55s6x-ral", features = ["lpc55s69_cm33_core0"] }
 
 nb = "0.1"
-nom = { version = "^5", default-features = false }
+# nom = { version = "^5", default-features = false }
 usb-device = "0.2.3"
 # usb-device = { path = "../usb-device" }
 usbd-serial = "0.1.0"
@@ -46,14 +46,8 @@ void = { version = "1", default-features = false }
 
 [dev-dependencies]
 aes-soft = "0.3"
-# NB: cortex-m-rtfm pulls in an old cortex-m-rt with no eabhihf support
-# Otherwise, git master would work
 cortex-m-rt = "0.6"
-# cortex-m-rt = { git = "https://github.com/rust-embedded/cortex-m-rt" }
-# Remove, as unreleased/git dependencies are not allowed
-# cortex-m-rtfm = "0.5"  # unreleased
-# cortex-m-rtfm = { git = "https://github.com/rtfm-rs/cortex-m-rtfm" }
-cortex-m-rtfm = { path = "../cortex-m-rtfm" }
+cortex-m-rtfm = "0.5.0-beta.1"
 cortex-m-semihosting = "0.3"
 heapless = "0.5"
 panic-halt  = "0.2"
