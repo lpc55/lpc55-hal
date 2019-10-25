@@ -22,7 +22,7 @@ pub use peripherals::{
 pub mod drivers;
 // pub use drivers::UsbBus;
 
-pub mod clock;
+// pub mod clock;
 pub mod clocks;
 pub mod gpio;
 pub mod pins;
@@ -44,6 +44,15 @@ pub use {
     gpio::Gpio,
     peripherals::usbfs::EnabledUsbfsDevice,
 };
+
+/// This is the main (monolithic) entry point to the HAL for non-RTFM applications.
+/// For RTFM, use `hal::<Peripheral>::from(<raw_peripheral>)` as needed.
+pub fn new() -> Peripherals {
+    Peripherals::from((
+        raw::Peripherals::take().expect("raw device peripherals already taken elsewhere"),
+        raw::CorePeripherals::take().expect("raw core peripherals already taken elsewhere"),
+    ))
+}
 
 /// This is the entry point to the HAL API. Before you can do anything else, you
 /// need to get an instance of this struct via [`Peripherals::take`] or
@@ -134,59 +143,15 @@ pub struct Peripherals {
 }
 
 impl Peripherals {
-    /// Take the peripherals safely
-    ///
-    /// This method can only be called one time to access the peripherals. It
-    /// will return `Some(Peripherals)` when called for the first time, then
-    /// `None` on any subsequent calls.
-    ///
-    /// Applications should call this method once, at the beginning of their
-    /// main method, to get access to the full API. Any other parts of the
-    /// program should just expect to be passed whatever parts of the HAL API
-    /// they need.
-    ///
-    /// Calling this method from a library is considered an anti-pattern.
-    /// Libraries should just require whatever they need to be passed as
-    /// arguments and leave the initialization to the application that calls
-    /// them.
-    ///
-    /// For an alternative way to gain access to the hardware, please take a
-    /// look at [`Peripherals::steal`].
-    ///
-    /// # Example
-    ///
-    /// ``` no_run
-    /// use lpc55s6x_hal::Peripherals;
-    ///
-    /// // This code should be at the beginning of your program. As long as this
-    /// // is the only place that calls `take`, the following should never
-    /// // panic.
-    /// let p = Peripherals::take().unwrap();
-    /// ```
-    pub fn take() -> Option<Self> {
-        Some(Self::new(
-            raw::Peripherals::take()?,
-            raw::CorePeripherals::take()?,
-        ))
-    }
-
-    pub unsafe fn steal() -> Self {
-        Self::new(raw::Peripherals::steal(), raw::CorePeripherals::steal())
-    }
-
     fn new(p: raw::Peripherals, cp: raw::CorePeripherals) -> Self {
         Peripherals {
             // HAL peripherals
             anactrl: Anactrl::from(p.ANACTRL),
             casper: Casper::from(p.CASPER),
-            // NOTE(unsafe) The init state of the gpio peripheral is enabled,
-            // thus it's safe to create an already initialized gpio port
             gpio: Gpio::from(p.GPIO),
             iocon: Iocon::from(p.IOCON),
             pmc: Pmc::from(p.PMC),
             syscon: Syscon::from(p.SYSCON),
-            // USBFSD: usbfs::device::wrap(p.USB0),
-            // USBFSH: usbfs::host::wrap(p.USBFSH),
             usbfs: Usbfs::from((p.USB0, p.USBFSH)),
             utick: Utick::from(p.UTICK0),
 
@@ -206,30 +171,24 @@ impl Peripherals {
             SYST: cp.SYST,
         }
     }
+
+    pub fn take() -> Option<Self> {
+        Some(Self::new(
+            raw::Peripherals::take()?,
+            raw::CorePeripherals::take()?,
+        ))
+    }
+
+    pub unsafe fn steal() -> Self {
+        Self::new(raw::Peripherals::steal(), raw::CorePeripherals::steal())
+    }
+
 }
 
 impl From<(raw::Peripherals, raw::CorePeripherals)> for Peripherals {
     fn from(raw: (raw::Peripherals, raw::CorePeripherals)) -> Self {
         Peripherals::new(raw.0, raw.1)
     }
-}
-
-// fn init() -> Peripherals {
-//     Peripherals::from((
-//         raw::CorePeripherals::take().unwrap(),
-//         raw::Peripherals::take().unwrap(),
-//     ))
-// }
-
-/// This is the main (monolithic) entry point to the HAL.
-///
-/// If you are using RTFM, prefer using `hal::<Peripheral>::from(<raw_peripheral>)`
-/// as needed.
-pub fn new() -> Peripherals {
-    Peripherals::from((
-        raw::Peripherals::take().expect("raw device peripherals already taken elsewhere"),
-        raw::CorePeripherals::take().expect("raw core peripherals already taken elsewhere"),
-    ))
 }
 
 pub fn get_cycle_count() -> u32 {
