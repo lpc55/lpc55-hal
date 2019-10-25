@@ -89,3 +89,15 @@ sizes-example:
 	cargo size --example $(EXAMPLE) --release
 
 
+venv:
+	python3 -m venv venv
+	venv/bin/pip install -U pip
+
+# re-run if dev or runtime dependencies change,
+# or when adding new scripts
+update-venv: venv
+	venv/bin/pip install -U pip
+	venv/bin/pip install -U -r dev-requirements.txt
+
+test-serial:
+	venv/bin/python test_serial.py

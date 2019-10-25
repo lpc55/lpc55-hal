@@ -9,3 +9,4 @@ core
 **/*.a
 /jlink-fw-sw
 .idea/
+**/venv

@@ -116,6 +116,7 @@ impl Endpoint {
         let i = self.index as usize;
         if i > 0 {
             assert!(epl.eps[i].ep_in[0].read().a().is_not_active());
+            // while epl.eps[i].ep_in[0].read().a().is_active() {}
         }
 
         if i == 0 {
