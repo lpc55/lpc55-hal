@@ -10,9 +10,9 @@ use crate::states::{
     ClocksSupportUsbfsToken,
 };
 use crate::{
-    anactrl::Anactrl,
-    pmc::Pmc,
-    syscon::Syscon,
+    Anactrl,
+    // Pmc,
+    Syscon,
 };
 
 // use cortex_m_semihosting::dbg;
@@ -120,7 +120,7 @@ impl ClockRequirements {
     /// It's a bit ridiculous to do this in code, but no idea how to avoid it.
     ///
     /// Can be called only once, to not invalidate previous configurations
-    pub fn configure(mut self, anactrl: &mut Anactrl, pmc: &mut Pmc, syscon: &mut Syscon) -> Result<Clocks> {
+    pub fn configure(mut self, anactrl: &mut Anactrl, /*pmc: &mut Pmc,*/ syscon: &mut Syscon) -> Result<Clocks> {
         if unsafe { CONFIGURED } {
             return Err(ClocksError::AlreadyConfigured);
         }

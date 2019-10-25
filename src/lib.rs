@@ -6,19 +6,27 @@ use embedded_hal as hal;
 
 pub extern crate lpc55s6x_pac as raw;
 
-pub mod anactrl;
-pub mod casper;
+pub mod peripherals;
+
+pub use peripherals::{
+    anactrl::Anactrl,
+    casper::Casper,
+    iocon::Iocon,
+    pmc::Pmc,
+    rng::Rng,
+    syscon::Syscon,
+    usbfs::Usbfs,
+    utick::Utick,
+};
+
+pub mod drivers;
+// pub use drivers::UsbBus;
+
 pub mod clock;
 pub mod clocks;
 pub mod gpio;
-pub mod iocon;
 pub mod pins;
-pub mod pmc;
-pub mod rng;
 pub mod sleep;
-pub mod syscon;
-pub mod usbfs;
-pub mod utick;
 
 #[macro_use]
 pub(crate) mod reg_proxy;
@@ -30,18 +38,11 @@ pub mod macros;
 pub mod prelude;
 
 pub mod states;
-use states::init_state;
 
 /// All the HAL peripherals
 pub use {
-    anactrl::Anactrl,
-    casper::Casper,
     gpio::Gpio,
-    iocon::Iocon,
-    pmc::Pmc,
-    syscon::Syscon,
-    usbfs::Usbfs,
-    usbfs::EnabledUsbfsDevice,
+    peripherals::usbfs::EnabledUsbfsDevice,
 };
 
 /// This is the entry point to the HAL API. Before you can do anything else, you
@@ -69,22 +70,22 @@ pub use {
 #[allow(non_snake_case)]
 pub struct Peripherals {
     /// Analog control
-    pub anactrl: anactrl::Anactrl,
+    pub anactrl: Anactrl,
 
     /// Cryptographic Accelerator and Signal Processing Engine with RAM sharing
-    pub casper: casper::Casper,
+    pub casper: Casper,
 
     /// General-purpose I/O (GPIO)
     pub gpio: gpio::Gpio, // <init_state::Unknown>,
 
     /// I/O configuration
-    pub iocon: iocon::Iocon, // <init_state::Unknown>,
+    pub iocon: Iocon, // <init_state::Unknown>,
 
     /// Power configuration
-    pub pmc: pmc::Pmc,
+    pub pmc: Pmc,
 
     /// System configuration
-    pub syscon: syscon::Syscon,
+    pub syscon: Syscon,
 
     // /// USB full-speed device
     // pub USBFSD: usbfs::device::UsbFsDev<init_state::Disabled>,
@@ -93,10 +94,10 @@ pub struct Peripherals {
     // pub USBFSH: usbfs::host::UsbFsHost<init_state::Disabled>,
 
     // USB full-speed device or host
-    pub usbfs: usbfs::Usbfs,
+    pub usbfs: Usbfs,
 
     /// Micro-Tick Timer
-    pub UTICK: utick::Utick<init_state::Disabled>,
+    pub utick: Utick,
 
     /// Analog-to-Digital Converter (ADC) - not HAL-ified.
     pub ADC0: raw::ADC0,
@@ -183,11 +184,11 @@ impl Peripherals {
             gpio: Gpio::from(p.GPIO),
             iocon: Iocon::from(p.IOCON),
             pmc: Pmc::from(p.PMC),
-            syscon: syscon::wrap(p.SYSCON),
+            syscon: Syscon::from(p.SYSCON),
             // USBFSD: usbfs::device::wrap(p.USB0),
             // USBFSH: usbfs::host::wrap(p.USBFSH),
             usbfs: Usbfs::from((p.USB0, p.USBFSH)),
-            UTICK: utick::wrap(p.UTICK0),
+            utick: Utick::from(p.UTICK0),
 
             // Raw peripherals
             ADC0: p.ADC0,

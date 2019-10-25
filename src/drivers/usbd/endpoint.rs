@@ -156,7 +156,7 @@ impl Endpoint {
         self.reset_in_buf(cs, epl);
     }
 
-    pub fn write(&self, buf: &[u8], cs: &CriticalSection, usb: &USB0, epl: &EndpointRegistersInstance) -> Result<usize> {
+    pub fn write(&self, buf: &[u8], cs: &CriticalSection, epl: &EndpointRegistersInstance) -> Result<usize> {
         if !self.is_in_buf_set() { return Err(UsbError::WouldBlock); }
         let in_buf = self.in_buf.as_ref().unwrap().borrow(cs);
 

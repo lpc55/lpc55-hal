@@ -25,7 +25,7 @@ fn main() -> ! {
     dbg!(after - before);
     // idbg!(after);
 
-    let mut syscon = hal::syscon::wrap(dp.SYSCON);
+    let mut syscon = hal::Syscon::from(dp.SYSCON);
     dbg!(hal::get_cycle_count());
 
     // TODO: make this method generic over i (in this case, 2)
@@ -41,7 +41,7 @@ fn main() -> ! {
     dbg!(dp.RNG.random_number.read().bits());
 
     // HAL access
-    let mut rng = hal::rng::wrap(dp.RNG).enabled(&mut syscon);
+    let mut rng = hal::Rng::from(dp.RNG).enabled(&mut syscon);
     let mut random_bytes = [0u8; 5];
     rng.read(&mut random_bytes).expect("RNG failure");
     dbg!(random_bytes);

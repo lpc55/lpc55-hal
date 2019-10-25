@@ -13,35 +13,15 @@ use lpc55s6x_hal as hal;
 
 // use hal::{reg_read, reg_modify};
 
-use usbd_serial::{CdcAcmClass, SerialPort};
+use usbd_serial::{CdcAcmClass, /*SerialPort*/};
 use usb_device::device::{UsbDeviceBuilder, UsbVidPid};
-use hal::usbfs::bus::UsbBus;
+use hal::drivers::UsbBus;
 
 
 #[entry]
 fn main() -> ! {
-    // let peripherals = hal::raw::Peripherals::take().unwrap();
-    // let mut syscon = hal::Syscon::from(peripherals.SYSCON);
-    // let iocon = hal::Iocon::from(peripherals.IOCON).enabled(&mut syscon);
-    // let mut pmc = peripherals.PMC.into();
-    // // let mut pmc = hal::Pmc::from(peripherals.PMC);
-
-    // let mut gpio = hal::Gpio::from(peripherals.GPIO).enabled(&mut syscon);
-
-    // let raw_core_peripherals = hal::raw::CorePeripherals::take().unwrap();
-    // let raw_device_peripherals = hal::raw::Peripherals::take().unwrap();
-
-    // let hal_peripherals = hal::Peripherals::from((raw_device_peripherals, raw_core_peripherals));
-
-
-    // let hal_peripherals = hal::Peripherals::from((
-    //     hal::raw::Peripherals::take().unwrap(),
-    //     hal::raw::CorePeripherals::take().unwrap(),
-    // ));
-
 
     let hal = hal::new();
-    // let hal2 = hal::new();  // panics...
 
     let mut anactrl = hal.anactrl;
     let mut pmc = hal.pmc;
@@ -62,7 +42,7 @@ fn main() -> ! {
     let clocks = hal::clocks::ClockRequirements::default()
         .system_freq(48.mhz())
         .support_usbfs()
-        .configure(&mut anactrl, &mut pmc, &mut syscon)
+        .configure(&mut anactrl, /*&mut pmc,*/ &mut syscon)
         .unwrap();
         // .expect("Clock configuration failed");
 

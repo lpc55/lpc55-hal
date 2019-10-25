@@ -2,9 +2,9 @@
 #![no_std]
 
 extern crate panic_semihosting;
-use cortex_m::iprintln;
+// use cortex_m::iprintln;
 use cortex_m_rt::entry;
-use cortex_m_semihosting::{dbg, hprintln};
+// use cortex_m_semihosting::{dbg, hprintln};
 
 use hal::prelude::*;
 use lpc55s6x_hal as hal;
@@ -15,7 +15,7 @@ fn main() -> ! {
     let mut syscon = hal.syscon;
     // dbg!(syscon.get_num_wait_states());
     let mut gpio = hal.gpio.enabled(&mut syscon);
-    let iocon = hal.iocon;
+    // let iocon = hal.iocon;
 
     // let mut cp = hal::raw::CorePeripherals::take().unwrap();
     // let stim = &mut cp.ITM.stim[0];
@@ -42,11 +42,11 @@ fn main() -> ! {
     // let iocon = iocon.disabled(&mut syscon);
     // iocon.release();
 
-    let clock = hal::syscon::Fro1MhzUtickClock::take()
+    let clock = hal::peripherals::syscon::Fro1MhzUtickClock::take()
         .unwrap()
         .enable(&mut syscon);
 
-    let mut utick = hal::utick::Utick::from(hal.UTICK).enabled(&mut syscon, &clock);
+    let mut utick = hal.utick.enabled(&mut syscon, &clock);
 
     let delay = hal::clock::Ticks {
         value: 500_000,

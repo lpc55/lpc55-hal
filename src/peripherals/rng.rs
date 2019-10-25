@@ -1,10 +1,20 @@
-use crate::{states::init_state, syscon::Syscon};
+use crate::{
+    raw,
+    peripherals::{
+        syscon::Syscon,
+    },
+    states::{
+        init_state,
+    }
+};
 
-/// HAL-ified RNG peripheral
-pub struct Rng<State = init_state::Enabled> {
-    raw: raw::RNG,
-    _state: State,
-}
+crate::wrap_stateful_peripheral!(Rng, RNG);
+
+// /// HAL-ified RNG peripheral
+// pub struct Rng<State = init_state::Enabled> {
+//     raw: raw::RNG,
+//     _state: State,
+// }
 
 #[derive(Debug)]
 // not sure why this kind of thing is not in `svd2rust`?
@@ -15,34 +25,10 @@ pub struct ModuleId {
     aperture: u8,
 }
 
-pub fn wrap(rng: raw::RNG) -> Rng<init_state::Disabled> {
-    Rng::new(rng)
-}
-
 impl Rng {
-    /// random method to get some information about the RNG
-    pub fn module_id(&self) -> ModuleId {
-        ModuleId {
-            id: self.raw.moduleid.read().id().bits(),
-            maj_rev: self.raw.moduleid.read().maj_rev().bits(),
-            min_rev: self.raw.moduleid.read().min_rev().bits(),
-            aperture: self.raw.moduleid.read().aperture().bits(),
-        }
-    }
-
-    pub fn release(self) -> raw::RNG {
-        self.raw
-    }
 }
 
-impl Rng<init_state::Disabled> {
-    fn new(rng: raw::RNG) -> Self {
-        Rng {
-            raw: rng,
-            _state: init_state::Disabled,
-        }
-    }
-
+impl<State> Rng<State> {
     pub fn enabled(mut self, syscon: &mut Syscon) -> Rng<init_state::Enabled> {
         syscon.enable_clock(&mut self.raw);
 
@@ -51,6 +37,16 @@ impl Rng<init_state::Disabled> {
             _state: init_state::Enabled(()),
         }
     }
+
+    pub fn disabled(mut self, syscon: &mut Syscon) -> Rng<init_state::Disabled> {
+        syscon.disable_clock(&mut self.raw);
+
+        Rng {
+            raw: self.raw,
+            _state: init_state::Disabled,
+        }
+    }
+
 }
 
 impl Rng<init_state::Enabled> {
@@ -110,15 +106,6 @@ impl Rng<init_state::Enabled> {
         }
     }
 
-    pub fn disabled(mut self, syscon: &mut Syscon) -> Rng<init_state::Disabled> {
-        syscon.disable_clock(&mut self.raw);
-
-        Rng {
-            raw: self.raw,
-            _state: init_state::Disabled,
-        }
-    }
-
     pub fn get_random_u32(&self) -> u32 {
         for _ in 0..32 {
             while self.raw.counter_val.read().refresh_cnt() == 0 {
@@ -127,12 +114,22 @@ impl Rng<init_state::Enabled> {
         }
         self.raw.random_number.read().bits()
     }
+
+    /// random method to get some information about the RNG
+    pub fn module_id(&self) -> ModuleId {
+        ModuleId {
+            id: self.raw.moduleid.read().id().bits(),
+            maj_rev: self.raw.moduleid.read().maj_rev().bits(),
+            min_rev: self.raw.moduleid.read().min_rev().bits(),
+            aperture: self.raw.moduleid.read().aperture().bits(),
+        }
+    }
 }
 
 #[derive(Debug)]
 pub enum Error {}
 
-impl crate::hal::blocking::rng::Read for Rng {
+impl crate::hal::blocking::rng::Read for Rng<init_state::Enabled> {
     type Error = Error;
 
     fn read(&mut self, buffer: &mut [u8]) -> Result<(), Self::Error> {

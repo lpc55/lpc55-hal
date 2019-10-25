@@ -1,5 +1,5 @@
 use crate::raw;
-use crate::{
+use crate::peripherals::{
     anactrl,
     pmc,
     syscon,
@@ -11,14 +11,6 @@ use crate::states::{
     // Fro96MHzEnabledToken,
     ClocksSupportUsbfsToken,
 };
-// use crate::clocks::Clocks;
-
-use crate::reg_modify;
-
-
-/// USB FS Device Driver
-pub mod bus;
-pub use crate::usbfs::bus::UsbBus;
 
 
 // Main struct
@@ -74,7 +66,7 @@ impl<State: init_state::InitState, Mode: usbfs_mode::UsbfsMode> Usbfs<State, Mod
         // Switch USB0 to "device" mode (default is "host")
         syscon.enable_clock(&mut self.raw_fsh);
         // NB!!! This will crash your debugger soo bad if usb0clk is not setup !!!
-        reg_modify!(crate, USBFSH, portmode, dev_enable, set_bit);
+        self.raw_fsh.portmode.modify(|_, w| w.dev_enable().set_bit());
         syscon.disable_clock(&mut self.raw_fsh);
 
         // Turn on USB1 SRAM

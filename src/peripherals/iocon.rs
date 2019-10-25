@@ -1,42 +1,18 @@
-use crate::{raw, states::init_state, syscon};
+use crate::{
+    raw,
+    peripherals::{
+        syscon,
+    },
+    states::{
+        init_state,
+    }
+};
 
 // use crate::pins::{
 //     Pins,
 // };
 
-pub fn wrap(iocon: raw::IOCON) -> Iocon {
-    Iocon::new(iocon)
-}
-
-impl core::convert::From<raw::IOCON> for Iocon<init_state::Unknown> {
-    fn from(raw: raw::IOCON) -> Self {
-        Iocon::new(raw)
-    }
-}
-
-/// Handle to the IOCON peripheral
-///
-/// Can be used to enable and disable the IO pin configuration. It is also required by
-/// other parts of the API to synchronize access the the underlying registers,
-/// wherever this is required.
-///
-/// Please refer to the [module documentation] for more information about the
-/// PMU.
-///
-/// [module documentation]: index.html
-pub struct Iocon<State = init_state::Unknown> {
-    raw: raw::IOCON,
-    _state: State,
-}
-
-impl Iocon<init_state::Unknown> {
-    pub(crate) fn new(iocon: raw::IOCON) -> Self {
-        Iocon {
-            raw: iocon,
-            _state: init_state::Unknown,
-        }
-    }
-}
+crate::wrap_stateful_peripheral!(Iocon, IOCON);
 
 impl<State> Iocon<State> {
     /// Enable IO pin configuration
@@ -71,10 +47,6 @@ impl<State> Iocon<State> {
             raw: self.raw,
             _state: init_state::Disabled,
         }
-    }
-
-    pub fn release(self) -> raw::IOCON {
-        self.raw
     }
 }
 

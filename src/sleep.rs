@@ -20,7 +20,7 @@ use crate::{
     //     self,
     //     Interrupt,
     // },
-    utick::{self, EnabledUtick},
+    peripherals::utick::{self, EnabledUtick},
 };
 
 /// Trait for putting the processor to sleep

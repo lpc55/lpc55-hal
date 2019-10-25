@@ -28,9 +28,9 @@ const APP: () = {
         let dp = c.device;
 
         // setup red LED
-        let mut syscon = hal::syscon::Syscon::from(dp.SYSCON);
+        let mut syscon = hal::Syscon::from(dp.SYSCON);
         let mut gpio = hal::gpio::Gpio::from(dp.GPIO).enabled(&mut syscon);
-        let iocon = hal::iocon::Iocon::from(dp.IOCON);
+        // let iocon = hal::Iocon::from(dp.IOCON);
 
         let pins = hal::pins::Pins::take().unwrap();
         let red_led = pins.pio1_6

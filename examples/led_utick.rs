@@ -26,10 +26,10 @@ fn main() -> ! {
     let mut syscon = hal.syscon;
     let mut gpio = hal.gpio.enabled(&mut syscon);
     let pins = hal::pins::Pins::take().unwrap();
-    let fro1mhz = hal::syscon::Fro1MhzUtickClock::take()
+    let fro1mhz = hal::peripherals::syscon::Fro1MhzUtickClock::take()
         .unwrap()
         .enable(&mut syscon);
-    let mut utick = hal::utick::Utick::from(hal.UTICK).enabled(&mut syscon, &fro1mhz);
+    let mut utick = hal.utick.enabled(&mut syscon, &fro1mhz);
     // let (utick, fro1mhz) = utick.disabled(&mut syscon);
     // let mut utick = utick.enabled(&mut syscon, fro1mhz);
 

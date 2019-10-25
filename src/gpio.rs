@@ -5,38 +5,34 @@ use crate::{
     raw,
     raw::gpio::{CLR, DIRSET, PIN, SET},
     states::{init_state, pin_state},
-    syscon,
+    peripherals::syscon,
 };
 
-// /// Contains types to indicate the direction of GPIO pins
-// pub mod direction {
-//     /// Implemented by types that indicate GPIO pin direction
-//     pub trait Direction {}
+crate::wrap_stateful_peripheral!(Gpio, GPIO);
 
-//     pub struct Unknown;
-//     impl Direction for Unknown {}
+impl Gpio {
+    /// Consumes disabled Gpio, returns an enabled one
+    pub fn enabled(mut self, syscon: &mut syscon::Syscon) -> Gpio<init_state::Enabled> {
+        // dbg!(syscon.is_clock_enabled(&self.gpio));
+        syscon.enable_clock(&mut self.raw);
+        // dbg!(syscon.is_clock_enabled(&self.gpio));
 
-//     pub struct Input;
-//     impl Direction for Input {}
+        Gpio {
+            raw: self.raw,
+            _state: init_state::Enabled(()),
+        }
+    }
 
-//     pub struct Output;
-//     impl Direction for Output {}
+    /// Consumes enabled Gpio, returns a disabled one
+    pub fn disabled(mut self, syscon: &mut syscon::Syscon) -> Gpio<init_state::Disabled> {
+        syscon.disable_clock(&mut self.raw);
 
-//     pub trait NotOutput: Direction {}
-//     impl NotOutput for Unknown {}
-//     impl NotOutput for Input {}
-// }
-
-// // pub trait Level;
-// // pub struct Low;
-// // impl Level for Low;
-// // pub struct High;
-// // impl Level for High;
-
-// pub enum Level {
-//     Low,
-//     High,
-// }
+        Gpio {
+            raw: self.raw,
+            _state: init_state::Disabled,
+        }
+    }
+}
 
 pub use crate::states::gpio::*;
 
@@ -116,53 +112,3 @@ where
     }
 }
 
-// // TODO: don't assume it's enabled (although it is at reset)
-// pub struct Gpio<State = init_state::Enabled> {
-//     pub(crate) raw: raw::GPIO,
-//     _state: State,
-// }
-
-// pub fn wrap(gpio: raw::GPIO) -> Gpio<init_state::Disabled> {
-//     Gpio::new(gpio)
-// }
-
-// impl Gpio<init_state::Disabled> {
-//     pub fn new(gpio: raw::GPIO) -> Self {
-//         Gpio {
-//             raw: gpio,
-//             _state: init_state::Disabled,
-//         }
-//     }
-
-crate::wrap_stateful_peripheral!(Gpio, GPIO);
-
-impl Gpio {
-    /// Consumes disabled Gpio, returns an enabled one
-    pub fn enabled(mut self, syscon: &mut syscon::Syscon) -> Gpio<init_state::Enabled> {
-        // dbg!(syscon.is_clock_enabled(&self.gpio));
-        syscon.enable_clock(&mut self.raw);
-        // dbg!(syscon.is_clock_enabled(&self.gpio));
-
-        Gpio {
-            raw: self.raw,
-            _state: init_state::Enabled(()),
-        }
-    }
-
-    /// Consumes enabled Gpio, returns a disabled one
-    pub fn disabled(mut self, syscon: &mut syscon::Syscon) -> Gpio<init_state::Disabled> {
-        syscon.disable_clock(&mut self.raw);
-
-        Gpio {
-            raw: self.raw,
-            _state: init_state::Disabled,
-        }
-    }
-}
-
-// impl<State> Gpio<State> {
-//     /// Return the raw peripheral
-//     pub fn release(self) -> raw::GPIO {
-//         self.raw
-//     }
-// }

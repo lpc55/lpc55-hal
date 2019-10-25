@@ -43,7 +43,7 @@ use usb_device::{
 
 use crate::{
     raw::USB0,
-    usbfs::EnabledUsbfsDevice,
+    peripherals::usbfs::EnabledUsbfsDevice,
 };
 
 
@@ -368,9 +368,9 @@ impl<PINS: Send+Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
         if !ep_addr.is_in() { return Err(UsbError::InvalidEndpoint); }
 
         interrupt::free(|cs| {
-            let usb = self.usb_regs.borrow(cs);
+            // let usb = self.usb_regs.borrow(cs);
             let eps = self.ep_regs.borrow(cs);
-            self.endpoints[ep_addr.index()].write(buf, cs, usb, eps)
+            self.endpoints[ep_addr.index()].write(buf, cs, eps)
         })
     }
 

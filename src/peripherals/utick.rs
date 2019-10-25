@@ -12,22 +12,24 @@ use nb;
 use void::Void;
 
 use crate::{
-    // pmu::LowPowerClock,
-    raw::{
-        self,
-        // utick::ctrl,
+    raw,
+    peripherals::{
+        syscon::{
+            self,
+            Fro1MhzUtickClock,
+        },
     },
-    states::init_state,
-    syscon::{self, Fro1MhzUtickClock},
-    wrap_peripheral_with_state,
+    states::{
+        init_state,
+    },
 };
 
-wrap_peripheral_with_state!(Utick, UTICK0, utick);
+crate::wrap_stateful_peripheral!(Utick, UTICK0);
 
 pub type EnabledUtick<'fro1mhz> =
     Utick<init_state::Enabled<&'fro1mhz Fro1MhzUtickClock<init_state::Enabled>>>;
 
-impl Utick<init_state::Disabled> {
+impl<State> Utick<State> {
     /// Enable the UTICK
     ///
     /// Consume a UTICK in `Disabled` state, return an instance in `Enabled` state.
@@ -54,9 +56,7 @@ impl Utick<init_state::Disabled> {
             _state: init_state::Enabled(fro1mhz),
         }
     }
-}
 
-impl EnabledUtick<'_> {
     /// Disable the UTICK
     ///
     /// Consume a UTICK in `Enabled` state, return an instance in `Disabled` state.

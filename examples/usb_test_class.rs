@@ -11,8 +11,7 @@ use hal::prelude::*;
 use lpc55s6x_hal as hal;
 
 use usb_device::test_class::TestClass;
-use hal::usbfs::bus::UsbBus;
-use hal::clocks;
+use hal::drivers::UsbBus;
 
 #[entry]
 fn main() -> ! {
@@ -32,7 +31,7 @@ fn main() -> ! {
         // .fro96mhz_main_clock()
         .system_freq(12.mhz())
         .support_usbfs()
-        .configure(&mut anactrl, &mut pmc, &mut syscon)
+        .configure(&mut anactrl, /*&mut pmc,*/ &mut syscon)
         .expect("Clock configuration failed");
 
     // cortex_m_semihosting::hprintln!("{:?}", clocks).ok();

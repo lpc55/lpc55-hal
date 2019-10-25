@@ -1,7 +1,8 @@
 use core::marker::PhantomData;
-use crate::usbfs::bus::constants::NUM_ENDPOINTS;
-
-use super::constants::EP_MEM_ADDR;
+use super::constants::{
+    NUM_ENDPOINTS,
+    EP_MEM_ADDR,
+};
 static mut ENDPOINT_REGISTERS_ATTACHED: bool = false;
 
 pub struct Instance {

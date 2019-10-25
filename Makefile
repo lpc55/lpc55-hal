@@ -2,6 +2,9 @@ build-both:
 	cargo build
 	cargo build --release
 
+clean:
+	rm -rf venv
+
 view-rtfm-expansion:
 	rustfmt target/rtfm-expansion.rs
 	vi target/rtfm-expansion.rs

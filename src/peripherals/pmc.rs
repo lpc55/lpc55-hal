@@ -5,15 +5,6 @@
 //! We are mostly concerned with power to analog peripherals.
 //!
 
-// use crate::raw;
-
-// // use core::convert::From;
-// impl core::convert::From<raw::PMC> for Pmc {
-//     fn from(raw: raw::PMC) -> Self {
-//         Pmc::new(raw)
-//     }
-// }
-
 crate::wrap_always_on_peripheral!(Pmc, PMC);
 
 impl Pmc {
