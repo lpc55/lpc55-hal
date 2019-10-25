@@ -11,6 +11,7 @@ pub mod peripherals;
 pub use peripherals::{
     anactrl::Anactrl,
     casper::Casper,
+    gpio::Gpio,
     iocon::Iocon,
     pmc::Pmc,
     rng::Rng,
@@ -20,12 +21,15 @@ pub use peripherals::{
 };
 
 pub mod drivers;
-// pub use drivers::UsbBus;
 
-// pub mod clock;
-pub mod clocks;
-pub mod gpio;
-pub mod pins;
+pub use drivers::{
+    ClockRequirements,
+    Pin,
+    Pins,
+    UsbBus,
+};
+
+pub mod clock;
 pub mod sleep;
 
 #[macro_use]
@@ -41,7 +45,6 @@ pub mod states;
 
 /// All the HAL peripherals
 pub use {
-    gpio::Gpio,
     peripherals::usbfs::EnabledUsbfsDevice,
 };
 
@@ -85,10 +88,10 @@ pub struct Peripherals {
     pub casper: Casper,
 
     /// General-purpose I/O (GPIO)
-    pub gpio: gpio::Gpio, // <init_state::Unknown>,
+    pub gpio: Gpio,
 
     /// I/O configuration
-    pub iocon: Iocon, // <init_state::Unknown>,
+    pub iocon: Iocon,
 
     /// Power configuration
     pub pmc: Pmc,

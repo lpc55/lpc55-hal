@@ -33,11 +33,11 @@ fn main() -> ! {
     //
     // on = low, off = high
 
-    let pins = hal::pins::Pins::take().unwrap();
+    let pins = hal::Pins::take().unwrap();
     let mut red = pins
         .pio1_6
         .into_gpio_pin(&mut gpio)
-        .into_output(hal::gpio::Level::High); // start turned off
+        .into_output(hal::drivers::pins::Level::High); // start turned off
 
     // let iocon = iocon.disabled(&mut syscon);
     // iocon.release();

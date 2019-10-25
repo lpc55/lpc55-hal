@@ -8,7 +8,7 @@ extern crate panic_halt; // 672 bytes
 use cortex_m_rt::entry;
 // use nb::block;
 
-use hal::{gpio::Level, prelude::*};
+use hal::{drivers::pins::Level, prelude::*};
 use lpc55s6x_hal as hal;
 
 // macro_rules! kitt {
@@ -25,7 +25,7 @@ fn main() -> ! {
     let hal = hal::new();
     let mut syscon = hal.syscon;
     let mut gpio = hal.gpio.enabled(&mut syscon);
-    let pins = hal::pins::Pins::take().unwrap();
+    let pins = hal::Pins::take().unwrap();
     let fro1mhz = hal::peripherals::syscon::Fro1MhzUtickClock::take()
         .unwrap()
         .enable(&mut syscon);

@@ -1,5 +1,6 @@
 pub mod anactrl;
 pub mod casper;
+pub mod gpio;
 pub mod iocon;
 pub mod pmc;
 pub mod rng;

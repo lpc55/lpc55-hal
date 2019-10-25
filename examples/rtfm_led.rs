@@ -8,15 +8,15 @@ use cortex_m_semihosting::dbg;
 use lpc55s6x_hal as hal;
 use hal::{
     prelude::*,
-    gpio::Level,
-    pins,
+    drivers::pins::Level,
+    drivers::pins,
     states,
 };
 
 #[rtfm::app(device = crate::hal::raw, peripherals = true)]
 const APP: () = {
     struct Resources {
-        led: pins::Pin<pins::PIO1_6, states::pin_state::Gpio<states::gpio::direction::Output>>,
+        led: hal::Pin<pins::PIO1_6, states::pin_state::Gpio<states::gpio::direction::Output>>,
         // delay: hal::clock::Ticks<'static, hal::syscon::Fro1MhzUtickClock<states::init_state::Enabled>>,
         // sleep: hal::sleep::Busy<'static, 'static>,
     }
@@ -29,10 +29,10 @@ const APP: () = {
 
         // setup red LED
         let mut syscon = hal::Syscon::from(dp.SYSCON);
-        let mut gpio = hal::gpio::Gpio::from(dp.GPIO).enabled(&mut syscon);
+        let mut gpio = hal::Gpio::from(dp.GPIO).enabled(&mut syscon);
         // let iocon = hal::Iocon::from(dp.IOCON);
 
-        let pins = hal::pins::Pins::take().unwrap();
+        let pins = hal::Pins::take().unwrap();
         let red_led = pins.pio1_6
             .into_gpio_pin(&mut gpio)
             .into_output(Level::High);

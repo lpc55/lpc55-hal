@@ -6,7 +6,7 @@ extern crate panic_halt; // 672 bytes
 
 use cortex_m_rt::entry;
 
-use hal::{gpio::Level, prelude::*};
+use hal::{drivers::pins::Level, prelude::*};
 use lpc55s6x_hal as hal;
 
 #[entry]
@@ -16,7 +16,7 @@ fn main() -> ! {
     let mut syscon = hal.syscon;
     let mut gpio = hal.gpio.enabled(&mut syscon);
 
-    let pins = hal::pins::Pins::take().unwrap();
+    let pins = hal::Pins::take().unwrap();
 
     // R = pio1_6
     let mut red = pins

@@ -32,14 +32,14 @@ fn main() -> ! {
 
     // BOARD_InitPins
     iocon.configure_pio_0_22_as_usb0_vbus();
-    let pins = hal::pins::Pins::take().unwrap();
+    let pins = hal::Pins::take().unwrap();
     // let usb0_vbus = pins.pio0_22;
     let mut red_led = pins
         .pio1_6
         .into_gpio_pin(&mut gpio)
-        .into_output(hal::gpio::Level::High); // start turned off
+        .into_output(hal::drivers::pins::Level::High); // start turned off
 
-    let clocks = hal::clocks::ClockRequirements::default()
+    let clocks = hal::ClockRequirements::default()
         .system_freq(48.mhz())
         .support_usbfs()
         .configure(&mut anactrl, /*&mut pmc,*/ &mut syscon)

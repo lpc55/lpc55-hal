@@ -27,7 +27,7 @@ fn main() -> ! {
 
     iocon.disabled(&mut syscon); // perfectionist ;)
 
-    let clocks = hal::clocks::ClockRequirements::default()
+    let clocks = hal::ClockRequirements::default()
         // .fro96mhz_main_clock()
         .system_freq(12.mhz())
         .support_usbfs()
