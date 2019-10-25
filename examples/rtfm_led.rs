@@ -13,10 +13,11 @@ use hal::{
     states,
 };
 
+type RedLed = hal::Pin<pins::PIO1_6, states::pin_state::Gpio<states::gpio_state::direction::Output>>;
 #[rtfm::app(device = crate::hal::raw, peripherals = true)]
 const APP: () = {
     struct Resources {
-        led: hal::Pin<pins::PIO1_6, states::pin_state::Gpio<states::gpio::direction::Output>>,
+        led: RedLed,
         // delay: hal::clock::Ticks<'static, hal::syscon::Fro1MhzUtickClock<states::init_state::Enabled>>,
         // sleep: hal::sleep::Busy<'static, 'static>,
     }

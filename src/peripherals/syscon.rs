@@ -1,4 +1,4 @@
-//! API for system configuration (SYSCON)
+//! API for system configuration (SYSCON) - always on
 //!
 //! The entry point to this API is [`SYSCON`]. Please refer to [`SYSCON`]'s
 //! documentation for additional information.

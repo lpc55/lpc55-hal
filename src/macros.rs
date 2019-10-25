@@ -12,10 +12,6 @@ macro_rules! wrap_always_on_peripheral {
             pub(crate) raw: raw::$pac_name,
         }
 
-        pub fn wrap(raw: raw::$pac_name) -> $hal_name {
-            $hal_name::new(raw)
-        }
-
         impl core::convert::From<raw::$pac_name> for $hal_name {
             fn from(raw: raw::$pac_name) -> Self {
                 $hal_name::new(raw)
@@ -23,8 +19,14 @@ macro_rules! wrap_always_on_peripheral {
         }
 
         impl $hal_name {
-            pub fn new(raw: raw::$pac_name) -> Self {
+            // pub fn new(raw: raw::$pac_name) -> Self {
+            fn new(raw: raw::$pac_name) -> Self {
                 $hal_name { raw }
+            }
+
+            pub unsafe fn steal() -> Self {
+                // seems a little wastefule to steal the full peripherals but ok..
+                Self::new(raw::Peripherals::steal().$pac_name)
             }
 
             pub fn release(self) -> raw::$pac_name {
@@ -48,17 +50,21 @@ macro_rules! wrap_stateful_peripheral {
             }
         }
 
-
         impl $hal_name {
-            pub fn new(raw: raw::$pac_name) -> Self {
+            fn new(raw: raw::$pac_name) -> Self {
                 $hal_name {
                     raw,
                     _state: init_state::Unknown,
                 }
             }
+
+            pub unsafe fn steal() -> Self {
+                // seems a little wastefule to steal the full peripherals but ok..
+                Self::new(raw::Peripherals::steal().$pac_name)
+            }
         }
 
-        impl $hal_name {
+        impl<State> $hal_name<State> {
             pub fn release(self) -> raw::$pac_name {
                 self.raw
             }

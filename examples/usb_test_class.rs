@@ -11,7 +11,10 @@ use hal::prelude::*;
 use lpc55s6x_hal as hal;
 
 use usb_device::test_class::TestClass;
-use hal::drivers::UsbBus;
+use hal::drivers::{
+    pins,
+    UsbBus,
+};
 
 #[entry]
 fn main() -> ! {
@@ -21,10 +24,9 @@ fn main() -> ! {
     let mut anactrl = hal.anactrl;
     let mut syscon = hal.syscon;
     let mut pmc = hal.pmc;
-    let iocon = hal.iocon.enabled(&mut syscon);
 
-    iocon.configure_pio_0_22_as_usb0_vbus();
-
+    let mut iocon = hal.iocon.enabled(&mut syscon);
+    let usb0_vbus_pin = pins::Pio0_22::take().unwrap().into_usb0_vbus_pin(&mut iocon);
     iocon.disabled(&mut syscon); // perfectionist ;)
 
     let clocks = hal::ClockRequirements::default()
@@ -33,8 +35,6 @@ fn main() -> ! {
         .support_usbfs()
         .configure(&mut anactrl, /*&mut pmc,*/ &mut syscon)
         .expect("Clock configuration failed");
-
-    // cortex_m_semihosting::hprintln!("{:?}", clocks).ok();
 
     let token = clocks.support_usbfs_token().expect(
         "Fro96MHz is not enabled or CPU freq below 12MHz, both of which the USB needs");
@@ -45,7 +45,7 @@ fn main() -> ! {
         &mut syscon,
         token);
 
-    let usb_bus = UsbBus::new(usbfsd, ());
+    let usb_bus = UsbBus::new(usbfsd, usb0_vbus_pin);
     let mut test = TestClass::new(&usb_bus);
     let mut usb_dev = { test.make_device(&usb_bus) };
 

@@ -15,7 +15,10 @@ use lpc55s6x_hal as hal;
 
 use usbd_serial::{CdcAcmClass, /*SerialPort*/};
 use usb_device::device::{UsbDeviceBuilder, UsbVidPid};
-use hal::drivers::UsbBus;
+use hal::drivers::{
+    pins,
+    UsbBus,
+};
 
 
 #[entry]
@@ -28,20 +31,19 @@ fn main() -> ! {
     let mut syscon = hal.syscon;
 
     let mut gpio = hal.gpio.enabled(&mut syscon);
-    let iocon = hal.iocon.enabled(&mut syscon);
+    let mut iocon = hal.iocon.enabled(&mut syscon);
 
-    // BOARD_InitPins
-    iocon.configure_pio_0_22_as_usb0_vbus();
-    let pins = hal::Pins::take().unwrap();
-    // let usb0_vbus = pins.pio0_22;
-    let mut red_led = pins
-        .pio1_6
+    let usb0_vbus_pin = pins::Pio0_22::take().unwrap().into_usb0_vbus_pin(&mut iocon);
+    iocon.disabled(&mut syscon).release(); // save the environment :)
+
+    let mut red_led = pins::Pio1_6::take().unwrap()
         .into_gpio_pin(&mut gpio)
         .into_output(hal::drivers::pins::Level::High); // start turned off
 
+
     let clocks = hal::ClockRequirements::default()
         .system_freq(48.mhz())
-        .support_usbfs()
+        // .support_usbfs()
         .configure(&mut anactrl, /*&mut pmc,*/ &mut syscon)
         .unwrap();
         // .expect("Clock configuration failed");
@@ -59,7 +61,7 @@ fn main() -> ! {
     );
 
     // let usb_bus = UsbBus::new(peripherals.USB0, (usb0_vbus,));
-    let usb_bus = UsbBus::new(usbfsd, ());
+    let usb_bus = UsbBus::new(usbfsd, usb0_vbus_pin);
     // let mut serial = SerialPort::new(&usb_bus);
     let mut cdc_acm = CdcAcmClass::new(&usb_bus, 8);
 

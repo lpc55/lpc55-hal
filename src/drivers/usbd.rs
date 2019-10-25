@@ -47,10 +47,17 @@ use crate::{
 };
 
 
-// TODO: fixme
-pub trait UsbPins: Send { }
-// impl UsbPins for (lpc55s6x_hal::pins::Pin<lpc55s6x_hal::pins::PIO0_22, lpc55s6x_hal::states::pin_state::Unused>,)
-impl UsbPins for () {}
+use crate::{
+    Pin,
+    drivers::pins::PinId,
+    states::{
+        pin_state,
+        pin_function,
+    },
+};
+
+pub trait Usb0VbusPin: Send { }
+impl<P> Usb0VbusPin for Pin<P, pin_state::Special<pin_function::USB0_VBUS>> where P: PinId + Send {}
 
 /// Implements the `usb_device::bus::UsbBus` trait.
 ///
@@ -62,20 +69,19 @@ impl UsbPins for () {}
 /// After the bus is enabled, in practice most access won't mutate the object itself
 /// but only endpoint-specific registers and buffers, the access to which is mostly
 /// arbitrated by endpoint handles.
-pub struct UsbBus<PINS> {
-    // TODO: use either a RegProxy, or perhaps a UsbFsDev<is::Enabled>
+pub struct UsbBus<P> {
     usb_regs: Mutex<USB0>,
     ep_regs: Mutex<endpoint_registers::Instance>,
     endpoints: [Endpoint; self::constants::NUM_ENDPOINTS],
     ep_allocator: EndpointMemoryAllocator,
     max_endpoint: usize,
-    pins: PhantomData<PINS>,
+    pin: PhantomData<P>,
 }
 
 
-impl<PINS: UsbPins+Sync> UsbBus<PINS> {
+impl<PIN: Usb0VbusPin + Sync> UsbBus<PIN> {
     /// Constructs a new USB peripheral driver.
-    pub fn new(usbfsd: EnabledUsbfsDevice, _pins: PINS) -> UsbBusAllocator<Self> {
+    pub fn new(usbfsd: EnabledUsbfsDevice, _usb0_vbus_pin: PIN) -> UsbBusAllocator<Self> {
         use self::constants::NUM_ENDPOINTS;
 
         let bus = UsbBus {
@@ -94,7 +100,7 @@ impl<PINS: UsbPins+Sync> UsbBus<PINS> {
 
                 unsafe { mem::transmute::<_, [Endpoint; NUM_ENDPOINTS]>(endpoints) }
             },
-            pins: PhantomData,
+            pin: PhantomData,
         };
 
         UsbBusAllocator::new(bus)

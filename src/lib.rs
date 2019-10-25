@@ -1,9 +1,6 @@
 // #![allow(non_camel_case_types)]
 #![no_std]
 
-// Meh, maybe `hal_traits` instead?
-use embedded_hal as hal;
-
 pub extern crate lpc55s6x_pac as raw;
 
 pub mod peripherals;
@@ -19,6 +16,8 @@ pub use peripherals::{
     usbfs::Usbfs,
     utick::Utick,
 };
+
+pub mod traits;
 
 pub mod drivers;
 
@@ -57,28 +56,10 @@ pub fn new() -> Peripherals {
     ))
 }
 
-/// This is the entry point to the HAL API. Before you can do anything else, you
-/// need to get an instance of this struct via [`Peripherals::take`] or
-/// [`Peripherals::steal`].
+/// This is the entry point to the HAL API.
 ///
-/// # Safe Use of the API
-///
-/// Since it should be impossible (outside of unsafe code) to access the
-/// peripherals before this struct is initialized, you can rely on the
-/// peripheral states being correct, as long as there's no bug in the API, and
-/// you're not using unsafe code to do anything that the HAL API can't account
-/// for.
-///
-/// If you directly use unsafe code to access peripherals or manipulate this
-/// API, this will be really obvious from the code. But please note that if
-/// you're using other APIs to access the hardware, such conflicting hardware
-/// access might not be obvious, as the other API might use unsafe code under
-/// the hood to access the hardware (just like this API does).
-///
-/// If you do access the peripherals in any way not intended by this API, please
-/// make sure you know what you're doing. In specific terms, this means you
-/// should be fully aware of what your code does, and whether that is a valid
-/// use of the hardware.
+/// Before you can do anything else, you need to get an instance of this struct,
+/// via `hal::new` or `hal::steal`.
 #[allow(non_snake_case)]
 pub struct Peripherals {
     /// Analog control
@@ -99,13 +80,7 @@ pub struct Peripherals {
     /// System configuration
     pub syscon: Syscon,
 
-    // /// USB full-speed device
-    // pub USBFSD: usbfs::device::UsbFsDev<init_state::Disabled>,
-
-    // /// USB full-speed host
-    // pub USBFSH: usbfs::host::UsbFsHost<init_state::Disabled>,
-
-    // USB full-speed device or host
+    /// USB full-speed device or, not implemented, host
     pub usbfs: Usbfs,
 
     /// Micro-Tick Timer

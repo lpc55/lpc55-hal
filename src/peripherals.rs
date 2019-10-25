@@ -1,3 +1,24 @@
+//! HAL wrappers around raw PAC peripherals.
+//!
+//! The APIs presented only implement basic functionality.
+//! For more complex things, consult `hal::drivers`.
+//!
+//! In an RTFM setup, RTFM owns Peripherals and CorePeripherals,
+//! so here use
+//! ```
+//! use lpc55s6x_hal as hal;
+//!
+//! let syscon = hal::Syscon::from(device::SYSCON);
+//! ```
+//!
+//! In a non-RTFM setup, to use a fully HAL-driven approach:
+//! ```
+//! use lpc55s6x_hal as hal;
+//!
+//! let hal = hal::new()
+//! let syscon = hal.syscon;
+//! ```
+
 pub mod anactrl;
 pub mod casper;
 pub mod gpio;

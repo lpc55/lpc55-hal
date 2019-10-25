@@ -33,8 +33,10 @@ pub mod usbfs_mode {
 
     pub struct Unknown;
     impl UsbfsMode for Unknown {}
+
     pub struct Device;
     impl UsbfsMode for Device {}
+
     pub struct Host;
     impl UsbfsMode for Host {}
 }
@@ -74,10 +76,9 @@ pub mod main_clock {
 /// a frozen Clocks (clock-tree configuration) for
 /// which USB clocks have been configured properly.
 pub struct ClocksSupportUsbfsToken {pub(crate) __: PhantomData<()>}
-// pub struct ValidUsbClockToken {pub(crate) __: PhantomData<()>}
 
 
-pub mod gpio {
+pub mod gpio_state {
     pub mod direction {
         /// Implemented by types that indicate GPIO pin direction
         pub trait Direction {}
@@ -91,16 +92,14 @@ pub mod gpio {
         pub struct Output;
         impl Direction for Output {}
 
+        pub trait NotInput: Direction {}
+        impl NotInput for Unknown {}
+        impl NotInput for Output {}
+
         pub trait NotOutput: Direction {}
         impl NotOutput for Unknown {}
         impl NotOutput for Input {}
     }
-
-    // pub trait Level;
-    // pub struct Low;
-    // impl Level for Low;
-    // pub struct High;
-    // impl Level for High;
 
     pub enum Level {
         Low,
@@ -108,9 +107,18 @@ pub mod gpio {
     }
 }
 
+pub mod pin_function {
+    #![allow(non_camel_case_types)]
+    pub trait Function {}
+
+    pub struct USB0_VBUS;
+    impl Function for USB0_VBUS {}
+}
+
 /// Contains types that indicate pin states
 pub mod pin_state {
-    use super::gpio::direction::Direction;
+    use super::gpio_state::direction::Direction;
+    use super::pin_function::Function;
 
     /// Implemented by types that indicate pin state
     pub trait PinState {}
@@ -130,4 +138,10 @@ pub mod pin_state {
     }
 
     impl<D> PinState for Gpio<D> where D: Direction {}
+
+    pub struct Special<F: Function> {
+        pub(crate) _function: F,
+    }
+
+    impl<F> PinState for Special<F> where F: Function {}
 }

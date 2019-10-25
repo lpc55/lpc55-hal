@@ -1,195 +1,31 @@
 use crate::{
     raw::gpio::{CLR, DIRSET, PIN, SET},
-    peripherals::gpio::Gpio,
-    states::{init_state, pin_state},
+    peripherals::{
+        gpio::Gpio,
+        iocon::Iocon,
+    },
+    states::{
+        init_state,
+        pin_state,
+        pin_function,
+    },
 };
 
-use crate::hal::digital::v2::{OutputPin, StatefulOutputPin};
+pub use crate::states::gpio_state::{
+    direction,
+    Level,
+};
 
-// bleeee *-imports
-pub use crate::states::gpio::*;
+pub mod types;
 
+pub mod gpio;
+// pub mod special;
 
-/// Implemented by types that identify pins
-pub trait PinId {
-    /// This is `0` for [`PIO0_0`] and `1` for [`PIO1_0`]
-    const PORT: usize;
-
-    /// This is `0` for [`PIO0_0`], `1` for [`PIO0_1`] and so forth.
-    const ID: u8;
-
-    /// This is `0x00000001` for [`PIO0_0`], `0x00000002` for [`PIO0_1`],
-    /// `0x00000004` for [`PIO0_2`], and so forth.
-    const MASK: u32;
-}
-
-static mut TAKEN: bool = false;
-
-macro_rules! pins {
-    ($(
-        $field:ident,
-        $type:ident,
-        $port:expr,
-        $id:expr,
-        $default_state_ty:ty,
-        $default_state_val:expr;
-    )*) => {
-        /// Provides access to all pins
-        ///
-        /// This struct is a part of [`iocon::Parts`].
-        ///
-        /// # Limitations
-        ///
-        /// This struct currently provides access to all pins that can be
-        /// available on an LPC82x part. Please make sure that you are aware of
-        /// which pins are actually available on your specific part, and only
-        /// use those.
-        ///
-        /// [`iocon::Parts`]: struct.Parts.html
-        #[allow(missing_docs)]
-        pub struct Pins {
-            $(pub $field: Pin<$type, $default_state_ty>,)*
-        }
-
-        impl Pins {
-
-            pub fn take() -> Option<Self> {
-                if unsafe { TAKEN } {
-                    None
-                } else {
-                    Some(unsafe {
-                        TAKEN = true;
-                        Pins::steal()
-                    } )
-                }
-            }
-
-            pub fn release(self) {
-                unsafe { TAKEN = false };
-            }
-
-            pub unsafe fn steal() -> Self {
-                Pins {
-                    $(
-                        $field: Pin {
-                            id   : $type(()),
-                            state: $default_state_val,
-                        },
-                    )*
-                }
-            }
-        }
-
-
-        $(
-            /// Identifies a specific pin
-            ///
-            /// Pins can be accessed via the field `pins` of [`iocon::Parts`].
-            ///
-            /// [`iocon::Parts`]: struct.Parts.html
-            #[allow(non_camel_case_types)]
-            pub struct $type(());
-
-            impl PinId for $type {
-                const PORT: usize = $port;
-                const ID  : u8    = $id;
-                const MASK: u32   = 0x1 << $id;
-            }
-        )*
-    }
-}
-
-// TODO: fill out properly
-pins!(
-    pio0_0 , PIO0_0 , 0, 0x00, pin_state::Unused, pin_state::Unused;
-    pio0_1 , PIO0_1 , 0, 0x01, pin_state::Unused, pin_state::Unused;
-    pio0_2 , PIO0_2 , 0, 0x02, pin_state::Unused, pin_state::Unused;
-    pio0_3 , PIO0_3 , 0, 0x03, pin_state::Unused, pin_state::Unused;
-    pio0_4 , PIO0_4 , 0, 0x04, pin_state::Unused, pin_state::Unused;
-    pio0_5 , PIO0_5 , 0, 0x05, pin_state::Unused, pin_state::Unused;
-    pio0_6 , PIO0_6 , 0, 0x06, pin_state::Unused, pin_state::Unused;
-    pio0_7 , PIO0_7 , 0, 0x07, pin_state::Unused, pin_state::Unused;
-    pio0_8 , PIO0_8 , 0, 0x08, pin_state::Unused, pin_state::Unused;
-    pio0_9 , PIO0_9 , 0, 0x09, pin_state::Unused, pin_state::Unused;
-    pio0_10, PIO0_10, 0, 0x0a, pin_state::Unused, pin_state::Unused;
-    pio0_11, PIO0_11, 0, 0x0b, pin_state::Unused, pin_state::Unused;
-    pio0_12, PIO0_12, 0, 0x0c, pin_state::Unused, pin_state::Unused;
-    pio0_13, PIO0_13, 0, 0x0d, pin_state::Unused, pin_state::Unused;
-    pio0_14, PIO0_14, 0, 0x0e, pin_state::Unused, pin_state::Unused;
-    pio0_15, PIO0_15, 0, 0x0f, pin_state::Unused, pin_state::Unused;
-
-    pio0_22, PIO0_22, 0, 0x16, pin_state::Unused, pin_state::Unused;
-
-    pio1_0 , PIO1_0 , 1, 0x00, pin_state::Unused, pin_state::Unused;
-    pio1_1 , PIO1_1 , 1, 0x01, pin_state::Unused, pin_state::Unused;
-    pio1_2 , PIO1_2 , 1, 0x02, pin_state::Unused, pin_state::Unused;
-    pio1_3 , PIO1_3 , 1, 0x03, pin_state::Unused, pin_state::Unused;
-    pio1_4 , PIO1_4 , 1, 0x04, pin_state::Unused, pin_state::Unused;
-    pio1_5 , PIO1_5 , 1, 0x05, pin_state::Unused, pin_state::Unused;
-    pio1_6 , PIO1_6 , 1, 0x06, pin_state::Unused, pin_state::Unused;
-    pio1_7 , PIO1_7 , 1, 0x07, pin_state::Unused, pin_state::Unused;
-);
-
-/// Main API to control for controlling pins
-///
-/// `Pin` has two type parameters:
-/// - `T`, to indicate which specific pin this instance of `Pin` represents (so,
-///   [`PIO0_0`], [`PIO0_1`], and so on)
-/// - `S`, to indicate which state the represented pin is currently in
-///
-/// A pin instance can be in one of the following states:
-/// - [`pin_state::Unused`], to indicate that the pin is currently not used
-/// - [`pin_state::Gpio`], to indicate that the pin is being used for
-///   general-purpose I/O
-/// - TODO: others
-///
-/// # State Management
-///
-/// All pins start out their initial state, as defined in the user manual. To
-/// prevent us from making mistakes, only the methods that induce a valid state
-/// transition are available. Code that tries to call a method that would cause
-/// an invalid state transition will simply not compile.
-///
-/// TODO: change this towards "assume nothing on the pin"
-/// TBD: what does this mean exactly...
-///
-/// # General Purpose I/O
-///
-/// All pins can be used for general-purpose I/O (GPIO), meaning they can be
-/// used for reading digital input signals and writing digital output signals.
-/// To set up a pin for GPIO use, you need to call [`Pin::into_gpio_pin`] when
-/// it is in its unused state.
-///
-/// (( Example ))
-///
-/// Now `pin` is in the GPIO state. The GPIO state has the following sub-states:
-/// - [`direction::Unknown`], to indicate that the current GPIO configuration is
-///   not known
-/// - [`direction::Input`], to indicate that the pin is configured for digital
-///   input
-/// - [`direction::Output`], to indicate that the pin is configured for digital
-///   output
-///
-/// To use a pin, that we previously configured for GPIO (see example above),
-/// for digital output, we need to set the pin direction and initial low/high
-/// state using [`Pin::into_output_low`] or [`Pin::into_output_high`].
-///
-/// Using pins for digital input is currently not supported by the API.
-///
-/// # Fixed and Movable Functions
-///
-/// Besides general-purpose I/O, pins can be used for a number of more
-/// specialized functions. Some of those can be used only on one specific pin
-/// (fixed functions), others can be assigned to any pin (movable functions).
-///
-/// (...)
-///
-/// This is currently not supported.
-pub struct Pin<T: PinId, S: pin_state::PinState> {
-    pub(crate) id: T,
-    #[allow(dead_code)]
-    pub(crate) state: S,
-}
+pub use types::{
+    PinId,
+    Pin,
+    PinType,
+};
 
 impl<T> Pin<T, pin_state::Unused>
 where
@@ -200,6 +36,8 @@ where
         self,
         _: &mut Gpio<init_state::Enabled>,
     ) -> Pin<T, pin_state::Gpio<direction::Unknown>> {
+        // TODO: need to set FUNC to 0 at minimum
+        // (possibly later than here)
         Pin {
             id: self.id,
             state: pin_state::Gpio {
@@ -212,87 +50,375 @@ where
             },
         }
     }
+
+    // pub fn into_special_pin(
+    //     self,
+    // ): -> Pin<T, pin_state::Special> {
+    //     Pin {
+    //         id: self.id,
+    //         state
+    // }
 }
 
-// impl<T, U> Pin<T, U>
-// where
-//     T: PinId,
-// {
-//     pub fn pin_info(&self, iocon: &iocon) -> u32 {
-//         self.raw.pio0_22.modify(|_, w|
-//     }
-
-// }
-
-impl<T, D> Pin<T, pin_state::Gpio<D>>
-where
-    T: PinId,
-    D: direction::NotOutput,
-{
-    pub fn into_output(self, initial: Level) -> Pin<T, pin_state::Gpio<direction::Output>> {
-        match initial {
-            Level::High => self.state.set[T::PORT].write(|w| unsafe { w.setp().bits(T::MASK) }),
-            Level::Low => self.state.clr[T::PORT].write(|w| unsafe { w.clrp().bits(T::MASK) }),
-        }
-
-        self.state.dirset[T::PORT].write(|w| unsafe { w.dirsetp().bits(T::MASK) });
+impl Pin<Pio0_22, pin_state::Unused> {
+    pub fn into_usb0_vbus_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) -> Pin<Pio0_22, pin_state::Special<pin_function::USB0_VBUS>> {
+        iocon.raw.pio0_22.modify(|_, w|
+            w
+            .func().alt7() // FUNC7, pin configured as USB0_VBUS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        );
 
         Pin {
             id: self.id,
-
-            state: pin_state::Gpio {
-                dirset: crate::reg_proxy::RegClusterProxy::new(),
-                pin: crate::reg_proxy::RegClusterProxy::new(),
-                set: crate::reg_proxy::RegClusterProxy::new(),
-                clr: crate::reg_proxy::RegClusterProxy::new(),
-
-                _direction: direction::Output,
+            state: pin_state::Special {
+                _function: pin_function::USB0_VBUS,
             },
         }
     }
 
-    // Alternatively, remove level parameter, where `into_output` has unspecified level,
-    // and add methods `into_output_{low,high}` like so
-    //
-    // pub fn into_output_high(self) -> Pin<T, pin_state::Gpio<'gpio, direction::Output>> {
-    //     self.state.set[T::PORT].write(|w| unsafe { w.setp().bits(T::MASK) });
-    //     self.into_output()
-    // }
-}
-/// These methods are only available if
-/// - pin is in GPIO state.
-/// - pin direction is output.
-impl<T> OutputPin for Pin<T, pin_state::Gpio<direction::Output>>
-where
-    T: PinId,
-{
-    type Error = void::Void;
-
-    /// Set the pin output to HIGH
-    fn set_high(&mut self) -> Result<(), Self::Error> {
-        self.state.set[T::PORT].write(|w| unsafe { w.setp().bits(T::MASK) });
-        Ok(())
-    }
-
-    /// Set the pin output to LOW
-    fn set_low(&mut self) -> Result<(), Self::Error> {
-        self.state.clr[T::PORT].write(|w| unsafe { w.clrp().bits(T::MASK) });
-        Ok(())
-    }
 }
 
-impl<T> StatefulOutputPin for Pin<T, pin_state::Gpio<direction::Output>>
-where
-    T: PinId,
-{
-    fn is_set_high(&self) -> Result<bool, Self::Error> {
-        Ok(self.state.pin[T::PORT].read().port().bits() & T::MASK == T::MASK)
-    }
+/*
+/// A fixed or movable function that can be assigned to a pin
+///
+/// T identifies function.
+/// State tracks whether it's assigned, and to which pin
+pub struct Function<T, State> {
+    ty: T,
+    _state: State,
+}
 
-    fn is_set_low(&self) -> Result<bool, Self::Error> {
-        Ok(!self.state.pin[T::PORT].read().port().bits() & T::MASK == T::MASK)
+impl<T> Function<T, state::Unassigned> {
+    /// Assign this function to a pin
+    ///
+    /// This method is only available if a number of requirements are met:
+    /// - `Function` must be in the [`Unassigned`] state, as a function can only
+    ///   be assigned to one pin.
+    /// - The [`Pin`] must be in the SWM state ([`pin_state::Swm`]). See
+    ///   documentation on [`Pin`] for information on pin state management.
+    /// - The function must be assignable to the pin. Movable functions can be
+    ///   assigned to any pin, but fixed functions can be assigned to only one
+    ///   pin.
+    /// - The state of the pin must allow another function of this type to be
+    ///   assigned. Input functions can always be assigned, but only one output
+    ///   or bidirectional function can be assigned to a given pin at any time.
+    ///
+    /// Code attempting to call this method while these requirement are not met,
+    /// will not compile.
+    ///
+    /// Consumes this instance of `Function`, as well as the provided [`Pin`],
+    /// and returns new instances. The returned `Function` instance will have its
+    /// state set to indicate that it has been assigned to the pin. The returned
+    /// [`Pin`] will have its state updated to indicate that a function of this
+    /// `Function`'s type has been assigned.
+    ///
+    /// # Examples
+    ///
+    /// Assign one output and one input function to the same pin:
+    ///
+    /// ``` no_run
+    /// use lpc82x_hal::Peripherals;
+    ///
+    /// let p = Peripherals::take().unwrap();
+    ///
+    /// let mut swm = p.SWM.split();
+    ///
+    /// // Assign output function to a pin
+    /// let (u0_txd, pio0_0) = swm.movable_functions.u0_txd.assign(
+    ///     swm.pins.pio0_0.into_swm_pin(),
+    ///     &mut swm.handle,
+    /// );
+    ///
+    j/// // Assign input function to the same pin
+    /// let (u1_rxd, pio0_0) = swm.movable_functions.u1_rxd.assign(
+    ///     pio0_0,
+    ///     &mut swm.handle,
+    /// );
+    /// ```
+    ///
+    /// [`Unassigned`]: state/struct.Unassigned.html
+    pub fn assign<P, S>(
+        mut self,
+        mut pin: Pin<P, S>,
+        swm: &mut Handle,
+    ) -> (
+        Function<T, state::Assigned<P>>,
+        <Pin<P, S> as AssignFunction<T, T::Kind>>::Assigned,
+    )
+    where
+        T: FunctionTrait<P>,
+        P: PinTrait,
+        S: PinState,
+        Pin<P, S>: AssignFunction<T, T::Kind>,
+    {
+        self.ty.assign(&mut pin.ty, swm);
+
+        let function = Function {
+            ty: self.ty,
+            _state: state::Assigned(PhantomData),
+        };
+
+        (function, pin.assign())
     }
 }
+
+impl<T, P> Function<T, state::Assigned<P>> {
+    /// Unassign this function from a pin
+    ///
+    /// This method is only available if a number of requirements are met:
+    /// - The function must be assigned to the provided pin. This means
+    ///   `Function` must be in the [`Assigned`] state, and the type parameter
+    ///   of [`Assigned`] must indicate that the function is assigned to the
+    ///   same pin that is provided as an argument.
+    /// - The [`Pin`] must be in the SWM state ([`pin_state::Swm`]), and the
+    ///   state must indicate that a function of this `Function`'s type is
+    ///   currently assigned. This should always be the case, if the previous
+    ///   condition is met, as it should be impossible to create inconsistent
+    ///   states between `Function`s and [`Pin`]s without using `unsafe`.
+    ///
+    /// Code attempting to call this method while these requirement are not met,
+    /// will not compile.
+    ///
+    /// Consumes this instance of `Function`, as well as the provided [`Pin`],
+    /// and returns new instances. The returned `Function` instance will have
+    /// its state set to indicate that it is no longer assigned to a pin. The
+    /// returned [`Pin`] will have its state updated to indicate that one fewer
+    /// function of this type is now assigned.
+    ///
+    /// # Examples
+    ///
+    /// Unassign a function that has been previously assigned to a pin:
+    ///
+    /// ``` no_run
+    /// # use lpc82x_hal::Peripherals;
+    /// #
+    /// # let p = Peripherals::take().unwrap();
+    /// #
+    /// # let mut swm = p.SWM.split();
+    /// #
+    /// # // Assign output function to a pin
+    /// # let (u0_txd, pio0_0) = swm.movable_functions.u0_txd.assign(
+    /// #     swm.pins.pio0_0.into_swm_pin(),
+    /// #     &mut swm.handle,
+    /// # );
+    /// #
+    /// // U0_TXD must have been previously assigned to the pin, or the
+    /// // following code will not compile. See documentation of
+    /// // `Function::assign`.
+    /// let (u0_txd, pio0_0) = u0_txd.unassign(pio0_0, &mut swm.handle);
+    /// ```
+    ///
+    /// [`Assigned`]: state/struct.Assigned.html
+    pub fn unassign<S>(
+        mut self,
+        mut pin: Pin<P, S>,
+        swm: &mut Handle,
+    ) -> (
+        Function<T, state::Unassigned>,
+        <Pin<P, S> as UnassignFunction<T, T::Kind>>::Unassigned,
+    )
+    where
+        T: FunctionTrait<P>,
+        P: PinTrait,
+        S: PinState,
+        Pin<P, S>: UnassignFunction<T, T::Kind>,
+    {
+        self.ty.unassign(&mut pin.ty, swm);
+
+        let function = Function {
+            ty: self.ty,
+            _state: state::Unassigned,
+        };
+
+        (function, pin.unassign())
+    }
+}
+*/
+
+// seems a bit inefficient, but want to be able to safely
+// take individual pins instead of the whole bunch
+static mut PIN_TAKEN: [[bool; 32]; 2] = [[false; 32]; 2];
+
+macro_rules! pins {
+    ($(
+        $field:ident,
+        $pin:ident,
+        $port:expr,
+        $number:expr,
+        $type:expr,
+        $default_state_ty:ty,
+        $default_state_val:expr;
+    )*) => {
+        /// Provides access to all pins
+        #[allow(missing_docs)]
+        pub struct Pins {
+            $(pub $field: Pin<$pin, $default_state_ty>,)*
+        }
+
+        impl Pins {
+
+            fn any_taken() -> bool {
+                unsafe {
+                    let any_port_0 = PIN_TAKEN[0].iter().any(|x| *x);
+                    let any_port_1 = PIN_TAKEN[1].iter().any(|x| *x);
+                    any_port_0 || any_port_1
+                }
+            }
+
+            fn set_all_taken() {
+                unsafe {
+                    for entry in PIN_TAKEN[0].iter_mut() { *entry = true; }
+                    for entry in PIN_TAKEN[1].iter_mut() { *entry = true; }
+                }
+            }
+
+            fn set_all_released() {
+                unsafe {
+                    for entry in PIN_TAKEN[0].iter_mut() { *entry = false; }
+                    for entry in PIN_TAKEN[1].iter_mut() { *entry = false; }
+                }
+            }
+
+            pub fn take() -> Option<Self> {
+                if Self::any_taken() {
+                    None
+                } else {
+                    Some(unsafe {
+                        Self::set_all_taken();
+                        Self::steal()
+                    } )
+                }
+            }
+
+            pub fn release(self) {
+                Self::set_all_released();
+            }
+
+            pub unsafe fn steal() -> Self {
+                Self {
+                    $(
+                        $field: $pin::steal(),
+                    )*
+                }
+            }
+        }
+
+
+        $(
+            /// Identifies a specific pin
+            ///
+            /// Pins can be `take`n individually, or en bloc via `Pins`.
+            #[allow(non_camel_case_types)]
+            pub struct $pin(());
+
+            impl $pin {
+                pub fn take() -> Option<Pin<Self, $default_state_ty>> {
+                    if unsafe { PIN_TAKEN[$port][$number] } {
+                        None
+                    } else {
+                        Some(unsafe {
+                            Self::steal()
+                        } )
+                    }
+                }
+
+                pub fn release(self) {
+                    unsafe { PIN_TAKEN[$port][$number] = false; }
+                }
+
+                pub unsafe fn steal() -> Pin<Self, $default_state_ty> {
+                    PIN_TAKEN[$port][$number] = true;
+                    Pin {
+                        id: Self(()),
+                        state: $default_state_val,
+                    }
+                }
+            }
+
+            impl PinId for $pin {
+                const PORT: usize = $port;
+                const NUMBER: u8    = $number;
+                const MASK: u32   = 0x1 << $number;
+                const TYPE: PinType = $type;
+            }
+        )*
+    }
+}
+
+pins!(
+    pio0_0 , Pio0_0 , 0,  0, PinType::A, pin_state::Unused, pin_state::Unused;
+    pio0_1 , Pio0_1 , 0,  1, PinType::D, pin_state::Unused, pin_state::Unused;
+    pio0_2 , Pio0_2 , 0,  2, PinType::D, pin_state::Unused, pin_state::Unused;
+    pio0_3 , Pio0_3 , 0,  3, PinType::D, pin_state::Unused, pin_state::Unused;
+    pio0_4 , Pio0_4 , 0,  4, PinType::D, pin_state::Unused, pin_state::Unused;
+    pio0_5 , Pio0_5 , 0,  5, PinType::D, pin_state::Unused, pin_state::Unused;
+    pio0_6 , Pio0_6 , 0,  6, PinType::D, pin_state::Unused, pin_state::Unused;
+    pio0_7 , Pio0_7 , 0,  7, PinType::D, pin_state::Unused, pin_state::Unused;
+    pio0_8 , Pio0_8 , 0,  8, PinType::D, pin_state::Unused, pin_state::Unused;
+    pio0_9 , Pio0_9 , 0,  9, PinType::A, pin_state::Unused, pin_state::Unused;
+    pio0_10, Pio0_10, 0, 10, PinType::A, pin_state::Unused, pin_state::Unused;
+    pio0_11, Pio0_11, 0, 11, PinType::A, pin_state::Unused, pin_state::Unused;
+    pio0_12, Pio0_12, 0, 12, PinType::A, pin_state::Unused, pin_state::Unused;
+    pio0_13, Pio0_13, 0, 13, PinType::I, pin_state::Unused, pin_state::Unused;
+    pio0_14, Pio0_14, 0, 14, PinType::I, pin_state::Unused, pin_state::Unused;
+    pio0_15, Pio0_15, 0, 15, PinType::A, pin_state::Unused, pin_state::Unused;
+    pio0_16, Pio0_16, 0, 16, PinType::A, pin_state::Unused, pin_state::Unused;
+    pio0_17, Pio0_17, 0, 17, PinType::D, pin_state::Unused, pin_state::Unused;
+    pio0_18, Pio0_18, 0, 18, PinType::A, pin_state::Unused, pin_state::Unused;
+    pio0_19, Pio0_19, 0, 19, PinType::D, pin_state::Unused, pin_state::Unused;
+    pio0_20, Pio0_20, 0, 20, PinType::D, pin_state::Unused, pin_state::Unused;
+    pio0_21, Pio0_21, 0, 21, PinType::D, pin_state::Unused, pin_state::Unused;
+    pio0_22, Pio0_22, 0, 22, PinType::D, pin_state::Unused, pin_state::Unused;
+    pio0_23, Pio0_23, 0, 23, PinType::A, pin_state::Unused, pin_state::Unused;
+    pio0_24, Pio0_24, 0, 24, PinType::D, pin_state::Unused, pin_state::Unused;
+    pio0_25, Pio0_25, 0, 25, PinType::D, pin_state::Unused, pin_state::Unused;
+    pio0_26, Pio0_26, 0, 26, PinType::D, pin_state::Unused, pin_state::Unused;
+    pio0_27, Pio0_27, 0, 27, PinType::D, pin_state::Unused, pin_state::Unused;
+    pio0_28, Pio0_28, 0, 28, PinType::D, pin_state::Unused, pin_state::Unused;
+    pio0_29, Pio0_29, 0, 29, PinType::D, pin_state::Unused, pin_state::Unused;
+    pio0_30, Pio0_30, 0, 30, PinType::D, pin_state::Unused, pin_state::Unused;
+    pio0_31, Pio0_31, 0, 31, PinType::A, pin_state::Unused, pin_state::Unused;
+
+    pio1_0 , Pio1_0 , 1,  0, PinType::A, pin_state::Unused, pin_state::Unused;
+    pio1_1 , Pio1_1 , 1,  1, PinType::D, pin_state::Unused, pin_state::Unused;
+    pio1_2 , Pio1_2 , 1,  2, PinType::D, pin_state::Unused, pin_state::Unused;
+    pio1_3 , Pio1_3 , 1,  3, PinType::D, pin_state::Unused, pin_state::Unused;
+    pio1_4 , Pio1_4 , 1,  4, PinType::D, pin_state::Unused, pin_state::Unused;
+    pio1_5 , Pio1_5 , 1,  5, PinType::D, pin_state::Unused, pin_state::Unused;
+    pio1_6 , Pio1_6 , 1,  6, PinType::D, pin_state::Unused, pin_state::Unused;
+    pio1_7 , Pio1_7 , 1,  7, PinType::D, pin_state::Unused, pin_state::Unused;
+    pio1_8 , Pio1_8 , 1,  8, PinType::A, pin_state::Unused, pin_state::Unused;
+    pio1_9 , Pio1_9 , 1,  9, PinType::A, pin_state::Unused, pin_state::Unused;
+    pio1_10, Pio1_10, 1, 10, PinType::D, pin_state::Unused, pin_state::Unused;
+    pio1_11, Pio1_11, 1, 11, PinType::D, pin_state::Unused, pin_state::Unused;
+    pio1_12, Pio1_12, 1, 12, PinType::D, pin_state::Unused, pin_state::Unused;
+    pio1_13, Pio1_13, 1, 13, PinType::D, pin_state::Unused, pin_state::Unused;
+    pio1_14, Pio1_14, 1, 14, PinType::A, pin_state::Unused, pin_state::Unused;
+    pio1_15, Pio1_15, 1, 15, PinType::D, pin_state::Unused, pin_state::Unused;
+    pio1_16, Pio1_16, 1, 16, PinType::D, pin_state::Unused, pin_state::Unused;
+    pio1_17, Pio1_17, 1, 17, PinType::D, pin_state::Unused, pin_state::Unused;
+    pio1_18, Pio1_18, 1, 18, PinType::D, pin_state::Unused, pin_state::Unused;
+    pio1_19, Pio1_19, 1, 19, PinType::A, pin_state::Unused, pin_state::Unused;
+    pio1_20, Pio1_20, 1, 20, PinType::D, pin_state::Unused, pin_state::Unused;
+    pio1_21, Pio1_21, 1, 21, PinType::D, pin_state::Unused, pin_state::Unused;
+    pio1_22, Pio1_22, 1, 22, PinType::D, pin_state::Unused, pin_state::Unused;
+    pio1_23, Pio1_23, 1, 23, PinType::D, pin_state::Unused, pin_state::Unused;
+    pio1_24, Pio1_24, 1, 24, PinType::D, pin_state::Unused, pin_state::Unused;
+    pio1_25, Pio1_25, 1, 25, PinType::D, pin_state::Unused, pin_state::Unused;
+    pio1_26, Pio1_26, 1, 26, PinType::D, pin_state::Unused, pin_state::Unused;
+    pio1_27, Pio1_27, 1, 27, PinType::D, pin_state::Unused, pin_state::Unused;
+    pio1_28, Pio1_28, 1, 28, PinType::D, pin_state::Unused, pin_state::Unused;
+    pio1_29, Pio1_29, 1, 29, PinType::D, pin_state::Unused, pin_state::Unused;
+    pio1_30, Pio1_30, 1, 30, PinType::D, pin_state::Unused, pin_state::Unused;
+    pio1_31, Pio1_31, 1, 31, PinType::D, pin_state::Unused, pin_state::Unused;
+);
 
 use crate::reg_cluster;
 reg_cluster!(DIRSET, DIRSET, raw::GPIO, dirset);

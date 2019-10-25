@@ -113,6 +113,7 @@ impl EnabledUsbfsDevice {
 }
 
 impl<State: init_state::InitState> Usbfs<State, usbfs_mode::Device> {
+    /// Disables the USB FS peripheral, assumed in device mode
     pub fn disabled(
         mut self,
         pmc: &mut pmc::Pmc,

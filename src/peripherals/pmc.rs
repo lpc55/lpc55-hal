@@ -1,4 +1,4 @@
-//! API for power management (PMC)
+//! API for power management (PMC) - always on
 //!
 //! The PMC peripheral is described in the user manual, chapter 13.
 //!
