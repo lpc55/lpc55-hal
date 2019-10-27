@@ -85,6 +85,46 @@ impl Pin<Pio0_22, pin_state::Unused> {
 
 }
 
+// // pin 3 from P24 (right Mikroe rail), labeled SDA
+// impl Pin<Pio1_24, pin_state::Unused> {
+//     pub fn into_sda_pin(
+//         self,
+//         iocon: &mut Iocon<init_state::Enabled>,
+//     ) ->Pin<Pio1_24, pin_state::Special<pin_function::FC2_RXD_SDA_MOSI_DATA>> {
+//         notimplemented!();
+//     }
+// }
+
+// // pin 4 from P24 (right Mikroe rail), labeled SCL
+// impl Pin<Pio0_27, pin_state::Unused> {
+//     pub fn into_sda_pin(
+//         self,
+//         iocon: &mut Iocon<init_state::Enabled>,
+//     ) ->Pin<Pio0_27, pin_state::Special<pin_function::FC2_TXD_SCL_MISO_WS>> {
+//         notimplemented!();
+//     }
+// }
+
+// // pin 5 from P24 (right Mikroe rail), labeled TX
+// impl Pin<Pio1_20, pin_state::Unused> {
+//     pub fn into_tx_pin(
+//         self,
+//         iocon: &mut Iocon<init_state::Enabled>,
+//     ) ->Pin<Pio1_20, pin_state::Special<pin_function::FC4_TXD_SCL_MISO_WS>> {
+//         notimplemented!();
+//     }
+// }
+
+// // pin 6 from P24 (right Mikroe rail), labeled RX
+// impl Pin<Pio1_21, pin_state::Unused> {
+//     pub fn into_rx_pin(
+//         self,
+//         iocon: &mut Iocon<init_state::Enabled>,
+//     ) ->Pin<Pio1_21, pin_state::Special<pin_function::FC4_RXD_SDA_MOSI_DATA>> {
+//         notimplemented!();
+//     }
+// }
+
 /*
 /// A fixed or movable function that can be assigned to a pin
 ///

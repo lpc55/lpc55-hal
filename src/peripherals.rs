@@ -21,7 +21,9 @@
 
 pub mod anactrl;
 pub mod casper;
+pub mod flexcomm;
 pub mod gpio;
+pub mod i2c;
 pub mod iocon;
 pub mod pmc;
 pub mod rng;

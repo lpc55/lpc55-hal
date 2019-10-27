@@ -6,6 +6,8 @@
 pub mod clocks;
 pub use clocks::ClockRequirements;
 
+pub mod i2c;
+
 pub mod pins;
 pub use pins::{
     Pin,

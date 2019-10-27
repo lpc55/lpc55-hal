@@ -111,8 +111,23 @@ pub mod pin_function {
     #![allow(non_camel_case_types)]
     pub trait Function {}
 
+
+
     pub struct USB0_VBUS;
     impl Function for USB0_VBUS {}
+
+    pub struct FC2_TXD_SCL_MISO_WS;
+    impl Function for FC2_TXD_SCL_MISO_WS {}
+
+    pub struct FC2_RXD_SDA_MOSI_DATA;
+    impl Function for FC2_RXD_SDA_MOSI_DATA {}
+
+    pub struct FC4_TXD_SCL_MISO_WS;
+    impl Function for FC4_TXD_SCL_MISO_WS {}
+
+    pub struct FC4_RXD_SDA_MOSI_DATA;
+    impl Function for FC4_RXD_SDA_MOSI_DATA {}
+
 }
 
 /// Contains types that indicate pin states

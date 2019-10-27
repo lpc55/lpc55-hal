@@ -72,6 +72,33 @@ macro_rules! wrap_stateful_peripheral {
     };
 }
 
+#[macro_export]
+macro_rules! stateful_peripheral_enable_disable {
+    ($hal_name:ident) => {
+        impl $hal_name {
+            /// Consumes disabled $hal_name, returns an enabled one
+            pub fn enabled(mut self, syscon: &mut syscon::Syscon) -> $hal_name<init_state::Enabled> {
+                syscon.enable_clock(&mut self.raw);
+
+                $hal_name {
+                    raw: self.raw,
+                    _state: init_state::Enabled(()),
+                }
+            }
+
+            /// Consumes disabled $hal_name, returns an enabled one
+            pub fn disabled(mut self, syscon: &mut syscon::Syscon) -> $hal_name<init_state::Disabled> {
+                syscon.disable_clock(&mut self.raw);
+
+                $hal_name {
+                    raw: self.raw,
+                    _state: init_state::Disabled,
+                }
+            }
+        }
+    }
+}
+
 // #[macro_export]
 // macro_rules! reg_write {
 //     ($peripheral:ident, $register:ident, $field:ident, $value:expr) => {

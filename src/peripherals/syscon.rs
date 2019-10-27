@@ -204,6 +204,14 @@ macro_rules! impl_clock_control {
 
 impl_clock_control!(raw::ADC0, adc, ahbclkctrl0);
 impl_clock_control!(raw::FLASH, flash, ahbclkctrl0);
+impl_clock_control!(raw::FLEXCOMM0, fc0, ahbclkctrl1);
+impl_clock_control!(raw::FLEXCOMM1, fc1, ahbclkctrl1);
+impl_clock_control!(raw::FLEXCOMM2, fc2, ahbclkctrl1);
+impl_clock_control!(raw::FLEXCOMM3, fc3, ahbclkctrl1);
+impl_clock_control!(raw::FLEXCOMM4, fc4, ahbclkctrl1);
+impl_clock_control!(raw::FLEXCOMM5, fc5, ahbclkctrl1);
+impl_clock_control!(raw::FLEXCOMM6, fc6, ahbclkctrl1);
+impl_clock_control!(raw::FLEXCOMM7, fc7, ahbclkctrl1);
 impl_clock_control!(raw::IOCON, iocon, ahbclkctrl0);
 impl_clock_control!(raw::GINT0, gint, ahbclkctrl0);
 impl_clock_control!(raw::PINT, pint, ahbclkctrl0);
@@ -280,22 +288,18 @@ macro_rules! impl_reset_control {
 
 // to be completed
 impl_reset_control!(raw::CASPER, casper_rst, presetctrl2);
-impl_reset_control!(raw::UTICK0, utick_rst, presetctrl1);
+impl_reset_control!(raw::FLEXCOMM0, fc0_rst, presetctrl1);
+impl_reset_control!(raw::FLEXCOMM1, fc1_rst, presetctrl1);
+impl_reset_control!(raw::FLEXCOMM2, fc2_rst, presetctrl1);
+impl_reset_control!(raw::FLEXCOMM3, fc3_rst, presetctrl1);
+impl_reset_control!(raw::FLEXCOMM4, fc4_rst, presetctrl1);
+impl_reset_control!(raw::FLEXCOMM5, fc5_rst, presetctrl1);
+impl_reset_control!(raw::FLEXCOMM6, fc6_rst, presetctrl1);
+impl_reset_control!(raw::FLEXCOMM7, fc7_rst, presetctrl1);
 impl_reset_control!(raw::USB0, usb0_dev_rst, presetctrl1);
-// TODO: figure out this weird messed up totally stupid macro syntax
-// to assert/release multiple resets. And/or don't tie everything to
-// a peripheral which is a not-so-perfect abstraction...
+impl_reset_control!(raw::UTICK0, utick_rst, presetctrl1);
+
 impl_reset_control!(raw::USBFSH, usb0_hostm_rst, usb0_hosts_rst, presetctrl2);
-// impl_reset_control!(raw::USBHSD,
-//     usb1_dev_rst, presetctrl2,
-//     usb1_phy_rst, presetctrl2,
-//     usb1_ram_rst, presetctrl2,
-// );
-// impl_reset_control!(raw::USBHSD,
-//     usb1_host_rst, presetctrl2,
-//     usb1_phy_rst, presetctrl2,
-//     usb1_ram_rst, presetctrl2,
-// );
 
 static mut FRO1MHZUTICKCLOCK_TAKEN: bool = false;
 

@@ -88,6 +88,10 @@ pub enum ClocksError {
 
 pub type Result<T> = core::result::Result<T, ClocksError>;
 
+// TODO:
+// - make sure Fro12MHz is running for FLEXCOMM0
+// - make sure Fro12 and Fro96 are even powered
+
 impl ClockRequirements {
     // TODO: need all these builder methods?
     // Or have user fill the struct by hand, using the defaults?
@@ -108,6 +112,12 @@ impl ClockRequirements {
         self.support_usbfs = true;
         self
     }
+
+    // NB: "The Flexcomm Interface (0 to 7) function clock
+    // frequency must not be higher than 48 MHz."
+    // pub fn support_flexcomm(mut self) -> Self {
+    //     notimplemented!();
+    // }
 
     pub fn system_freq<Freq>(mut self, freq: Freq) -> Self where Freq: Into<Hertz> {
         self.system_clock_freq = Some(freq.into());
