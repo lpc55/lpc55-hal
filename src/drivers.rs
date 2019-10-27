@@ -7,6 +7,7 @@ pub mod clocks;
 pub use clocks::ClockRequirements;
 
 pub mod i2c;
+pub use i2c::I2cMaster;
 
 pub mod pins;
 pub use pins::{

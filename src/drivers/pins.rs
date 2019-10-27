@@ -85,25 +85,37 @@ impl Pin<Pio0_22, pin_state::Unused> {
 
 }
 
-// // pin 3 from P24 (right Mikroe rail), labeled SDA
-// impl Pin<Pio1_24, pin_state::Unused> {
-//     pub fn into_sda_pin(
-//         self,
-//         iocon: &mut Iocon<init_state::Enabled>,
-//     ) ->Pin<Pio1_24, pin_state::Special<pin_function::FC2_RXD_SDA_MOSI_DATA>> {
-//         notimplemented!();
-//     }
-// }
+// pin 3 from P24 (right Mikroe rail), labeled SDA
+impl Pin<Pio1_24, pin_state::Unused> {
+    pub fn into_sda_pin(
+        self,
+        _iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_24, pin_state::Special<pin_function::FC2_RXD_SDA_MOSI_DATA>> {
+        // notimplemented!();
+        Pin {
+            id: self.id,
+            state: pin_state::Special {
+                _function: pin_function::FC2_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
 
-// // pin 4 from P24 (right Mikroe rail), labeled SCL
-// impl Pin<Pio0_27, pin_state::Unused> {
-//     pub fn into_sda_pin(
-//         self,
-//         iocon: &mut Iocon<init_state::Enabled>,
-//     ) ->Pin<Pio0_27, pin_state::Special<pin_function::FC2_TXD_SCL_MISO_WS>> {
-//         notimplemented!();
-//     }
-// }
+// pin 4 from P24 (right Mikroe rail), labeled SCL
+impl Pin<Pio0_27, pin_state::Unused> {
+    pub fn into_scl_pin(
+        self,
+        _iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_27, pin_state::Special<pin_function::FC2_TXD_SCL_MISO_WS>> {
+        // notimplemented!();
+        Pin {
+            id: self.id,
+            state: pin_state::Special {
+                _function: pin_function::FC2_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
 
 // // pin 5 from P24 (right Mikroe rail), labeled TX
 // impl Pin<Pio1_20, pin_state::Unused> {

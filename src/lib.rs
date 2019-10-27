@@ -8,6 +8,8 @@ pub mod peripherals;
 pub use peripherals::{
     anactrl::Anactrl,
     casper::Casper,
+    flexcomm::Flexcomm2,
+    flexcomm::Flexcomm4,
     gpio::Gpio,
     iocon::Iocon,
     pmc::Pmc,
@@ -23,6 +25,7 @@ pub mod drivers;
 
 pub use drivers::{
     ClockRequirements,
+    I2cMaster,
     Pin,
     Pins,
     UsbBus,
@@ -67,6 +70,10 @@ pub struct Peripherals {
 
     /// Cryptographic Accelerator and Signal Processing Engine with RAM sharing
     pub casper: Casper,
+
+    /// Flexcomm Interface Serial Communication
+    pub flexcomm2: Flexcomm2,
+    pub flexcomm4: Flexcomm4,
 
     /// General-purpose I/O (GPIO)
     pub gpio: Gpio,
@@ -126,6 +133,8 @@ impl Peripherals {
             // HAL peripherals
             anactrl: Anactrl::from(p.ANACTRL),
             casper: Casper::from(p.CASPER),
+            flexcomm2: Flexcomm2::from((p.FLEXCOMM2, p.I2C2, p.SPI2, p.USART2)),
+            flexcomm4: Flexcomm4::from((p.FLEXCOMM4, p.I2C4, p.SPI4, p.USART4)),
             gpio: Gpio::from(p.GPIO),
             iocon: Iocon::from(p.IOCON),
             pmc: Pmc::from(p.PMC),

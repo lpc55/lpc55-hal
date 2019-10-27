@@ -1,6 +1,7 @@
+use core::marker::PhantomData;
 use crate::traits::established::blocking::i2c::{Write, WriteRead, Read};
 use crate::peripherals::{
-    i2c::{
+    flexcomm::{
         // Trait marking I2C peripherals
         I2c, // as I2cPeripheral
         // Actual I2c HAL peripherals
@@ -9,7 +10,13 @@ use crate::peripherals::{
         I2cPins,
     },
 };
-use crate::drivers::clocks::Hertz;
+use crate::drivers::{
+    pins::{
+        // Pin,
+        PinId,
+    },
+};
+// use crate::drivers::clocks::Hertz;
 
 /// I2C error
 #[derive(Debug)]
@@ -30,13 +37,17 @@ pub enum Error {
 
 // TODO: Parametrize with Master/Slave MODE
 /// I2C peripheral operating in master mode
-pub struct I2cMaster<I2C, PINS>
+pub struct I2cMaster<PIO1, PIO2, I2C, PINS>
 where
+    PIO1: PinId,
+    PIO2: PinId,
     I2C: I2c,
-    PINS: I2cPins<I2C>,
+    PINS: I2cPins<PIO1, PIO2, I2C>,
 {
     i2c: I2C,
     pins: PINS,
+    _pin1: PhantomData<PIO1>,
+    _pin2: PhantomData<PIO2>,
 }
 
 // trait I2cCommon {
@@ -48,11 +59,13 @@ where
 macro_rules! impl_i2c {
     ($I2cX:ident) => {
 
-impl<PINS> I2cMaster<$I2cX, PINS>
+impl<PIO1, PIO2, PINS> I2cMaster<PIO1, PIO2, $I2cX, PINS>
 where
-    PINS: I2cPins<$I2cX>,
+    PIO1: PinId,
+    PIO2: PinId,
+    PINS: I2cPins<PIO1, PIO2, $I2cX>,
 {
-    pub fn new(i2c: $I2cX, pins: PINS, speed: /*Kilo*/Hertz, /*_compatible_clocks: ClocksSupportI2cToken*/) -> Self {
+    pub fn new(i2c: $I2cX, pins: PINS, /*speed: KiloHertz, _compatible_clocks: ClocksSupportI2cToken*/) -> Self {
         i2c.raw.cfg.modify(|_, w| w
             .msten().enabled()
             .slven().disabled()
@@ -67,7 +80,9 @@ where
 
         Self {
             i2c,
-            pins: pins,
+            pins,
+            _pin1: PhantomData,
+            _pin2: PhantomData,
         }
     }
 
@@ -101,9 +116,11 @@ where
 //     }
 // }
 
-impl<PINS> Write for I2cMaster<$I2cX, PINS>
+impl<PIO1, PIO2, PINS> Write for I2cMaster<PIO1, PIO2, $I2cX, PINS>
 where
-    PINS: I2cPins<$I2cX>,
+    PIO1: PinId,
+    PIO2: PinId,
+    PINS: I2cPins<PIO1, PIO2, $I2cX>,
 {
     type Error = Error;
 
@@ -173,9 +190,11 @@ where
     }
 }
 
-impl<PINS> Read for I2cMaster<$I2cX, PINS>
+impl<PIO1, PIO2, PINS> Read for I2cMaster<PIO1, PIO2, $I2cX, PINS>
 where
-    PINS: I2cPins<$I2cX>,
+    PIO1: PinId,
+    PIO2: PinId,
+    PINS: I2cPins<PIO1, PIO2, $I2cX>,
 {
     type Error = Error;
 
@@ -244,9 +263,11 @@ where
     }
 }
 
-impl<PINS> WriteRead for I2cMaster<$I2cX, PINS>
+impl<PIO1, PIO2, PINS> WriteRead for I2cMaster<PIO1, PIO2, $I2cX, PINS>
 where
-    PINS: I2cPins<$I2cX>,
+    PIO1: PinId,
+    PIO2: PinId,
+    PINS: I2cPins<PIO1, PIO2, $I2cX>,
 {
     type Error = Error;
 
