@@ -134,8 +134,14 @@ macro_rules! flexcomm {
 }
 
 flexcomm!(Flexcomm0, I2c0, Spi0, Usart0, FLEXCOMM0, I2C0, SPI0, USART0, fcclksel0);
+flexcomm!(Flexcomm1, I2c1, Spi1, Usart1, FLEXCOMM1, I2C1, SPI1, USART1, fcclksel1);
 flexcomm!(Flexcomm2, I2c2, Spi2, Usart2, FLEXCOMM2, I2C2, SPI2, USART2, fcclksel2);
+flexcomm!(Flexcomm3, I2c3, Spi3, Usart3, FLEXCOMM3, I2C3, SPI3, USART3, fcclksel3);
 flexcomm!(Flexcomm4, I2c4, Spi4, Usart4, FLEXCOMM4, I2C4, SPI4, USART4, fcclksel4);
+flexcomm!(Flexcomm5, I2c5, Spi5, Usart5, FLEXCOMM5, I2C5, SPI5, USART5, fcclksel5);
+flexcomm!(Flexcomm6, I2c6, Spi6, Usart6, FLEXCOMM6, I2C6, SPI6, USART6, fcclksel6);
+flexcomm!(Flexcomm7, I2c7, Spi7, Usart7, FLEXCOMM7, I2C7, SPI7, USART7, fcclksel7);
+
 // flexcomm_enable_disable!(Flexcomm0, fcclksel0);
 // // impl Flexcomm for Flexcomm0 {}
 
@@ -169,8 +175,14 @@ flexcomm!(Flexcomm4, I2c4, Spi4, Usart4, FLEXCOMM4, I2C4, SPI4, USART4, fcclksel
 
 pub trait I2c {}
 
+impl I2c for I2c0 {}
+impl I2c for I2c1 {}
 impl I2c for I2c2 {}
+impl I2c for I2c3 {}
 impl I2c for I2c4 {}
+impl I2c for I2c5 {}
+impl I2c for I2c6 {}
+impl I2c for I2c7 {}
 
 /// I2C serial clock
 pub trait I2cSclPin<PIO, I2C> where PIO: PinId, I2C: I2c {}

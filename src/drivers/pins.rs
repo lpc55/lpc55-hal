@@ -50,24 +50,16 @@ where
             },
         }
     }
-
-    // pub fn into_special_pin(
-    //     self,
-    // ): -> Pin<T, pin_state::Special> {
-    //     Pin {
-    //         id: self.id,
-    //         state
-    // }
 }
 
-impl Pin<Pio0_22, pin_state::Unused> {
-    pub fn into_usb0_vbus_pin(
+impl Pin<Pio1_20, pin_state::Unused> {
+    pub fn into_scl_pin(
         self,
         iocon: &mut Iocon<init_state::Enabled>,
-    ) -> Pin<Pio0_22, pin_state::Special<pin_function::USB0_VBUS>> {
-        iocon.raw.pio0_22.modify(|_, w|
+    ) ->Pin<Pio1_20, pin_state::Special<pin_function::FC4_TXD_SCL_MISO_WS>> {
+        iocon.raw.pio1_20.modify(|_, w|
             w
-            .func().alt7() // FUNC7, pin configured as USB0_VBUS
+            .func().alt5() // FUNC1, pin configured as FC2_TXD_SCL_MISO_WS
             .mode().inactive() // MODE_INACT, no additional pin function
             .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
             .invert().disabled() // INV_DI, input function is not inverted
@@ -78,44 +70,133 @@ impl Pin<Pio0_22, pin_state::Unused> {
         Pin {
             id: self.id,
             state: pin_state::Special {
-                _function: pin_function::USB0_VBUS,
+                _function: pin_function::FC4_TXD_SCL_MISO_WS,
             },
         }
     }
-
 }
 
-// pin 3 from P24 (right Mikroe rail), labeled SDA
-impl Pin<Pio1_24, pin_state::Unused> {
+impl Pin<Pio1_21, pin_state::Unused> {
     pub fn into_sda_pin(
         self,
-        _iocon: &mut Iocon<init_state::Enabled>,
-    ) ->Pin<Pio1_24, pin_state::Special<pin_function::FC2_RXD_SDA_MOSI_DATA>> {
-        // notimplemented!();
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_21, pin_state::Special<pin_function::FC4_RXD_SDA_MOSI_DATA>> {
+        iocon.raw.pio1_21.modify(|_, w|
+            w
+            .func().alt5() // FUNC1, pin configured as FC2_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        );
+
         Pin {
             id: self.id,
             state: pin_state::Special {
-                _function: pin_function::FC2_RXD_SDA_MOSI_DATA,
+                _function: pin_function::FC4_RXD_SDA_MOSI_DATA,
             },
         }
     }
 }
 
-// pin 4 from P24 (right Mikroe rail), labeled SCL
-impl Pin<Pio0_27, pin_state::Unused> {
-    pub fn into_scl_pin(
-        self,
-        _iocon: &mut Iocon<init_state::Enabled>,
-    ) ->Pin<Pio0_27, pin_state::Special<pin_function::FC2_TXD_SCL_MISO_WS>> {
-        // notimplemented!();
-        Pin {
-            id: self.id,
-            state: pin_state::Special {
-                _function: pin_function::FC2_TXD_SCL_MISO_WS,
-            },
-        }
-    }
-}
+// impl Pin<Pio0_22, pin_state::Unused> {
+//     pub fn into_usb0_vbus_pin(
+//         self,
+//         iocon: &mut Iocon<init_state::Enabled>,
+//     ) -> Pin<Pio0_22, pin_state::Special<pin_function::USB0_VBUS>> {
+//         iocon.raw.pio0_22.modify(|_, w|
+//             w
+//             .func().alt7() // FUNC7, pin configured as USB0_VBUS
+//             .mode().inactive() // MODE_INACT, no additional pin function
+//             .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+//             .invert().disabled() // INV_DI, input function is not inverted
+//             .digimode().digital() // DIGITAL_EN, enable digital fucntion
+//             .od().normal() // OPENDRAIN_DI, open drain is disabled
+//         );
+
+//         Pin {
+//             id: self.id,
+//             state: pin_state::Special {
+//                 _function: pin_function::USB0_VBUS,
+//             },
+//         }
+//     }
+
+// }
+
+// // pin 3 from P24 (right Mikroe rail), labeled SDA
+// impl Pin<Pio1_24, pin_state::Unused> {
+//     pub fn into_sda_pin(
+//         self,
+//         iocon: &mut Iocon<init_state::Enabled>,
+//     ) ->Pin<Pio1_24, pin_state::Special<pin_function::FC2_RXD_SDA_MOSI_DATA>> {
+//         iocon.raw.pio1_24.modify(|_, w|
+//             w
+//             .func().alt1() // FUNC1, pin configured as FC2_RXD_SDA_MOSI_DATA
+//             .mode().inactive() // MODE_INACT, no additional pin function
+//             .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+//             .invert().disabled() // INV_DI, input function is not inverted
+//             .digimode().digital() // DIGITAL_EN, enable digital fucntion
+//             .od().normal() // OPENDRAIN_DI, open drain is disabled
+//         );
+//  // 71     const uint32_t port0_pin29_config = (/* Pin is configured as FC0_RXD_SDA_MOSI_DATA */
+//  // 72                                          IOCON_PIO_FUNC1 |
+//  // 73                                          /* No addition pin function */
+//  // 74                                          IOCON_PIO_MODE_INACT |
+//  // 75                                          /* Standard mode, output slew rate control is enabled */
+//  // 76                                          IOCON_PIO_SLEW_STANDARD |
+//  // 77                                          /* Input function is not inverted */
+//  // 78                                          IOCON_PIO_INV_DI |
+//  // 79                                          /* Enables digital function */
+//  // 80                                          IOCON_PIO_DIGITAL_EN |
+//  // 81                                          /* Open drain is disabled */
+//  // 82                                          IOCON_PIO_OPENDRAIN_DI);
+//         Pin {
+//             id: self.id,
+//             state: pin_state::Special {
+//                 _function: pin_function::FC2_RXD_SDA_MOSI_DATA,
+//             },
+//         }
+//     }
+// }
+
+// // pin 4 from P24 (right Mikroe rail), labeled SCL
+// impl Pin<Pio0_27, pin_state::Unused> {
+//     pub fn into_scl_pin(
+//         self,
+//         iocon: &mut Iocon<init_state::Enabled>,
+//     ) ->Pin<Pio0_27, pin_state::Special<pin_function::FC2_TXD_SCL_MISO_WS>> {
+//         iocon.raw.pio0_27.modify(|_, w|
+//             w
+//             .func().alt1() // FUNC1, pin configured as FC2_TXD_SCL_MISO_WS
+//             .mode().inactive() // MODE_INACT, no additional pin function
+//             .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+//             .invert().disabled() // INV_DI, input function is not inverted
+//             .digimode().digital() // DIGITAL_EN, enable digital fucntion
+//             .od().normal() // OPENDRAIN_DI, open drain is disabled
+//         );
+//  // 86     const uint32_t port0_pin30_config = (/* Pin is configured as FC0_TXD_SCL_MISO_WS */
+//  // 87                                          IOCON_PIO_FUNC1 |
+//  // 88                                          /* No addition pin function */
+//  // 89                                          IOCON_PIO_MODE_INACT |
+//  // 90                                          /* Standard mode, output slew rate control is enabled */
+//  // 91                                          IOCON_PIO_SLEW_STANDARD |
+//  // 92                                          /* Input function is not inverted */
+//  // 93                                          IOCON_PIO_INV_DI |
+//  // 94                                          /* Enables digital function */
+//  // 95                                          IOCON_PIO_DIGITAL_EN |
+//  // 96                                          /* Open drain is disabled */
+//  // 97                                          IOCON_PIO_OPENDRAIN_DI);
+
+//         Pin {
+//             id: self.id,
+//             state: pin_state::Special {
+//                 _function: pin_function::FC2_TXD_SCL_MISO_WS,
+//             },
+//         }
+//     }
+// }
 
 // // pin 5 from P24 (right Mikroe rail), labeled TX
 // impl Pin<Pio1_20, pin_state::Unused> {

@@ -19,7 +19,7 @@ circle-ci = { repository = "nickray/lpc55s6x-hal" }
 [dependencies]
 bare-metal = "0.2"
 cortex-m = "0.6"
-# cortex-m-semihosting = "0.3"
+cortex-m-semihosting = "0.3"
 embedded-hal = { version = "0.2", features = ["unproven"] }
 
 lpc55s6x-pac = "0.0.5"
@@ -52,6 +52,9 @@ cortex-m-semihosting = "0.3"
 heapless = "0.5"
 panic-halt  = "0.2"
 panic-semihosting = { version = "0.5", features = ["jlink-quirks"] }
+ssd1306 = "0.3.0-alpha.2"
+# ssd1306 = { path = "../ssd1306-clean" }
+# ssd1306 = "0.2.2"
 
 [features]
 default = ["rt"]
