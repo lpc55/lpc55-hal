@@ -46,7 +46,7 @@ impl<State: init_state::InitState, Mode: usbfs_mode::UsbfsMode> Usbfs<State, Mod
         pmc: &mut pmc::Pmc,
         syscon: &mut syscon::Syscon,
         // lock_fro_to_sof: bool, // we always lock to SOF
-        _compatible_clocks: ClocksSupportUsbfsToken,
+        _clocks_token: ClocksSupportUsbfsToken,
     ) -> EnabledUsbfsDevice {
 
         // Configure clock input: Fro96MHz divided by 2 = 48MHz

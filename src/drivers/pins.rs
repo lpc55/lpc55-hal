@@ -1,13 +1,20 @@
 use crate::{
     raw::gpio::{CLR, DIRSET, PIN, SET},
     peripherals::{
+        flexcomm::*,
         gpio::Gpio,
         iocon::Iocon,
     },
     states::{
         init_state,
-        pin_state,
-        pin_function,
+        pin_state::{
+            self,
+            Special,
+        },
+        pin_function::{
+            self,
+            *,
+        }
     },
 };
 
@@ -52,14 +59,14 @@ where
     }
 }
 
-impl Pin<Pio1_20, pin_state::Unused> {
-    pub fn into_scl_pin(
+impl Pin<Pio0_22, pin_state::Unused> {
+    pub fn into_usb0_vbus_pin(
         self,
         iocon: &mut Iocon<init_state::Enabled>,
-    ) ->Pin<Pio1_20, pin_state::Special<pin_function::FC4_TXD_SCL_MISO_WS>> {
-        iocon.raw.pio1_20.modify(|_, w|
+    ) -> Pin<Pio0_22, pin_state::Special<pin_function::USB0_VBUS>> {
+        iocon.raw.pio0_22.modify(|_, w|
             w
-            .func().alt5() // FUNC1, pin configured as FC2_TXD_SCL_MISO_WS
+            .func().alt7() // FUNC7, pin configured as USB0_VBUS
             .mode().inactive() // MODE_INACT, no additional pin function
             .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
             .invert().disabled() // INV_DI, input function is not inverted
@@ -70,310 +77,12 @@ impl Pin<Pio1_20, pin_state::Unused> {
         Pin {
             id: self.id,
             state: pin_state::Special {
-                _function: pin_function::FC4_TXD_SCL_MISO_WS,
+                _function: pin_function::USB0_VBUS,
             },
         }
     }
 }
 
-impl Pin<Pio1_21, pin_state::Unused> {
-    pub fn into_sda_pin(
-        self,
-        iocon: &mut Iocon<init_state::Enabled>,
-    ) ->Pin<Pio1_21, pin_state::Special<pin_function::FC4_RXD_SDA_MOSI_DATA>> {
-        iocon.raw.pio1_21.modify(|_, w|
-            w
-            .func().alt5() // FUNC1, pin configured as FC2_TXD_SCL_MISO_WS
-            .mode().inactive() // MODE_INACT, no additional pin function
-            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
-            .invert().disabled() // INV_DI, input function is not inverted
-            .digimode().digital() // DIGITAL_EN, enable digital fucntion
-            .od().normal() // OPENDRAIN_DI, open drain is disabled
-        );
-
-        Pin {
-            id: self.id,
-            state: pin_state::Special {
-                _function: pin_function::FC4_RXD_SDA_MOSI_DATA,
-            },
-        }
-    }
-}
-
-// impl Pin<Pio0_22, pin_state::Unused> {
-//     pub fn into_usb0_vbus_pin(
-//         self,
-//         iocon: &mut Iocon<init_state::Enabled>,
-//     ) -> Pin<Pio0_22, pin_state::Special<pin_function::USB0_VBUS>> {
-//         iocon.raw.pio0_22.modify(|_, w|
-//             w
-//             .func().alt7() // FUNC7, pin configured as USB0_VBUS
-//             .mode().inactive() // MODE_INACT, no additional pin function
-//             .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
-//             .invert().disabled() // INV_DI, input function is not inverted
-//             .digimode().digital() // DIGITAL_EN, enable digital fucntion
-//             .od().normal() // OPENDRAIN_DI, open drain is disabled
-//         );
-
-//         Pin {
-//             id: self.id,
-//             state: pin_state::Special {
-//                 _function: pin_function::USB0_VBUS,
-//             },
-//         }
-//     }
-
-// }
-
-// // pin 3 from P24 (right Mikroe rail), labeled SDA
-// impl Pin<Pio1_24, pin_state::Unused> {
-//     pub fn into_sda_pin(
-//         self,
-//         iocon: &mut Iocon<init_state::Enabled>,
-//     ) ->Pin<Pio1_24, pin_state::Special<pin_function::FC2_RXD_SDA_MOSI_DATA>> {
-//         iocon.raw.pio1_24.modify(|_, w|
-//             w
-//             .func().alt1() // FUNC1, pin configured as FC2_RXD_SDA_MOSI_DATA
-//             .mode().inactive() // MODE_INACT, no additional pin function
-//             .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
-//             .invert().disabled() // INV_DI, input function is not inverted
-//             .digimode().digital() // DIGITAL_EN, enable digital fucntion
-//             .od().normal() // OPENDRAIN_DI, open drain is disabled
-//         );
-//  // 71     const uint32_t port0_pin29_config = (/* Pin is configured as FC0_RXD_SDA_MOSI_DATA */
-//  // 72                                          IOCON_PIO_FUNC1 |
-//  // 73                                          /* No addition pin function */
-//  // 74                                          IOCON_PIO_MODE_INACT |
-//  // 75                                          /* Standard mode, output slew rate control is enabled */
-//  // 76                                          IOCON_PIO_SLEW_STANDARD |
-//  // 77                                          /* Input function is not inverted */
-//  // 78                                          IOCON_PIO_INV_DI |
-//  // 79                                          /* Enables digital function */
-//  // 80                                          IOCON_PIO_DIGITAL_EN |
-//  // 81                                          /* Open drain is disabled */
-//  // 82                                          IOCON_PIO_OPENDRAIN_DI);
-//         Pin {
-//             id: self.id,
-//             state: pin_state::Special {
-//                 _function: pin_function::FC2_RXD_SDA_MOSI_DATA,
-//             },
-//         }
-//     }
-// }
-
-// // pin 4 from P24 (right Mikroe rail), labeled SCL
-// impl Pin<Pio0_27, pin_state::Unused> {
-//     pub fn into_scl_pin(
-//         self,
-//         iocon: &mut Iocon<init_state::Enabled>,
-//     ) ->Pin<Pio0_27, pin_state::Special<pin_function::FC2_TXD_SCL_MISO_WS>> {
-//         iocon.raw.pio0_27.modify(|_, w|
-//             w
-//             .func().alt1() // FUNC1, pin configured as FC2_TXD_SCL_MISO_WS
-//             .mode().inactive() // MODE_INACT, no additional pin function
-//             .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
-//             .invert().disabled() // INV_DI, input function is not inverted
-//             .digimode().digital() // DIGITAL_EN, enable digital fucntion
-//             .od().normal() // OPENDRAIN_DI, open drain is disabled
-//         );
-//  // 86     const uint32_t port0_pin30_config = (/* Pin is configured as FC0_TXD_SCL_MISO_WS */
-//  // 87                                          IOCON_PIO_FUNC1 |
-//  // 88                                          /* No addition pin function */
-//  // 89                                          IOCON_PIO_MODE_INACT |
-//  // 90                                          /* Standard mode, output slew rate control is enabled */
-//  // 91                                          IOCON_PIO_SLEW_STANDARD |
-//  // 92                                          /* Input function is not inverted */
-//  // 93                                          IOCON_PIO_INV_DI |
-//  // 94                                          /* Enables digital function */
-//  // 95                                          IOCON_PIO_DIGITAL_EN |
-//  // 96                                          /* Open drain is disabled */
-//  // 97                                          IOCON_PIO_OPENDRAIN_DI);
-
-//         Pin {
-//             id: self.id,
-//             state: pin_state::Special {
-//                 _function: pin_function::FC2_TXD_SCL_MISO_WS,
-//             },
-//         }
-//     }
-// }
-
-// // pin 5 from P24 (right Mikroe rail), labeled TX
-// impl Pin<Pio1_20, pin_state::Unused> {
-//     pub fn into_tx_pin(
-//         self,
-//         iocon: &mut Iocon<init_state::Enabled>,
-//     ) ->Pin<Pio1_20, pin_state::Special<pin_function::FC4_TXD_SCL_MISO_WS>> {
-//         notimplemented!();
-//     }
-// }
-
-// // pin 6 from P24 (right Mikroe rail), labeled RX
-// impl Pin<Pio1_21, pin_state::Unused> {
-//     pub fn into_rx_pin(
-//         self,
-//         iocon: &mut Iocon<init_state::Enabled>,
-//     ) ->Pin<Pio1_21, pin_state::Special<pin_function::FC4_RXD_SDA_MOSI_DATA>> {
-//         notimplemented!();
-//     }
-// }
-
-/*
-/// A fixed or movable function that can be assigned to a pin
-///
-/// T identifies function.
-/// State tracks whether it's assigned, and to which pin
-pub struct Function<T, State> {
-    ty: T,
-    _state: State,
-}
-
-impl<T> Function<T, state::Unassigned> {
-    /// Assign this function to a pin
-    ///
-    /// This method is only available if a number of requirements are met:
-    /// - `Function` must be in the [`Unassigned`] state, as a function can only
-    ///   be assigned to one pin.
-    /// - The [`Pin`] must be in the SWM state ([`pin_state::Swm`]). See
-    ///   documentation on [`Pin`] for information on pin state management.
-    /// - The function must be assignable to the pin. Movable functions can be
-    ///   assigned to any pin, but fixed functions can be assigned to only one
-    ///   pin.
-    /// - The state of the pin must allow another function of this type to be
-    ///   assigned. Input functions can always be assigned, but only one output
-    ///   or bidirectional function can be assigned to a given pin at any time.
-    ///
-    /// Code attempting to call this method while these requirement are not met,
-    /// will not compile.
-    ///
-    /// Consumes this instance of `Function`, as well as the provided [`Pin`],
-    /// and returns new instances. The returned `Function` instance will have its
-    /// state set to indicate that it has been assigned to the pin. The returned
-    /// [`Pin`] will have its state updated to indicate that a function of this
-    /// `Function`'s type has been assigned.
-    ///
-    /// # Examples
-    ///
-    /// Assign one output and one input function to the same pin:
-    ///
-    /// ``` no_run
-    /// use lpc82x_hal::Peripherals;
-    ///
-    /// let p = Peripherals::take().unwrap();
-    ///
-    /// let mut swm = p.SWM.split();
-    ///
-    /// // Assign output function to a pin
-    /// let (u0_txd, pio0_0) = swm.movable_functions.u0_txd.assign(
-    ///     swm.pins.pio0_0.into_swm_pin(),
-    ///     &mut swm.handle,
-    /// );
-    ///
-    j/// // Assign input function to the same pin
-    /// let (u1_rxd, pio0_0) = swm.movable_functions.u1_rxd.assign(
-    ///     pio0_0,
-    ///     &mut swm.handle,
-    /// );
-    /// ```
-    ///
-    /// [`Unassigned`]: state/struct.Unassigned.html
-    pub fn assign<P, S>(
-        mut self,
-        mut pin: Pin<P, S>,
-        swm: &mut Handle,
-    ) -> (
-        Function<T, state::Assigned<P>>,
-        <Pin<P, S> as AssignFunction<T, T::Kind>>::Assigned,
-    )
-    where
-        T: FunctionTrait<P>,
-        P: PinTrait,
-        S: PinState,
-        Pin<P, S>: AssignFunction<T, T::Kind>,
-    {
-        self.ty.assign(&mut pin.ty, swm);
-
-        let function = Function {
-            ty: self.ty,
-            _state: state::Assigned(PhantomData),
-        };
-
-        (function, pin.assign())
-    }
-}
-
-impl<T, P> Function<T, state::Assigned<P>> {
-    /// Unassign this function from a pin
-    ///
-    /// This method is only available if a number of requirements are met:
-    /// - The function must be assigned to the provided pin. This means
-    ///   `Function` must be in the [`Assigned`] state, and the type parameter
-    ///   of [`Assigned`] must indicate that the function is assigned to the
-    ///   same pin that is provided as an argument.
-    /// - The [`Pin`] must be in the SWM state ([`pin_state::Swm`]), and the
-    ///   state must indicate that a function of this `Function`'s type is
-    ///   currently assigned. This should always be the case, if the previous
-    ///   condition is met, as it should be impossible to create inconsistent
-    ///   states between `Function`s and [`Pin`]s without using `unsafe`.
-    ///
-    /// Code attempting to call this method while these requirement are not met,
-    /// will not compile.
-    ///
-    /// Consumes this instance of `Function`, as well as the provided [`Pin`],
-    /// and returns new instances. The returned `Function` instance will have
-    /// its state set to indicate that it is no longer assigned to a pin. The
-    /// returned [`Pin`] will have its state updated to indicate that one fewer
-    /// function of this type is now assigned.
-    ///
-    /// # Examples
-    ///
-    /// Unassign a function that has been previously assigned to a pin:
-    ///
-    /// ``` no_run
-    /// # use lpc82x_hal::Peripherals;
-    /// #
-    /// # let p = Peripherals::take().unwrap();
-    /// #
-    /// # let mut swm = p.SWM.split();
-    /// #
-    /// # // Assign output function to a pin
-    /// # let (u0_txd, pio0_0) = swm.movable_functions.u0_txd.assign(
-    /// #     swm.pins.pio0_0.into_swm_pin(),
-    /// #     &mut swm.handle,
-    /// # );
-    /// #
-    /// // U0_TXD must have been previously assigned to the pin, or the
-    /// // following code will not compile. See documentation of
-    /// // `Function::assign`.
-    /// let (u0_txd, pio0_0) = u0_txd.unassign(pio0_0, &mut swm.handle);
-    /// ```
-    ///
-    /// [`Assigned`]: state/struct.Assigned.html
-    pub fn unassign<S>(
-        mut self,
-        mut pin: Pin<P, S>,
-        swm: &mut Handle,
-    ) -> (
-        Function<T, state::Unassigned>,
-        <Pin<P, S> as UnassignFunction<T, T::Kind>>::Unassigned,
-    )
-    where
-        T: FunctionTrait<P>,
-        P: PinTrait,
-        S: PinState,
-        Pin<P, S>: UnassignFunction<T, T::Kind>,
-    {
-        self.ty.unassign(&mut pin.ty, swm);
-
-        let function = Function {
-            ty: self.ty,
-            _state: state::Unassigned,
-        };
-
-        (function, pin.unassign())
-    }
-}
-*/
 
 // seems a bit inefficient, but want to be able to safely
 // take individual pins instead of the whole bunch
@@ -559,3 +268,6131 @@ reg_cluster!(PIN, PIN, raw::GPIO, pin);
 reg_cluster!(SET, SET, raw::GPIO, set);
 reg_cluster!(CLR, CLR, raw::GPIO, clr);
 
+
+// all that follows is generated with `generate-flexcomm-pin-driver.py`
+
+impl Pin<Pio0_0, pin_state::Unused> {
+    pub fn into_usart3_sclk_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_0, pin_state::Special<FC3_SCK>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_0.modify(|_, w| unsafe {
+            w
+            .func().bits(2) // FUNC2, pin configured as FC3_SCK
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC3_SCK,
+            },
+        }
+    }
+}
+impl Pin<Pio0_1, pin_state::Unused> {
+    pub fn into_usart3_cts_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_1, pin_state::Special<FC3_CTS_SDA_SSEL0>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_1.modify(|_, w| unsafe {
+            w
+            .func().bits(2) // FUNC2, pin configured as FC3_CTS_SDA_SSEL0
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC3_CTS_SDA_SSEL0,
+            },
+        }
+    }
+}
+impl Pin<Pio0_1, pin_state::Unused> {
+    pub fn into_i2c3_sda_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_1, pin_state::Special<FC3_CTS_SDA_SSEL0>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_1.modify(|_, w| unsafe {
+            w
+            .func().bits(2) // FUNC2, pin configured as FC3_CTS_SDA_SSEL0
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC3_CTS_SDA_SSEL0,
+            },
+        }
+    }
+}
+impl Pin<Pio0_1, pin_state::Unused> {
+    pub fn into_spi3_ssel0_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_1, pin_state::Special<FC3_CTS_SDA_SSEL0>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_1.modify(|_, w| unsafe {
+            w
+            .func().bits(2) // FUNC2, pin configured as FC3_CTS_SDA_SSEL0
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC3_CTS_SDA_SSEL0,
+            },
+        }
+    }
+}
+impl Pin<Pio0_2, pin_state::Unused> {
+    pub fn into_usart3_tx_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_2, pin_state::Special<FC3_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_2.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC3_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC3_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio0_2, pin_state::Unused> {
+    pub fn into_i2c3_scl_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_2, pin_state::Special<FC3_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_2.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC3_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC3_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio0_2, pin_state::Unused> {
+    pub fn into_spi3_miso_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_2, pin_state::Special<FC3_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_2.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC3_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC3_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio0_2, pin_state::Unused> {
+    pub fn into_i2s3_ws_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_2, pin_state::Special<FC3_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_2.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC3_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC3_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio0_3, pin_state::Unused> {
+    pub fn into_usart3_rx_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_3, pin_state::Special<FC3_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_3.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC3_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC3_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio0_3, pin_state::Unused> {
+    pub fn into_i2c3_sda_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_3, pin_state::Special<FC3_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_3.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC3_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC3_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio0_3, pin_state::Unused> {
+    pub fn into_spi3_mosi_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_3, pin_state::Special<FC3_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_3.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC3_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC3_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio0_3, pin_state::Unused> {
+    pub fn into_i2s3_sda_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_3, pin_state::Special<FC3_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_3.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC3_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC3_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio0_4, pin_state::Unused> {
+    pub fn into_usart4_sclk_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_4, pin_state::Special<FC4_SCK>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_4.modify(|_, w| unsafe {
+            w
+            .func().bits(2) // FUNC2, pin configured as FC4_SCK
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC4_SCK,
+            },
+        }
+    }
+}
+impl Pin<Pio0_5, pin_state::Unused> {
+    pub fn into_usart4_rx_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_5, pin_state::Special<FC4_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_5.modify(|_, w| unsafe {
+            w
+            .func().bits(2) // FUNC2, pin configured as FC4_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC4_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio0_5, pin_state::Unused> {
+    pub fn into_i2c4_sda_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_5, pin_state::Special<FC4_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_5.modify(|_, w| unsafe {
+            w
+            .func().bits(2) // FUNC2, pin configured as FC4_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC4_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio0_5, pin_state::Unused> {
+    pub fn into_spi4_mosi_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_5, pin_state::Special<FC4_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_5.modify(|_, w| unsafe {
+            w
+            .func().bits(2) // FUNC2, pin configured as FC4_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC4_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio0_5, pin_state::Unused> {
+    pub fn into_i2s4_sda_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_5, pin_state::Special<FC4_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_5.modify(|_, w| unsafe {
+            w
+            .func().bits(2) // FUNC2, pin configured as FC4_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC4_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio0_5, pin_state::Unused> {
+    pub fn into_usart3_rts_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_5, pin_state::Special<FC3_RTS_SCL_SSEL1>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_5.modify(|_, w| unsafe {
+            w
+            .func().bits(8) // FUNC8, pin configured as FC3_RTS_SCL_SSEL1
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC3_RTS_SCL_SSEL1,
+            },
+        }
+    }
+}
+impl Pin<Pio0_5, pin_state::Unused> {
+    pub fn into_i2c3_scl_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_5, pin_state::Special<FC3_RTS_SCL_SSEL1>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_5.modify(|_, w| unsafe {
+            w
+            .func().bits(8) // FUNC8, pin configured as FC3_RTS_SCL_SSEL1
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC3_RTS_SCL_SSEL1,
+            },
+        }
+    }
+}
+impl Pin<Pio0_5, pin_state::Unused> {
+    pub fn into_spi3_ssel1_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_5, pin_state::Special<FC3_RTS_SCL_SSEL1>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_5.modify(|_, w| unsafe {
+            w
+            .func().bits(8) // FUNC8, pin configured as FC3_RTS_SCL_SSEL1
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC3_RTS_SCL_SSEL1,
+            },
+        }
+    }
+}
+impl Pin<Pio0_6, pin_state::Unused> {
+    pub fn into_usart3_sclk_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_6, pin_state::Special<FC3_SCK>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_6.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC3_SCK
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC3_SCK,
+            },
+        }
+    }
+}
+impl Pin<Pio0_7, pin_state::Unused> {
+    pub fn into_usart3_rts_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_7, pin_state::Special<FC3_RTS_SCL_SSEL1>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_7.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC3_RTS_SCL_SSEL1
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC3_RTS_SCL_SSEL1,
+            },
+        }
+    }
+}
+impl Pin<Pio0_7, pin_state::Unused> {
+    pub fn into_i2c3_scl_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_7, pin_state::Special<FC3_RTS_SCL_SSEL1>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_7.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC3_RTS_SCL_SSEL1
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC3_RTS_SCL_SSEL1,
+            },
+        }
+    }
+}
+impl Pin<Pio0_7, pin_state::Unused> {
+    pub fn into_spi3_ssel1_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_7, pin_state::Special<FC3_RTS_SCL_SSEL1>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_7.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC3_RTS_SCL_SSEL1
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC3_RTS_SCL_SSEL1,
+            },
+        }
+    }
+}
+impl Pin<Pio0_7, pin_state::Unused> {
+    pub fn into_usart5_sclk_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_7, pin_state::Special<FC5_SCK>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_7.modify(|_, w| unsafe {
+            w
+            .func().bits(3) // FUNC3, pin configured as FC5_SCK
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC5_SCK,
+            },
+        }
+    }
+}
+impl Pin<Pio0_7, pin_state::Unused> {
+    pub fn into_usart1_sclk_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_7, pin_state::Special<FC1_SCK>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_7.modify(|_, w| unsafe {
+            w
+            .func().bits(4) // FUNC4, pin configured as FC1_SCK
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC1_SCK,
+            },
+        }
+    }
+}
+impl Pin<Pio0_8, pin_state::Unused> {
+    pub fn into_spi3_ssel3_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_8, pin_state::Special<FC3_SSEL3>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_8.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC3_SSEL3
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC3_SSEL3,
+            },
+        }
+    }
+}
+impl Pin<Pio0_8, pin_state::Unused> {
+    pub fn into_usart5_rx_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_8, pin_state::Special<FC5_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_8.modify(|_, w| unsafe {
+            w
+            .func().bits(3) // FUNC3, pin configured as FC5_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC5_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio0_8, pin_state::Unused> {
+    pub fn into_i2c5_sda_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_8, pin_state::Special<FC5_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_8.modify(|_, w| unsafe {
+            w
+            .func().bits(3) // FUNC3, pin configured as FC5_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC5_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio0_8, pin_state::Unused> {
+    pub fn into_spi5_mosi_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_8, pin_state::Special<FC5_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_8.modify(|_, w| unsafe {
+            w
+            .func().bits(3) // FUNC3, pin configured as FC5_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC5_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio0_8, pin_state::Unused> {
+    pub fn into_i2s5_sda_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_8, pin_state::Special<FC5_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_8.modify(|_, w| unsafe {
+            w
+            .func().bits(3) // FUNC3, pin configured as FC5_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC5_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio0_9, pin_state::Unused> {
+    pub fn into_spi3_ssel2_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_9, pin_state::Special<FC3_SSEL2>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_9.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC3_SSEL2
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC3_SSEL2,
+            },
+        }
+    }
+}
+impl Pin<Pio0_9, pin_state::Unused> {
+    pub fn into_usart5_tx_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_9, pin_state::Special<FC5_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_9.modify(|_, w| unsafe {
+            w
+            .func().bits(3) // FUNC3, pin configured as FC5_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC5_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio0_9, pin_state::Unused> {
+    pub fn into_i2c5_scl_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_9, pin_state::Special<FC5_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_9.modify(|_, w| unsafe {
+            w
+            .func().bits(3) // FUNC3, pin configured as FC5_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC5_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio0_9, pin_state::Unused> {
+    pub fn into_spi5_miso_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_9, pin_state::Special<FC5_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_9.modify(|_, w| unsafe {
+            w
+            .func().bits(3) // FUNC3, pin configured as FC5_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC5_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio0_9, pin_state::Unused> {
+    pub fn into_i2s5_ws_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_9, pin_state::Special<FC5_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_9.modify(|_, w| unsafe {
+            w
+            .func().bits(3) // FUNC3, pin configured as FC5_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC5_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio0_10, pin_state::Unused> {
+    pub fn into_usart6_sclk_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_10, pin_state::Special<FC6_SCK>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_10.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC6_SCK
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC6_SCK,
+            },
+        }
+    }
+}
+impl Pin<Pio0_10, pin_state::Unused> {
+    pub fn into_usart1_tx_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_10, pin_state::Special<FC1_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_10.modify(|_, w| unsafe {
+            w
+            .func().bits(4) // FUNC4, pin configured as FC1_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC1_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio0_10, pin_state::Unused> {
+    pub fn into_i2c1_scl_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_10, pin_state::Special<FC1_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_10.modify(|_, w| unsafe {
+            w
+            .func().bits(4) // FUNC4, pin configured as FC1_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC1_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio0_10, pin_state::Unused> {
+    pub fn into_spi1_miso_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_10, pin_state::Special<FC1_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_10.modify(|_, w| unsafe {
+            w
+            .func().bits(4) // FUNC4, pin configured as FC1_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC1_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio0_10, pin_state::Unused> {
+    pub fn into_i2s1_ws_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_10, pin_state::Special<FC1_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_10.modify(|_, w| unsafe {
+            w
+            .func().bits(4) // FUNC4, pin configured as FC1_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC1_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio0_11, pin_state::Unused> {
+    pub fn into_usart6_rx_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_11, pin_state::Special<FC6_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_11.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC6_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC6_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio0_11, pin_state::Unused> {
+    pub fn into_i2c6_sda_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_11, pin_state::Special<FC6_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_11.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC6_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC6_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio0_11, pin_state::Unused> {
+    pub fn into_spi6_mosi_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_11, pin_state::Special<FC6_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_11.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC6_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC6_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio0_11, pin_state::Unused> {
+    pub fn into_i2s6_sda_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_11, pin_state::Special<FC6_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_11.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC6_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC6_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio0_12, pin_state::Unused> {
+    pub fn into_usart3_tx_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_12, pin_state::Special<FC3_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_12.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC3_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC3_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio0_12, pin_state::Unused> {
+    pub fn into_i2c3_scl_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_12, pin_state::Special<FC3_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_12.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC3_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC3_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio0_12, pin_state::Unused> {
+    pub fn into_spi3_miso_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_12, pin_state::Special<FC3_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_12.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC3_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC3_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio0_12, pin_state::Unused> {
+    pub fn into_i2s3_ws_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_12, pin_state::Special<FC3_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_12.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC3_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC3_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio0_12, pin_state::Unused> {
+    pub fn into_usart6_tx_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_12, pin_state::Special<FC6_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_12.modify(|_, w| unsafe {
+            w
+            .func().bits(7) // FUNC7, pin configured as FC6_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC6_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio0_12, pin_state::Unused> {
+    pub fn into_i2c6_scl_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_12, pin_state::Special<FC6_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_12.modify(|_, w| unsafe {
+            w
+            .func().bits(7) // FUNC7, pin configured as FC6_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC6_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio0_12, pin_state::Unused> {
+    pub fn into_spi6_miso_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_12, pin_state::Special<FC6_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_12.modify(|_, w| unsafe {
+            w
+            .func().bits(7) // FUNC7, pin configured as FC6_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC6_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio0_12, pin_state::Unused> {
+    pub fn into_i2s6_ws_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_12, pin_state::Special<FC6_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_12.modify(|_, w| unsafe {
+            w
+            .func().bits(7) // FUNC7, pin configured as FC6_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC6_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio0_13, pin_state::Unused> {
+    pub fn into_usart1_cts_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_13, pin_state::Special<FC1_CTS_SDA_SSEL0>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_13.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC1_CTS_SDA_SSEL0
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC1_CTS_SDA_SSEL0,
+            },
+        }
+    }
+}
+impl Pin<Pio0_13, pin_state::Unused> {
+    pub fn into_i2c1_sda_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_13, pin_state::Special<FC1_CTS_SDA_SSEL0>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_13.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC1_CTS_SDA_SSEL0
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC1_CTS_SDA_SSEL0,
+            },
+        }
+    }
+}
+impl Pin<Pio0_13, pin_state::Unused> {
+    pub fn into_spi1_ssel0_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_13, pin_state::Special<FC1_CTS_SDA_SSEL0>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_13.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC1_CTS_SDA_SSEL0
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC1_CTS_SDA_SSEL0,
+            },
+        }
+    }
+}
+impl Pin<Pio0_13, pin_state::Unused> {
+    pub fn into_usart1_rx_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_13, pin_state::Special<FC1_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_13.modify(|_, w| unsafe {
+            w
+            .func().bits(5) // FUNC5, pin configured as FC1_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC1_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio0_13, pin_state::Unused> {
+    pub fn into_spi1_mosi_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_13, pin_state::Special<FC1_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_13.modify(|_, w| unsafe {
+            w
+            .func().bits(5) // FUNC5, pin configured as FC1_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC1_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio0_13, pin_state::Unused> {
+    pub fn into_i2s1_sda_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_13, pin_state::Special<FC1_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_13.modify(|_, w| unsafe {
+            w
+            .func().bits(5) // FUNC5, pin configured as FC1_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC1_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio0_14, pin_state::Unused> {
+    pub fn into_usart1_rts_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_14, pin_state::Special<FC1_RTS_SCL_SSEL1>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_14.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC1_RTS_SCL_SSEL1
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC1_RTS_SCL_SSEL1,
+            },
+        }
+    }
+}
+impl Pin<Pio0_14, pin_state::Unused> {
+    pub fn into_i2c1_scl_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_14, pin_state::Special<FC1_RTS_SCL_SSEL1>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_14.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC1_RTS_SCL_SSEL1
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC1_RTS_SCL_SSEL1,
+            },
+        }
+    }
+}
+impl Pin<Pio0_14, pin_state::Unused> {
+    pub fn into_spi1_ssel1_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_14, pin_state::Special<FC1_RTS_SCL_SSEL1>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_14.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC1_RTS_SCL_SSEL1
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC1_RTS_SCL_SSEL1,
+            },
+        }
+    }
+}
+impl Pin<Pio0_14, pin_state::Unused> {
+    pub fn into_usart1_tx_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_14, pin_state::Special<FC1_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_14.modify(|_, w| unsafe {
+            w
+            .func().bits(6) // FUNC6, pin configured as FC1_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC1_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio0_14, pin_state::Unused> {
+    pub fn into_spi1_miso_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_14, pin_state::Special<FC1_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_14.modify(|_, w| unsafe {
+            w
+            .func().bits(6) // FUNC6, pin configured as FC1_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC1_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio0_14, pin_state::Unused> {
+    pub fn into_i2s1_ws_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_14, pin_state::Special<FC1_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_14.modify(|_, w| unsafe {
+            w
+            .func().bits(6) // FUNC6, pin configured as FC1_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC1_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio0_15, pin_state::Unused> {
+    pub fn into_usart6_cts_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_15, pin_state::Special<FC6_CTS_SDA_SSEL0>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_15.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC6_CTS_SDA_SSEL0
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC6_CTS_SDA_SSEL0,
+            },
+        }
+    }
+}
+impl Pin<Pio0_15, pin_state::Unused> {
+    pub fn into_i2c6_sda_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_15, pin_state::Special<FC6_CTS_SDA_SSEL0>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_15.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC6_CTS_SDA_SSEL0
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC6_CTS_SDA_SSEL0,
+            },
+        }
+    }
+}
+impl Pin<Pio0_15, pin_state::Unused> {
+    pub fn into_spi6_ssel0_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_15, pin_state::Special<FC6_CTS_SDA_SSEL0>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_15.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC6_CTS_SDA_SSEL0
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC6_CTS_SDA_SSEL0,
+            },
+        }
+    }
+}
+impl Pin<Pio0_16, pin_state::Unused> {
+    pub fn into_usart4_tx_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_16, pin_state::Special<FC4_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_16.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC4_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC4_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio0_16, pin_state::Unused> {
+    pub fn into_i2c4_scl_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_16, pin_state::Special<FC4_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_16.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC4_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC4_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio0_16, pin_state::Unused> {
+    pub fn into_spi4_miso_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_16, pin_state::Special<FC4_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_16.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC4_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC4_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio0_16, pin_state::Unused> {
+    pub fn into_i2s4_ws_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_16, pin_state::Special<FC4_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_16.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC4_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC4_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio0_17, pin_state::Unused> {
+    pub fn into_spi4_ssel2_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_17, pin_state::Special<FC4_SSEL2>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_17.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC4_SSEL2
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC4_SSEL2,
+            },
+        }
+    }
+}
+impl Pin<Pio0_18, pin_state::Unused> {
+    pub fn into_usart4_cts_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_18, pin_state::Special<FC4_CTS_SDA_SSEL0>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_18.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC4_CTS_SDA_SSEL0
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC4_CTS_SDA_SSEL0,
+            },
+        }
+    }
+}
+impl Pin<Pio0_18, pin_state::Unused> {
+    pub fn into_i2c4_sda_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_18, pin_state::Special<FC4_CTS_SDA_SSEL0>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_18.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC4_CTS_SDA_SSEL0
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC4_CTS_SDA_SSEL0,
+            },
+        }
+    }
+}
+impl Pin<Pio0_18, pin_state::Unused> {
+    pub fn into_spi4_ssel0_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_18, pin_state::Special<FC4_CTS_SDA_SSEL0>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_18.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC4_CTS_SDA_SSEL0
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC4_CTS_SDA_SSEL0,
+            },
+        }
+    }
+}
+impl Pin<Pio0_19, pin_state::Unused> {
+    pub fn into_usart4_rts_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_19, pin_state::Special<FC4_RTS_SCL_SSEL1>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_19.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC4_RTS_SCL_SSEL1
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC4_RTS_SCL_SSEL1,
+            },
+        }
+    }
+}
+impl Pin<Pio0_19, pin_state::Unused> {
+    pub fn into_i2c4_scl_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_19, pin_state::Special<FC4_RTS_SCL_SSEL1>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_19.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC4_RTS_SCL_SSEL1
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC4_RTS_SCL_SSEL1,
+            },
+        }
+    }
+}
+impl Pin<Pio0_19, pin_state::Unused> {
+    pub fn into_spi4_ssel1_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_19, pin_state::Special<FC4_RTS_SCL_SSEL1>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_19.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC4_RTS_SCL_SSEL1
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC4_RTS_SCL_SSEL1,
+            },
+        }
+    }
+}
+impl Pin<Pio0_19, pin_state::Unused> {
+    pub fn into_usart7_tx_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_19, pin_state::Special<FC7_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_19.modify(|_, w| unsafe {
+            w
+            .func().bits(7) // FUNC7, pin configured as FC7_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC7_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio0_19, pin_state::Unused> {
+    pub fn into_i2c7_scl_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_19, pin_state::Special<FC7_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_19.modify(|_, w| unsafe {
+            w
+            .func().bits(7) // FUNC7, pin configured as FC7_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC7_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio0_19, pin_state::Unused> {
+    pub fn into_spi7_miso_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_19, pin_state::Special<FC7_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_19.modify(|_, w| unsafe {
+            w
+            .func().bits(7) // FUNC7, pin configured as FC7_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC7_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio0_19, pin_state::Unused> {
+    pub fn into_i2s7_ws_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_19, pin_state::Special<FC7_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_19.modify(|_, w| unsafe {
+            w
+            .func().bits(7) // FUNC7, pin configured as FC7_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC7_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio0_20, pin_state::Unused> {
+    pub fn into_usart3_cts_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_20, pin_state::Special<FC3_CTS_SDA_SSEL0>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_20.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC3_CTS_SDA_SSEL0
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC3_CTS_SDA_SSEL0,
+            },
+        }
+    }
+}
+impl Pin<Pio0_20, pin_state::Unused> {
+    pub fn into_i2c3_sda_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_20, pin_state::Special<FC3_CTS_SDA_SSEL0>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_20.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC3_CTS_SDA_SSEL0
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC3_CTS_SDA_SSEL0,
+            },
+        }
+    }
+}
+impl Pin<Pio0_20, pin_state::Unused> {
+    pub fn into_spi3_ssel0_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_20, pin_state::Special<FC3_CTS_SDA_SSEL0>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_20.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC3_CTS_SDA_SSEL0
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC3_CTS_SDA_SSEL0,
+            },
+        }
+    }
+}
+impl Pin<Pio0_20, pin_state::Unused> {
+    pub fn into_usart7_rx_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_20, pin_state::Special<FC7_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_20.modify(|_, w| unsafe {
+            w
+            .func().bits(7) // FUNC7, pin configured as FC7_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC7_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio0_20, pin_state::Unused> {
+    pub fn into_i2c7_sda_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_20, pin_state::Special<FC7_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_20.modify(|_, w| unsafe {
+            w
+            .func().bits(7) // FUNC7, pin configured as FC7_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC7_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio0_20, pin_state::Unused> {
+    pub fn into_spi7_mosi_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_20, pin_state::Special<FC7_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_20.modify(|_, w| unsafe {
+            w
+            .func().bits(7) // FUNC7, pin configured as FC7_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC7_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio0_20, pin_state::Unused> {
+    pub fn into_i2s7_sda_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_20, pin_state::Special<FC7_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_20.modify(|_, w| unsafe {
+            w
+            .func().bits(7) // FUNC7, pin configured as FC7_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC7_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio0_20, pin_state::Unused> {
+    pub fn into_usart4_tx_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_20, pin_state::Special<FC4_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_20.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC4_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC4_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio0_20, pin_state::Unused> {
+    pub fn into_i2c4_scl_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_20, pin_state::Special<FC4_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_20.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC4_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC4_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio0_20, pin_state::Unused> {
+    pub fn into_spi4_miso_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_20, pin_state::Special<FC4_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_20.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC4_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC4_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio0_20, pin_state::Unused> {
+    pub fn into_i2s4_ws_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_20, pin_state::Special<FC4_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_20.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC4_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC4_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio0_21, pin_state::Unused> {
+    pub fn into_usart3_rts_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_21, pin_state::Special<FC3_RTS_SCL_SSEL1>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_21.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC3_RTS_SCL_SSEL1
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC3_RTS_SCL_SSEL1,
+            },
+        }
+    }
+}
+impl Pin<Pio0_21, pin_state::Unused> {
+    pub fn into_i2c3_scl_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_21, pin_state::Special<FC3_RTS_SCL_SSEL1>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_21.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC3_RTS_SCL_SSEL1
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC3_RTS_SCL_SSEL1,
+            },
+        }
+    }
+}
+impl Pin<Pio0_21, pin_state::Unused> {
+    pub fn into_spi3_ssel1_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_21, pin_state::Special<FC3_RTS_SCL_SSEL1>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_21.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC3_RTS_SCL_SSEL1
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC3_RTS_SCL_SSEL1,
+            },
+        }
+    }
+}
+impl Pin<Pio0_21, pin_state::Unused> {
+    pub fn into_usart7_sclk_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_21, pin_state::Special<FC7_SCK>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_21.modify(|_, w| unsafe {
+            w
+            .func().bits(7) // FUNC7, pin configured as FC7_SCK
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC7_SCK,
+            },
+        }
+    }
+}
+impl Pin<Pio0_22, pin_state::Unused> {
+    pub fn into_usart6_tx_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_22, pin_state::Special<FC6_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_22.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC6_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC6_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio0_22, pin_state::Unused> {
+    pub fn into_i2c6_scl_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_22, pin_state::Special<FC6_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_22.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC6_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC6_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio0_22, pin_state::Unused> {
+    pub fn into_spi6_miso_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_22, pin_state::Special<FC6_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_22.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC6_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC6_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio0_22, pin_state::Unused> {
+    pub fn into_i2s6_ws_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_22, pin_state::Special<FC6_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_22.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC6_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC6_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio0_23, pin_state::Unused> {
+    pub fn into_usart0_cts_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_23, pin_state::Special<FC0_CTS_SDA_SSEL0>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_23.modify(|_, w| unsafe {
+            w
+            .func().bits(5) // FUNC5, pin configured as FC0_CTS_SDA_SSEL0
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC0_CTS_SDA_SSEL0,
+            },
+        }
+    }
+}
+impl Pin<Pio0_23, pin_state::Unused> {
+    pub fn into_i2c0_sda_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_23, pin_state::Special<FC0_CTS_SDA_SSEL0>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_23.modify(|_, w| unsafe {
+            w
+            .func().bits(5) // FUNC5, pin configured as FC0_CTS_SDA_SSEL0
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC0_CTS_SDA_SSEL0,
+            },
+        }
+    }
+}
+impl Pin<Pio0_23, pin_state::Unused> {
+    pub fn into_spi0_ssel0_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_23, pin_state::Special<FC0_CTS_SDA_SSEL0>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_23.modify(|_, w| unsafe {
+            w
+            .func().bits(5) // FUNC5, pin configured as FC0_CTS_SDA_SSEL0
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC0_CTS_SDA_SSEL0,
+            },
+        }
+    }
+}
+impl Pin<Pio0_24, pin_state::Unused> {
+    pub fn into_usart0_rx_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_24, pin_state::Special<FC0_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_24.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC0_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC0_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio0_24, pin_state::Unused> {
+    pub fn into_i2c0_sda_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_24, pin_state::Special<FC0_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_24.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC0_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC0_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio0_24, pin_state::Unused> {
+    pub fn into_spi0_mosi_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_24, pin_state::Special<FC0_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_24.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC0_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC0_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio0_24, pin_state::Unused> {
+    pub fn into_i2s0_sda_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_24, pin_state::Special<FC0_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_24.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC0_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC0_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio0_25, pin_state::Unused> {
+    pub fn into_usart0_tx_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_25, pin_state::Special<FC0_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_25.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC0_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC0_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio0_25, pin_state::Unused> {
+    pub fn into_i2c0_scl_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_25, pin_state::Special<FC0_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_25.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC0_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC0_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio0_25, pin_state::Unused> {
+    pub fn into_spi0_miso_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_25, pin_state::Special<FC0_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_25.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC0_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC0_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio0_25, pin_state::Unused> {
+    pub fn into_i2s0_ws_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_25, pin_state::Special<FC0_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_25.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC0_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC0_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio0_26, pin_state::Unused> {
+    pub fn into_usart2_rx_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_26, pin_state::Special<FC2_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_26.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC2_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC2_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio0_26, pin_state::Unused> {
+    pub fn into_i2c2_sda_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_26, pin_state::Special<FC2_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_26.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC2_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC2_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio0_26, pin_state::Unused> {
+    pub fn into_spi2_mosi_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_26, pin_state::Special<FC2_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_26.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC2_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC2_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio0_26, pin_state::Unused> {
+    pub fn into_i2s2_sda_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_26, pin_state::Special<FC2_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_26.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC2_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC2_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio0_26, pin_state::Unused> {
+    pub fn into_usart0_sclk_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_26, pin_state::Special<FC0_SCK>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_26.modify(|_, w| unsafe {
+            w
+            .func().bits(8) // FUNC8, pin configured as FC0_SCK
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC0_SCK,
+            },
+        }
+    }
+}
+impl Pin<Pio0_27, pin_state::Unused> {
+    pub fn into_usart2_tx_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_27, pin_state::Special<FC2_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_27.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC2_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC2_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio0_27, pin_state::Unused> {
+    pub fn into_i2c2_scl_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_27, pin_state::Special<FC2_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_27.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC2_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC2_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio0_27, pin_state::Unused> {
+    pub fn into_spi2_miso_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_27, pin_state::Special<FC2_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_27.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC2_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC2_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio0_27, pin_state::Unused> {
+    pub fn into_i2s2_ws_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_27, pin_state::Special<FC2_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_27.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC2_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC2_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio0_27, pin_state::Unused> {
+    pub fn into_usart7_rx_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_27, pin_state::Special<FC7_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_27.modify(|_, w| unsafe {
+            w
+            .func().bits(7) // FUNC7, pin configured as FC7_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC7_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio0_27, pin_state::Unused> {
+    pub fn into_i2c7_sda_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_27, pin_state::Special<FC7_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_27.modify(|_, w| unsafe {
+            w
+            .func().bits(7) // FUNC7, pin configured as FC7_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC7_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio0_27, pin_state::Unused> {
+    pub fn into_spi7_mosi_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_27, pin_state::Special<FC7_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_27.modify(|_, w| unsafe {
+            w
+            .func().bits(7) // FUNC7, pin configured as FC7_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC7_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio0_27, pin_state::Unused> {
+    pub fn into_i2s7_sda_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_27, pin_state::Special<FC7_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_27.modify(|_, w| unsafe {
+            w
+            .func().bits(7) // FUNC7, pin configured as FC7_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC7_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio0_28, pin_state::Unused> {
+    pub fn into_usart0_sclk_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_28, pin_state::Special<FC0_SCK>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_28.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC0_SCK
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC0_SCK,
+            },
+        }
+    }
+}
+impl Pin<Pio0_29, pin_state::Unused> {
+    pub fn into_usart0_rx_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_29, pin_state::Special<FC0_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_29.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC0_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC0_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio0_29, pin_state::Unused> {
+    pub fn into_i2c0_sda_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_29, pin_state::Special<FC0_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_29.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC0_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC0_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio0_29, pin_state::Unused> {
+    pub fn into_spi0_mosi_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_29, pin_state::Special<FC0_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_29.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC0_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC0_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio0_29, pin_state::Unused> {
+    pub fn into_i2s0_sda_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_29, pin_state::Special<FC0_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_29.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC0_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC0_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio0_30, pin_state::Unused> {
+    pub fn into_usart0_tx_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_30, pin_state::Special<FC0_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_30.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC0_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC0_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio0_30, pin_state::Unused> {
+    pub fn into_i2c0_scl_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_30, pin_state::Special<FC0_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_30.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC0_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC0_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio0_30, pin_state::Unused> {
+    pub fn into_spi0_miso_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_30, pin_state::Special<FC0_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_30.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC0_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC0_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio0_30, pin_state::Unused> {
+    pub fn into_i2s0_ws_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_30, pin_state::Special<FC0_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_30.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC0_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC0_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio0_31, pin_state::Unused> {
+    pub fn into_usart0_cts_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_31, pin_state::Special<FC0_CTS_SDA_SSEL0>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_31.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC0_CTS_SDA_SSEL0
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC0_CTS_SDA_SSEL0,
+            },
+        }
+    }
+}
+impl Pin<Pio0_31, pin_state::Unused> {
+    pub fn into_i2c0_sda_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_31, pin_state::Special<FC0_CTS_SDA_SSEL0>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_31.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC0_CTS_SDA_SSEL0
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC0_CTS_SDA_SSEL0,
+            },
+        }
+    }
+}
+impl Pin<Pio0_31, pin_state::Unused> {
+    pub fn into_spi0_ssel0_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio0_31, pin_state::Special<FC0_CTS_SDA_SSEL0>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio0_31.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC0_CTS_SDA_SSEL0
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC0_CTS_SDA_SSEL0,
+            },
+        }
+    }
+}
+impl Pin<Pio1_0, pin_state::Unused> {
+    pub fn into_usart0_rts_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_0, pin_state::Special<FC0_RTS_SCL_SSEL1>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_0.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC0_RTS_SCL_SSEL1
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC0_RTS_SCL_SSEL1,
+            },
+        }
+    }
+}
+impl Pin<Pio1_0, pin_state::Unused> {
+    pub fn into_i2c0_scl_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_0, pin_state::Special<FC0_RTS_SCL_SSEL1>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_0.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC0_RTS_SCL_SSEL1
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC0_RTS_SCL_SSEL1,
+            },
+        }
+    }
+}
+impl Pin<Pio1_0, pin_state::Unused> {
+    pub fn into_spi0_ssel1_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_0, pin_state::Special<FC0_RTS_SCL_SSEL1>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_0.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC0_RTS_SCL_SSEL1
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC0_RTS_SCL_SSEL1,
+            },
+        }
+    }
+}
+impl Pin<Pio1_1, pin_state::Unused> {
+    pub fn into_usart3_rx_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_1, pin_state::Special<FC3_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_1.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC3_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC3_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio1_1, pin_state::Unused> {
+    pub fn into_i2c3_sda_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_1, pin_state::Special<FC3_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_1.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC3_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC3_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio1_1, pin_state::Unused> {
+    pub fn into_spi3_mosi_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_1, pin_state::Special<FC3_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_1.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC3_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC3_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio1_1, pin_state::Unused> {
+    pub fn into_i2s3_sda_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_1, pin_state::Special<FC3_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_1.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC3_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC3_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio1_4, pin_state::Unused> {
+    pub fn into_usart0_sclk_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_4, pin_state::Special<FC0_SCK>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_4.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC0_SCK
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC0_SCK,
+            },
+        }
+    }
+}
+impl Pin<Pio1_5, pin_state::Unused> {
+    pub fn into_usart0_rx_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_5, pin_state::Special<FC0_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_5.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC0_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC0_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio1_5, pin_state::Unused> {
+    pub fn into_i2c0_sda_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_5, pin_state::Special<FC0_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_5.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC0_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC0_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio1_5, pin_state::Unused> {
+    pub fn into_spi0_mosi_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_5, pin_state::Special<FC0_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_5.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC0_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC0_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio1_5, pin_state::Unused> {
+    pub fn into_i2s0_sda_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_5, pin_state::Special<FC0_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_5.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC0_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC0_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio1_6, pin_state::Unused> {
+    pub fn into_usart0_tx_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_6, pin_state::Special<FC0_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_6.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC0_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC0_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio1_6, pin_state::Unused> {
+    pub fn into_i2c0_scl_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_6, pin_state::Special<FC0_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_6.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC0_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC0_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio1_6, pin_state::Unused> {
+    pub fn into_spi0_miso_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_6, pin_state::Special<FC0_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_6.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC0_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC0_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio1_6, pin_state::Unused> {
+    pub fn into_i2s0_ws_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_6, pin_state::Special<FC0_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_6.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC0_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC0_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio1_7, pin_state::Unused> {
+    pub fn into_usart0_rts_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_7, pin_state::Special<FC0_RTS_SCL_SSEL1>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_7.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC0_RTS_SCL_SSEL1
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC0_RTS_SCL_SSEL1,
+            },
+        }
+    }
+}
+impl Pin<Pio1_7, pin_state::Unused> {
+    pub fn into_i2c0_scl_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_7, pin_state::Special<FC0_RTS_SCL_SSEL1>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_7.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC0_RTS_SCL_SSEL1
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC0_RTS_SCL_SSEL1,
+            },
+        }
+    }
+}
+impl Pin<Pio1_7, pin_state::Unused> {
+    pub fn into_spi0_ssel1_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_7, pin_state::Special<FC0_RTS_SCL_SSEL1>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_7.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC0_RTS_SCL_SSEL1
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC0_RTS_SCL_SSEL1,
+            },
+        }
+    }
+}
+impl Pin<Pio1_8, pin_state::Unused> {
+    pub fn into_usart0_cts_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_8, pin_state::Special<FC0_CTS_SDA_SSEL0>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_8.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC0_CTS_SDA_SSEL0
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC0_CTS_SDA_SSEL0,
+            },
+        }
+    }
+}
+impl Pin<Pio1_8, pin_state::Unused> {
+    pub fn into_i2c0_sda_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_8, pin_state::Special<FC0_CTS_SDA_SSEL0>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_8.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC0_CTS_SDA_SSEL0
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC0_CTS_SDA_SSEL0,
+            },
+        }
+    }
+}
+impl Pin<Pio1_8, pin_state::Unused> {
+    pub fn into_spi0_ssel0_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_8, pin_state::Special<FC0_CTS_SDA_SSEL0>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_8.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC0_CTS_SDA_SSEL0
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC0_CTS_SDA_SSEL0,
+            },
+        }
+    }
+}
+impl Pin<Pio1_8, pin_state::Unused> {
+    pub fn into_spi4_ssel2_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_8, pin_state::Special<FC4_SSEL2>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_8.modify(|_, w| unsafe {
+            w
+            .func().bits(5) // FUNC5, pin configured as FC4_SSEL2
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC4_SSEL2,
+            },
+        }
+    }
+}
+impl Pin<Pio1_9, pin_state::Unused> {
+    pub fn into_usart1_sclk_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_9, pin_state::Special<FC1_SCK>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_9.modify(|_, w| unsafe {
+            w
+            .func().bits(2) // FUNC2, pin configured as FC1_SCK
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC1_SCK,
+            },
+        }
+    }
+}
+impl Pin<Pio1_9, pin_state::Unused> {
+    pub fn into_usart4_cts_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_9, pin_state::Special<FC4_CTS_SDA_SSEL0>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_9.modify(|_, w| unsafe {
+            w
+            .func().bits(5) // FUNC5, pin configured as FC4_CTS_SDA_SSEL0
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC4_CTS_SDA_SSEL0,
+            },
+        }
+    }
+}
+impl Pin<Pio1_9, pin_state::Unused> {
+    pub fn into_i2c4_sda_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_9, pin_state::Special<FC4_CTS_SDA_SSEL0>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_9.modify(|_, w| unsafe {
+            w
+            .func().bits(5) // FUNC5, pin configured as FC4_CTS_SDA_SSEL0
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC4_CTS_SDA_SSEL0,
+            },
+        }
+    }
+}
+impl Pin<Pio1_9, pin_state::Unused> {
+    pub fn into_spi4_ssel0_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_9, pin_state::Special<FC4_CTS_SDA_SSEL0>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_9.modify(|_, w| unsafe {
+            w
+            .func().bits(5) // FUNC5, pin configured as FC4_CTS_SDA_SSEL0
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC4_CTS_SDA_SSEL0,
+            },
+        }
+    }
+}
+impl Pin<Pio1_10, pin_state::Unused> {
+    pub fn into_usart1_rx_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_10, pin_state::Special<FC1_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_10.modify(|_, w| unsafe {
+            w
+            .func().bits(2) // FUNC2, pin configured as FC1_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC1_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio1_10, pin_state::Unused> {
+    pub fn into_i2c1_sda_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_10, pin_state::Special<FC1_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_10.modify(|_, w| unsafe {
+            w
+            .func().bits(2) // FUNC2, pin configured as FC1_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC1_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio1_10, pin_state::Unused> {
+    pub fn into_spi1_mosi_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_10, pin_state::Special<FC1_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_10.modify(|_, w| unsafe {
+            w
+            .func().bits(2) // FUNC2, pin configured as FC1_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC1_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio1_10, pin_state::Unused> {
+    pub fn into_i2s1_sda_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_10, pin_state::Special<FC1_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_10.modify(|_, w| unsafe {
+            w
+            .func().bits(2) // FUNC2, pin configured as FC1_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC1_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio1_11, pin_state::Unused> {
+    pub fn into_usart1_tx_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_11, pin_state::Special<FC1_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_11.modify(|_, w| unsafe {
+            w
+            .func().bits(2) // FUNC2, pin configured as FC1_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC1_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio1_11, pin_state::Unused> {
+    pub fn into_i2c1_scl_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_11, pin_state::Special<FC1_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_11.modify(|_, w| unsafe {
+            w
+            .func().bits(2) // FUNC2, pin configured as FC1_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC1_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio1_11, pin_state::Unused> {
+    pub fn into_spi1_miso_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_11, pin_state::Special<FC1_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_11.modify(|_, w| unsafe {
+            w
+            .func().bits(2) // FUNC2, pin configured as FC1_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC1_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio1_11, pin_state::Unused> {
+    pub fn into_i2s1_ws_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_11, pin_state::Special<FC1_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_11.modify(|_, w| unsafe {
+            w
+            .func().bits(2) // FUNC2, pin configured as FC1_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC1_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio1_12, pin_state::Unused> {
+    pub fn into_usart6_sclk_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_12, pin_state::Special<FC6_SCK>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_12.modify(|_, w| unsafe {
+            w
+            .func().bits(2) // FUNC2, pin configured as FC6_SCK
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC6_SCK,
+            },
+        }
+    }
+}
+impl Pin<Pio1_13, pin_state::Unused> {
+    pub fn into_usart6_rx_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_13, pin_state::Special<FC6_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_13.modify(|_, w| unsafe {
+            w
+            .func().bits(2) // FUNC2, pin configured as FC6_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC6_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio1_13, pin_state::Unused> {
+    pub fn into_i2c6_sda_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_13, pin_state::Special<FC6_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_13.modify(|_, w| unsafe {
+            w
+            .func().bits(2) // FUNC2, pin configured as FC6_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC6_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio1_13, pin_state::Unused> {
+    pub fn into_spi6_mosi_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_13, pin_state::Special<FC6_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_13.modify(|_, w| unsafe {
+            w
+            .func().bits(2) // FUNC2, pin configured as FC6_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC6_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio1_13, pin_state::Unused> {
+    pub fn into_i2s6_sda_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_13, pin_state::Special<FC6_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_13.modify(|_, w| unsafe {
+            w
+            .func().bits(2) // FUNC2, pin configured as FC6_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC6_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio1_14, pin_state::Unused> {
+    pub fn into_usart5_cts_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_14, pin_state::Special<FC5_CTS_SDA_SSEL0>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_14.modify(|_, w| unsafe {
+            w
+            .func().bits(4) // FUNC4, pin configured as FC5_CTS_SDA_SSEL0
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC5_CTS_SDA_SSEL0,
+            },
+        }
+    }
+}
+impl Pin<Pio1_14, pin_state::Unused> {
+    pub fn into_i2c5_sda_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_14, pin_state::Special<FC5_CTS_SDA_SSEL0>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_14.modify(|_, w| unsafe {
+            w
+            .func().bits(4) // FUNC4, pin configured as FC5_CTS_SDA_SSEL0
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC5_CTS_SDA_SSEL0,
+            },
+        }
+    }
+}
+impl Pin<Pio1_14, pin_state::Unused> {
+    pub fn into_spi5_ssel0_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_14, pin_state::Special<FC5_CTS_SDA_SSEL0>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_14.modify(|_, w| unsafe {
+            w
+            .func().bits(4) // FUNC4, pin configured as FC5_CTS_SDA_SSEL0
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC5_CTS_SDA_SSEL0,
+            },
+        }
+    }
+}
+impl Pin<Pio1_15, pin_state::Unused> {
+    pub fn into_usart5_rts_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_15, pin_state::Special<FC5_RTS_SCL_SSEL1>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_15.modify(|_, w| unsafe {
+            w
+            .func().bits(4) // FUNC4, pin configured as FC5_RTS_SCL_SSEL1
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC5_RTS_SCL_SSEL1,
+            },
+        }
+    }
+}
+impl Pin<Pio1_15, pin_state::Unused> {
+    pub fn into_i2c5_scl_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_15, pin_state::Special<FC5_RTS_SCL_SSEL1>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_15.modify(|_, w| unsafe {
+            w
+            .func().bits(4) // FUNC4, pin configured as FC5_RTS_SCL_SSEL1
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC5_RTS_SCL_SSEL1,
+            },
+        }
+    }
+}
+impl Pin<Pio1_15, pin_state::Unused> {
+    pub fn into_spi5_ssel1_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_15, pin_state::Special<FC5_RTS_SCL_SSEL1>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_15.modify(|_, w| unsafe {
+            w
+            .func().bits(4) // FUNC4, pin configured as FC5_RTS_SCL_SSEL1
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC5_RTS_SCL_SSEL1,
+            },
+        }
+    }
+}
+impl Pin<Pio1_15, pin_state::Unused> {
+    pub fn into_usart4_rts_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_15, pin_state::Special<FC4_RTS_SCL_SSEL1>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_15.modify(|_, w| unsafe {
+            w
+            .func().bits(5) // FUNC5, pin configured as FC4_RTS_SCL_SSEL1
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC4_RTS_SCL_SSEL1,
+            },
+        }
+    }
+}
+impl Pin<Pio1_15, pin_state::Unused> {
+    pub fn into_i2c4_scl_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_15, pin_state::Special<FC4_RTS_SCL_SSEL1>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_15.modify(|_, w| unsafe {
+            w
+            .func().bits(5) // FUNC5, pin configured as FC4_RTS_SCL_SSEL1
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC4_RTS_SCL_SSEL1,
+            },
+        }
+    }
+}
+impl Pin<Pio1_15, pin_state::Unused> {
+    pub fn into_spi4_ssel1_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_15, pin_state::Special<FC4_RTS_SCL_SSEL1>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_15.modify(|_, w| unsafe {
+            w
+            .func().bits(5) // FUNC5, pin configured as FC4_RTS_SCL_SSEL1
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC4_RTS_SCL_SSEL1,
+            },
+        }
+    }
+}
+impl Pin<Pio1_16, pin_state::Unused> {
+    pub fn into_usart6_tx_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_16, pin_state::Special<FC6_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_16.modify(|_, w| unsafe {
+            w
+            .func().bits(2) // FUNC2, pin configured as FC6_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC6_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio1_16, pin_state::Unused> {
+    pub fn into_i2c6_scl_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_16, pin_state::Special<FC6_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_16.modify(|_, w| unsafe {
+            w
+            .func().bits(2) // FUNC2, pin configured as FC6_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC6_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio1_16, pin_state::Unused> {
+    pub fn into_spi6_miso_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_16, pin_state::Special<FC6_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_16.modify(|_, w| unsafe {
+            w
+            .func().bits(2) // FUNC2, pin configured as FC6_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC6_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio1_16, pin_state::Unused> {
+    pub fn into_i2s6_ws_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_16, pin_state::Special<FC6_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_16.modify(|_, w| unsafe {
+            w
+            .func().bits(2) // FUNC2, pin configured as FC6_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC6_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio1_17, pin_state::Unused> {
+    pub fn into_usart6_rts_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_17, pin_state::Special<FC6_RTS_SCL_SSEL1>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_17.modify(|_, w| unsafe {
+            w
+            .func().bits(3) // FUNC3, pin configured as FC6_RTS_SCL_SSEL1
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC6_RTS_SCL_SSEL1,
+            },
+        }
+    }
+}
+impl Pin<Pio1_17, pin_state::Unused> {
+    pub fn into_i2c6_scl_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_17, pin_state::Special<FC6_RTS_SCL_SSEL1>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_17.modify(|_, w| unsafe {
+            w
+            .func().bits(3) // FUNC3, pin configured as FC6_RTS_SCL_SSEL1
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC6_RTS_SCL_SSEL1,
+            },
+        }
+    }
+}
+impl Pin<Pio1_17, pin_state::Unused> {
+    pub fn into_spi6_ssel1_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_17, pin_state::Special<FC6_RTS_SCL_SSEL1>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_17.modify(|_, w| unsafe {
+            w
+            .func().bits(3) // FUNC3, pin configured as FC6_RTS_SCL_SSEL1
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC6_RTS_SCL_SSEL1,
+            },
+        }
+    }
+}
+impl Pin<Pio1_19, pin_state::Unused> {
+    pub fn into_usart4_sclk_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_19, pin_state::Special<FC4_SCK>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_19.modify(|_, w| unsafe {
+            w
+            .func().bits(5) // FUNC5, pin configured as FC4_SCK
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC4_SCK,
+            },
+        }
+    }
+}
+impl Pin<Pio1_20, pin_state::Unused> {
+    pub fn into_usart7_rts_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_20, pin_state::Special<FC7_RTS_SCL_SSEL1>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_20.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC7_RTS_SCL_SSEL1
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC7_RTS_SCL_SSEL1,
+            },
+        }
+    }
+}
+impl Pin<Pio1_20, pin_state::Unused> {
+    pub fn into_i2c7_scl_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_20, pin_state::Special<FC7_RTS_SCL_SSEL1>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_20.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC7_RTS_SCL_SSEL1
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC7_RTS_SCL_SSEL1,
+            },
+        }
+    }
+}
+impl Pin<Pio1_20, pin_state::Unused> {
+    pub fn into_spi7_ssel1_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_20, pin_state::Special<FC7_RTS_SCL_SSEL1>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_20.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC7_RTS_SCL_SSEL1
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC7_RTS_SCL_SSEL1,
+            },
+        }
+    }
+}
+impl Pin<Pio1_20, pin_state::Unused> {
+    pub fn into_usart4_tx_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_20, pin_state::Special<FC4_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_20.modify(|_, w| unsafe {
+            w
+            .func().bits(5) // FUNC5, pin configured as FC4_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC4_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio1_20, pin_state::Unused> {
+    pub fn into_i2c4_scl_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_20, pin_state::Special<FC4_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_20.modify(|_, w| unsafe {
+            w
+            .func().bits(5) // FUNC5, pin configured as FC4_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC4_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio1_20, pin_state::Unused> {
+    pub fn into_spi4_miso_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_20, pin_state::Special<FC4_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_20.modify(|_, w| unsafe {
+            w
+            .func().bits(5) // FUNC5, pin configured as FC4_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC4_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio1_20, pin_state::Unused> {
+    pub fn into_i2s4_ws_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_20, pin_state::Special<FC4_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_20.modify(|_, w| unsafe {
+            w
+            .func().bits(5) // FUNC5, pin configured as FC4_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC4_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio1_21, pin_state::Unused> {
+    pub fn into_usart7_cts_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_21, pin_state::Special<FC7_CTS_SDA_SSEL0>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_21.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC7_CTS_SDA_SSEL0
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC7_CTS_SDA_SSEL0,
+            },
+        }
+    }
+}
+impl Pin<Pio1_21, pin_state::Unused> {
+    pub fn into_i2c7_sda_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_21, pin_state::Special<FC7_CTS_SDA_SSEL0>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_21.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC7_CTS_SDA_SSEL0
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC7_CTS_SDA_SSEL0,
+            },
+        }
+    }
+}
+impl Pin<Pio1_21, pin_state::Unused> {
+    pub fn into_spi7_ssel0_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_21, pin_state::Special<FC7_CTS_SDA_SSEL0>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_21.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC7_CTS_SDA_SSEL0
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC7_CTS_SDA_SSEL0,
+            },
+        }
+    }
+}
+impl Pin<Pio1_21, pin_state::Unused> {
+    pub fn into_usart4_rx_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_21, pin_state::Special<FC4_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_21.modify(|_, w| unsafe {
+            w
+            .func().bits(5) // FUNC5, pin configured as FC4_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC4_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio1_21, pin_state::Unused> {
+    pub fn into_i2c4_sda_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_21, pin_state::Special<FC4_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_21.modify(|_, w| unsafe {
+            w
+            .func().bits(5) // FUNC5, pin configured as FC4_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC4_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio1_21, pin_state::Unused> {
+    pub fn into_spi4_mosi_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_21, pin_state::Special<FC4_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_21.modify(|_, w| unsafe {
+            w
+            .func().bits(5) // FUNC5, pin configured as FC4_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC4_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio1_21, pin_state::Unused> {
+    pub fn into_i2s4_sda_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_21, pin_state::Special<FC4_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_21.modify(|_, w| unsafe {
+            w
+            .func().bits(5) // FUNC5, pin configured as FC4_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC4_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio1_22, pin_state::Unused> {
+    pub fn into_spi4_ssel3_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_22, pin_state::Special<FC4_SSEL3>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_22.modify(|_, w| unsafe {
+            w
+            .func().bits(5) // FUNC5, pin configured as FC4_SSEL3
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC4_SSEL3,
+            },
+        }
+    }
+}
+impl Pin<Pio1_23, pin_state::Unused> {
+    pub fn into_usart2_sclk_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_23, pin_state::Special<FC2_SCK>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_23.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC2_SCK
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC2_SCK,
+            },
+        }
+    }
+}
+impl Pin<Pio1_23, pin_state::Unused> {
+    pub fn into_spi3_ssel2_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_23, pin_state::Special<FC3_SSEL2>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_23.modify(|_, w| unsafe {
+            w
+            .func().bits(5) // FUNC5, pin configured as FC3_SSEL2
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC3_SSEL2,
+            },
+        }
+    }
+}
+impl Pin<Pio1_24, pin_state::Unused> {
+    pub fn into_usart2_rx_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_24, pin_state::Special<FC2_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_24.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC2_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC2_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio1_24, pin_state::Unused> {
+    pub fn into_i2c2_sda_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_24, pin_state::Special<FC2_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_24.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC2_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC2_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio1_24, pin_state::Unused> {
+    pub fn into_spi2_mosi_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_24, pin_state::Special<FC2_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_24.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC2_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC2_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio1_24, pin_state::Unused> {
+    pub fn into_i2s2_sda_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_24, pin_state::Special<FC2_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_24.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC2_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC2_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio1_24, pin_state::Unused> {
+    pub fn into_spi3_ssel3_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_24, pin_state::Special<FC3_SSEL3>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_24.modify(|_, w| unsafe {
+            w
+            .func().bits(5) // FUNC5, pin configured as FC3_SSEL3
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC3_SSEL3,
+            },
+        }
+    }
+}
+impl Pin<Pio1_25, pin_state::Unused> {
+    pub fn into_usart2_tx_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_25, pin_state::Special<FC2_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_25.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC2_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC2_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio1_25, pin_state::Unused> {
+    pub fn into_i2c2_scl_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_25, pin_state::Special<FC2_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_25.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC2_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC2_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio1_25, pin_state::Unused> {
+    pub fn into_spi2_miso_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_25, pin_state::Special<FC2_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_25.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC2_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC2_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio1_25, pin_state::Unused> {
+    pub fn into_i2s2_ws_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_25, pin_state::Special<FC2_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_25.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC2_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC2_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio1_26, pin_state::Unused> {
+    pub fn into_usart2_cts_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_26, pin_state::Special<FC2_CTS_SDA_SSEL0>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_26.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC2_CTS_SDA_SSEL0
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC2_CTS_SDA_SSEL0,
+            },
+        }
+    }
+}
+impl Pin<Pio1_26, pin_state::Unused> {
+    pub fn into_i2c2_sda_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_26, pin_state::Special<FC2_CTS_SDA_SSEL0>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_26.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC2_CTS_SDA_SSEL0
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC2_CTS_SDA_SSEL0,
+            },
+        }
+    }
+}
+impl Pin<Pio1_26, pin_state::Unused> {
+    pub fn into_spi2_ssel0_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_26, pin_state::Special<FC2_CTS_SDA_SSEL0>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_26.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC2_CTS_SDA_SSEL0
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC2_CTS_SDA_SSEL0,
+            },
+        }
+    }
+}
+impl Pin<Pio1_27, pin_state::Unused> {
+    pub fn into_usart2_rts_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_27, pin_state::Special<FC2_RTS_SCL_SSEL1>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_27.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC2_RTS_SCL_SSEL1
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC2_RTS_SCL_SSEL1,
+            },
+        }
+    }
+}
+impl Pin<Pio1_27, pin_state::Unused> {
+    pub fn into_i2c2_scl_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_27, pin_state::Special<FC2_RTS_SCL_SSEL1>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_27.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC2_RTS_SCL_SSEL1
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC2_RTS_SCL_SSEL1,
+            },
+        }
+    }
+}
+impl Pin<Pio1_27, pin_state::Unused> {
+    pub fn into_spi2_ssel1_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_27, pin_state::Special<FC2_RTS_SCL_SSEL1>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_27.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC2_RTS_SCL_SSEL1
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC2_RTS_SCL_SSEL1,
+            },
+        }
+    }
+}
+impl Pin<Pio1_28, pin_state::Unused> {
+    pub fn into_usart7_sclk_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_28, pin_state::Special<FC7_SCK>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_28.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC7_SCK
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC7_SCK,
+            },
+        }
+    }
+}
+impl Pin<Pio1_29, pin_state::Unused> {
+    pub fn into_usart7_rx_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_29, pin_state::Special<FC7_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_29.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC7_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC7_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio1_29, pin_state::Unused> {
+    pub fn into_i2c7_sda_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_29, pin_state::Special<FC7_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_29.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC7_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC7_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio1_29, pin_state::Unused> {
+    pub fn into_spi7_mosi_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_29, pin_state::Special<FC7_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_29.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC7_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC7_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio1_29, pin_state::Unused> {
+    pub fn into_i2s7_sda_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_29, pin_state::Special<FC7_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_29.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC7_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC7_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio1_30, pin_state::Unused> {
+    pub fn into_usart7_tx_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_30, pin_state::Special<FC7_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_30.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC7_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC7_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio1_30, pin_state::Unused> {
+    pub fn into_i2c7_scl_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_30, pin_state::Special<FC7_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_30.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC7_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC7_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio1_30, pin_state::Unused> {
+    pub fn into_spi7_miso_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_30, pin_state::Special<FC7_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_30.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC7_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC7_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio1_30, pin_state::Unused> {
+    pub fn into_i2s7_ws_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_30, pin_state::Special<FC7_TXD_SCL_MISO_WS>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_30.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC7_TXD_SCL_MISO_WS
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC7_TXD_SCL_MISO_WS,
+            },
+        }
+    }
+}
+impl Pin<Pio1_30, pin_state::Unused> {
+    pub fn into_usart7_rx_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_30, pin_state::Special<FC7_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_30.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC7_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC7_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio1_30, pin_state::Unused> {
+    pub fn into_i2c7_sda_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_30, pin_state::Special<FC7_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_30.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC7_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC7_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio1_30, pin_state::Unused> {
+    pub fn into_spi7_mosi_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_30, pin_state::Special<FC7_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_30.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC7_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC7_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+impl Pin<Pio1_30, pin_state::Unused> {
+    pub fn into_i2s7_sda_pin(
+        self,
+        iocon: &mut Iocon<init_state::Enabled>,
+    ) ->Pin<Pio1_30, pin_state::Special<FC7_RXD_SDA_MOSI_DATA>> {
+        // unfortunately, data sheet has more FUNCs than SVD has alts
+        // otherwise, it would be safe
+        iocon.raw.pio1_30.modify(|_, w| unsafe {
+            w
+            .func().bits(1) // FUNC1, pin configured as FC7_RXD_SDA_MOSI_DATA
+            .mode().inactive() // MODE_INACT, no additional pin function
+            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+            .invert().disabled() // INV_DI, input function is not inverted
+            .digimode().digital() // DIGITAL_EN, enable digital fucntion
+            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        });
+
+        Pin {
+            id: self.id,
+            state: Special {
+                _function: FC7_RXD_SDA_MOSI_DATA,
+            },
+        }
+    }
+}
+
+impl<PIO: PinId> I2cSclPin<PIO, I2c0> for Pin<PIO, Special<FC0_RTS_SCL_SSEL1>> {}
+impl<PIO: PinId> I2cSclPin<PIO, I2c0> for Pin<PIO, Special<FC0_TXD_SCL_MISO_WS>> {}
+impl<PIO: PinId> I2cSclPin<PIO, I2c1> for Pin<PIO, Special<FC1_RTS_SCL_SSEL1>> {}
+impl<PIO: PinId> I2cSclPin<PIO, I2c1> for Pin<PIO, Special<FC1_TXD_SCL_MISO_WS>> {}
+impl<PIO: PinId> I2cSclPin<PIO, I2c2> for Pin<PIO, Special<FC2_RTS_SCL_SSEL1>> {}
+impl<PIO: PinId> I2cSclPin<PIO, I2c2> for Pin<PIO, Special<FC2_TXD_SCL_MISO_WS>> {}
+impl<PIO: PinId> I2cSclPin<PIO, I2c3> for Pin<PIO, Special<FC3_RTS_SCL_SSEL1>> {}
+impl<PIO: PinId> I2cSclPin<PIO, I2c3> for Pin<PIO, Special<FC3_TXD_SCL_MISO_WS>> {}
+impl<PIO: PinId> I2cSclPin<PIO, I2c4> for Pin<PIO, Special<FC4_RTS_SCL_SSEL1>> {}
+impl<PIO: PinId> I2cSclPin<PIO, I2c4> for Pin<PIO, Special<FC4_TXD_SCL_MISO_WS>> {}
+impl<PIO: PinId> I2cSclPin<PIO, I2c5> for Pin<PIO, Special<FC5_RTS_SCL_SSEL1>> {}
+impl<PIO: PinId> I2cSclPin<PIO, I2c5> for Pin<PIO, Special<FC5_TXD_SCL_MISO_WS>> {}
+impl<PIO: PinId> I2cSclPin<PIO, I2c6> for Pin<PIO, Special<FC6_RTS_SCL_SSEL1>> {}
+impl<PIO: PinId> I2cSclPin<PIO, I2c6> for Pin<PIO, Special<FC6_TXD_SCL_MISO_WS>> {}
+impl<PIO: PinId> I2cSclPin<PIO, I2c7> for Pin<PIO, Special<FC7_RTS_SCL_SSEL1>> {}
+impl<PIO: PinId> I2cSclPin<PIO, I2c7> for Pin<PIO, Special<FC7_TXD_SCL_MISO_WS>> {}
+impl<PIO: PinId> I2cSdaPin<PIO, I2c0> for Pin<PIO, Special<FC0_CTS_SDA_SSEL0>> {}
+impl<PIO: PinId> I2cSdaPin<PIO, I2c0> for Pin<PIO, Special<FC0_RXD_SDA_MOSI_DATA>> {}
+impl<PIO: PinId> I2cSdaPin<PIO, I2c1> for Pin<PIO, Special<FC1_CTS_SDA_SSEL0>> {}
+impl<PIO: PinId> I2cSdaPin<PIO, I2c1> for Pin<PIO, Special<FC1_RXD_SDA_MOSI_DATA>> {}
+impl<PIO: PinId> I2cSdaPin<PIO, I2c2> for Pin<PIO, Special<FC2_CTS_SDA_SSEL0>> {}
+impl<PIO: PinId> I2cSdaPin<PIO, I2c2> for Pin<PIO, Special<FC2_RXD_SDA_MOSI_DATA>> {}
+impl<PIO: PinId> I2cSdaPin<PIO, I2c3> for Pin<PIO, Special<FC3_CTS_SDA_SSEL0>> {}
+impl<PIO: PinId> I2cSdaPin<PIO, I2c3> for Pin<PIO, Special<FC3_RXD_SDA_MOSI_DATA>> {}
+impl<PIO: PinId> I2cSdaPin<PIO, I2c4> for Pin<PIO, Special<FC4_CTS_SDA_SSEL0>> {}
+impl<PIO: PinId> I2cSdaPin<PIO, I2c4> for Pin<PIO, Special<FC4_RXD_SDA_MOSI_DATA>> {}
+impl<PIO: PinId> I2cSdaPin<PIO, I2c5> for Pin<PIO, Special<FC5_CTS_SDA_SSEL0>> {}
+impl<PIO: PinId> I2cSdaPin<PIO, I2c5> for Pin<PIO, Special<FC5_RXD_SDA_MOSI_DATA>> {}
+impl<PIO: PinId> I2cSdaPin<PIO, I2c6> for Pin<PIO, Special<FC6_CTS_SDA_SSEL0>> {}
+impl<PIO: PinId> I2cSdaPin<PIO, I2c6> for Pin<PIO, Special<FC6_RXD_SDA_MOSI_DATA>> {}
+impl<PIO: PinId> I2cSdaPin<PIO, I2c7> for Pin<PIO, Special<FC7_CTS_SDA_SSEL0>> {}
+impl<PIO: PinId> I2cSdaPin<PIO, I2c7> for Pin<PIO, Special<FC7_RXD_SDA_MOSI_DATA>> {}
+impl<PIO: PinId> I2sSdaPin<PIO, I2s0> for Pin<PIO, Special<FC0_RXD_SDA_MOSI_DATA>> {}
+impl<PIO: PinId> I2sSdaPin<PIO, I2s1> for Pin<PIO, Special<FC1_RXD_SDA_MOSI_DATA>> {}
+impl<PIO: PinId> I2sSdaPin<PIO, I2s2> for Pin<PIO, Special<FC2_RXD_SDA_MOSI_DATA>> {}
+impl<PIO: PinId> I2sSdaPin<PIO, I2s3> for Pin<PIO, Special<FC3_RXD_SDA_MOSI_DATA>> {}
+impl<PIO: PinId> I2sSdaPin<PIO, I2s4> for Pin<PIO, Special<FC4_RXD_SDA_MOSI_DATA>> {}
+impl<PIO: PinId> I2sSdaPin<PIO, I2s5> for Pin<PIO, Special<FC5_RXD_SDA_MOSI_DATA>> {}
+impl<PIO: PinId> I2sSdaPin<PIO, I2s6> for Pin<PIO, Special<FC6_RXD_SDA_MOSI_DATA>> {}
+impl<PIO: PinId> I2sSdaPin<PIO, I2s7> for Pin<PIO, Special<FC7_RXD_SDA_MOSI_DATA>> {}
+impl<PIO: PinId> I2sWsPin<PIO, I2s0> for Pin<PIO, Special<FC0_TXD_SCL_MISO_WS>> {}
+impl<PIO: PinId> I2sWsPin<PIO, I2s1> for Pin<PIO, Special<FC1_TXD_SCL_MISO_WS>> {}
+impl<PIO: PinId> I2sWsPin<PIO, I2s2> for Pin<PIO, Special<FC2_TXD_SCL_MISO_WS>> {}
+impl<PIO: PinId> I2sWsPin<PIO, I2s3> for Pin<PIO, Special<FC3_TXD_SCL_MISO_WS>> {}
+impl<PIO: PinId> I2sWsPin<PIO, I2s4> for Pin<PIO, Special<FC4_TXD_SCL_MISO_WS>> {}
+impl<PIO: PinId> I2sWsPin<PIO, I2s5> for Pin<PIO, Special<FC5_TXD_SCL_MISO_WS>> {}
+impl<PIO: PinId> I2sWsPin<PIO, I2s6> for Pin<PIO, Special<FC6_TXD_SCL_MISO_WS>> {}
+impl<PIO: PinId> I2sWsPin<PIO, I2s7> for Pin<PIO, Special<FC7_TXD_SCL_MISO_WS>> {}
+impl<PIO: PinId> SpiMisoPin<PIO, Spi0> for Pin<PIO, Special<FC0_TXD_SCL_MISO_WS>> {}
+impl<PIO: PinId> SpiMisoPin<PIO, Spi1> for Pin<PIO, Special<FC1_TXD_SCL_MISO_WS>> {}
+impl<PIO: PinId> SpiMisoPin<PIO, Spi2> for Pin<PIO, Special<FC2_TXD_SCL_MISO_WS>> {}
+impl<PIO: PinId> SpiMisoPin<PIO, Spi3> for Pin<PIO, Special<FC3_TXD_SCL_MISO_WS>> {}
+impl<PIO: PinId> SpiMisoPin<PIO, Spi4> for Pin<PIO, Special<FC4_TXD_SCL_MISO_WS>> {}
+impl<PIO: PinId> SpiMisoPin<PIO, Spi5> for Pin<PIO, Special<FC5_TXD_SCL_MISO_WS>> {}
+impl<PIO: PinId> SpiMisoPin<PIO, Spi6> for Pin<PIO, Special<FC6_TXD_SCL_MISO_WS>> {}
+impl<PIO: PinId> SpiMisoPin<PIO, Spi7> for Pin<PIO, Special<FC7_TXD_SCL_MISO_WS>> {}
+impl<PIO: PinId> SpiMosiPin<PIO, Spi0> for Pin<PIO, Special<FC0_RXD_SDA_MOSI_DATA>> {}
+impl<PIO: PinId> SpiMosiPin<PIO, Spi1> for Pin<PIO, Special<FC1_RXD_SDA_MOSI_DATA>> {}
+impl<PIO: PinId> SpiMosiPin<PIO, Spi2> for Pin<PIO, Special<FC2_RXD_SDA_MOSI_DATA>> {}
+impl<PIO: PinId> SpiMosiPin<PIO, Spi3> for Pin<PIO, Special<FC3_RXD_SDA_MOSI_DATA>> {}
+impl<PIO: PinId> SpiMosiPin<PIO, Spi4> for Pin<PIO, Special<FC4_RXD_SDA_MOSI_DATA>> {}
+impl<PIO: PinId> SpiMosiPin<PIO, Spi5> for Pin<PIO, Special<FC5_RXD_SDA_MOSI_DATA>> {}
+impl<PIO: PinId> SpiMosiPin<PIO, Spi6> for Pin<PIO, Special<FC6_RXD_SDA_MOSI_DATA>> {}
+impl<PIO: PinId> SpiMosiPin<PIO, Spi7> for Pin<PIO, Special<FC7_RXD_SDA_MOSI_DATA>> {}
+impl<PIO: PinId> SpiSsel0Pin<PIO, Spi0> for Pin<PIO, Special<FC0_CTS_SDA_SSEL0>> {}
+impl<PIO: PinId> SpiSsel0Pin<PIO, Spi1> for Pin<PIO, Special<FC1_CTS_SDA_SSEL0>> {}
+impl<PIO: PinId> SpiSsel0Pin<PIO, Spi2> for Pin<PIO, Special<FC2_CTS_SDA_SSEL0>> {}
+impl<PIO: PinId> SpiSsel0Pin<PIO, Spi3> for Pin<PIO, Special<FC3_CTS_SDA_SSEL0>> {}
+impl<PIO: PinId> SpiSsel0Pin<PIO, Spi4> for Pin<PIO, Special<FC4_CTS_SDA_SSEL0>> {}
+impl<PIO: PinId> SpiSsel0Pin<PIO, Spi5> for Pin<PIO, Special<FC5_CTS_SDA_SSEL0>> {}
+impl<PIO: PinId> SpiSsel0Pin<PIO, Spi6> for Pin<PIO, Special<FC6_CTS_SDA_SSEL0>> {}
+impl<PIO: PinId> SpiSsel0Pin<PIO, Spi7> for Pin<PIO, Special<FC7_CTS_SDA_SSEL0>> {}
+impl<PIO: PinId> SpiSsel1Pin<PIO, Spi0> for Pin<PIO, Special<FC0_RTS_SCL_SSEL1>> {}
+impl<PIO: PinId> SpiSsel1Pin<PIO, Spi1> for Pin<PIO, Special<FC1_RTS_SCL_SSEL1>> {}
+impl<PIO: PinId> SpiSsel1Pin<PIO, Spi2> for Pin<PIO, Special<FC2_RTS_SCL_SSEL1>> {}
+impl<PIO: PinId> SpiSsel1Pin<PIO, Spi3> for Pin<PIO, Special<FC3_RTS_SCL_SSEL1>> {}
+impl<PIO: PinId> SpiSsel1Pin<PIO, Spi4> for Pin<PIO, Special<FC4_RTS_SCL_SSEL1>> {}
+impl<PIO: PinId> SpiSsel1Pin<PIO, Spi5> for Pin<PIO, Special<FC5_RTS_SCL_SSEL1>> {}
+impl<PIO: PinId> SpiSsel1Pin<PIO, Spi6> for Pin<PIO, Special<FC6_RTS_SCL_SSEL1>> {}
+impl<PIO: PinId> SpiSsel1Pin<PIO, Spi7> for Pin<PIO, Special<FC7_RTS_SCL_SSEL1>> {}
+impl<PIO: PinId> SpiSsel2Pin<PIO, Spi3> for Pin<PIO, Special<FC3_SSEL2>> {}
+impl<PIO: PinId> SpiSsel2Pin<PIO, Spi4> for Pin<PIO, Special<FC4_SSEL2>> {}
+impl<PIO: PinId> SpiSsel3Pin<PIO, Spi3> for Pin<PIO, Special<FC3_SSEL3>> {}
+impl<PIO: PinId> SpiSsel3Pin<PIO, Spi4> for Pin<PIO, Special<FC4_SSEL3>> {}
+impl<PIO: PinId> UsartCtsPin<PIO, Usart0> for Pin<PIO, Special<FC0_CTS_SDA_SSEL0>> {}
+impl<PIO: PinId> UsartCtsPin<PIO, Usart1> for Pin<PIO, Special<FC1_CTS_SDA_SSEL0>> {}
+impl<PIO: PinId> UsartCtsPin<PIO, Usart2> for Pin<PIO, Special<FC2_CTS_SDA_SSEL0>> {}
+impl<PIO: PinId> UsartCtsPin<PIO, Usart3> for Pin<PIO, Special<FC3_CTS_SDA_SSEL0>> {}
+impl<PIO: PinId> UsartCtsPin<PIO, Usart4> for Pin<PIO, Special<FC4_CTS_SDA_SSEL0>> {}
+impl<PIO: PinId> UsartCtsPin<PIO, Usart5> for Pin<PIO, Special<FC5_CTS_SDA_SSEL0>> {}
+impl<PIO: PinId> UsartCtsPin<PIO, Usart6> for Pin<PIO, Special<FC6_CTS_SDA_SSEL0>> {}
+impl<PIO: PinId> UsartCtsPin<PIO, Usart7> for Pin<PIO, Special<FC7_CTS_SDA_SSEL0>> {}
+impl<PIO: PinId> UsartRtsPin<PIO, Usart0> for Pin<PIO, Special<FC0_RTS_SCL_SSEL1>> {}
+impl<PIO: PinId> UsartRtsPin<PIO, Usart1> for Pin<PIO, Special<FC1_RTS_SCL_SSEL1>> {}
+impl<PIO: PinId> UsartRtsPin<PIO, Usart2> for Pin<PIO, Special<FC2_RTS_SCL_SSEL1>> {}
+impl<PIO: PinId> UsartRtsPin<PIO, Usart3> for Pin<PIO, Special<FC3_RTS_SCL_SSEL1>> {}
+impl<PIO: PinId> UsartRtsPin<PIO, Usart4> for Pin<PIO, Special<FC4_RTS_SCL_SSEL1>> {}
+impl<PIO: PinId> UsartRtsPin<PIO, Usart5> for Pin<PIO, Special<FC5_RTS_SCL_SSEL1>> {}
+impl<PIO: PinId> UsartRtsPin<PIO, Usart6> for Pin<PIO, Special<FC6_RTS_SCL_SSEL1>> {}
+impl<PIO: PinId> UsartRtsPin<PIO, Usart7> for Pin<PIO, Special<FC7_RTS_SCL_SSEL1>> {}
+impl<PIO: PinId> UsartRxPin<PIO, Usart0> for Pin<PIO, Special<FC0_RXD_SDA_MOSI_DATA>> {}
+impl<PIO: PinId> UsartRxPin<PIO, Usart1> for Pin<PIO, Special<FC1_RXD_SDA_MOSI_DATA>> {}
+impl<PIO: PinId> UsartRxPin<PIO, Usart2> for Pin<PIO, Special<FC2_RXD_SDA_MOSI_DATA>> {}
+impl<PIO: PinId> UsartRxPin<PIO, Usart3> for Pin<PIO, Special<FC3_RXD_SDA_MOSI_DATA>> {}
+impl<PIO: PinId> UsartRxPin<PIO, Usart4> for Pin<PIO, Special<FC4_RXD_SDA_MOSI_DATA>> {}
+impl<PIO: PinId> UsartRxPin<PIO, Usart5> for Pin<PIO, Special<FC5_RXD_SDA_MOSI_DATA>> {}
+impl<PIO: PinId> UsartRxPin<PIO, Usart6> for Pin<PIO, Special<FC6_RXD_SDA_MOSI_DATA>> {}
+impl<PIO: PinId> UsartRxPin<PIO, Usart7> for Pin<PIO, Special<FC7_RXD_SDA_MOSI_DATA>> {}
+impl<PIO: PinId> UsartSclkPin<PIO, Usart0> for Pin<PIO, Special<FC0_SCK>> {}
+impl<PIO: PinId> UsartSclkPin<PIO, Usart1> for Pin<PIO, Special<FC1_SCK>> {}
+impl<PIO: PinId> UsartSclkPin<PIO, Usart2> for Pin<PIO, Special<FC2_SCK>> {}
+impl<PIO: PinId> UsartSclkPin<PIO, Usart3> for Pin<PIO, Special<FC3_SCK>> {}
+impl<PIO: PinId> UsartSclkPin<PIO, Usart4> for Pin<PIO, Special<FC4_SCK>> {}
+impl<PIO: PinId> UsartSclkPin<PIO, Usart5> for Pin<PIO, Special<FC5_SCK>> {}
+impl<PIO: PinId> UsartSclkPin<PIO, Usart6> for Pin<PIO, Special<FC6_SCK>> {}
+impl<PIO: PinId> UsartSclkPin<PIO, Usart7> for Pin<PIO, Special<FC7_SCK>> {}
+impl<PIO: PinId> UsartTxPin<PIO, Usart0> for Pin<PIO, Special<FC0_TXD_SCL_MISO_WS>> {}
+impl<PIO: PinId> UsartTxPin<PIO, Usart1> for Pin<PIO, Special<FC1_TXD_SCL_MISO_WS>> {}
+impl<PIO: PinId> UsartTxPin<PIO, Usart2> for Pin<PIO, Special<FC2_TXD_SCL_MISO_WS>> {}
+impl<PIO: PinId> UsartTxPin<PIO, Usart3> for Pin<PIO, Special<FC3_TXD_SCL_MISO_WS>> {}
+impl<PIO: PinId> UsartTxPin<PIO, Usart4> for Pin<PIO, Special<FC4_TXD_SCL_MISO_WS>> {}
+impl<PIO: PinId> UsartTxPin<PIO, Usart5> for Pin<PIO, Special<FC5_TXD_SCL_MISO_WS>> {}
+impl<PIO: PinId> UsartTxPin<PIO, Usart6> for Pin<PIO, Special<FC6_TXD_SCL_MISO_WS>> {}
+impl<PIO: PinId> UsartTxPin<PIO, Usart7> for Pin<PIO, Special<FC7_TXD_SCL_MISO_WS>> {}

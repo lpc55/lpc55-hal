@@ -1,10 +1,12 @@
 use core::marker::PhantomData;
+use crate::drivers::clocks::Kilohertz;
 use crate::traits::established::blocking::i2c::{Write, WriteRead, Read};
 use crate::peripherals::{
     flexcomm::{
         // Trait marking I2C peripherals and pins
-        I2c, // as I2cPeripheral
+        I2c,
         I2cPins,
+
         // Actual I2c HAL peripherals
         I2c0,
         I2c1,
@@ -60,12 +62,6 @@ where
     _pin2: PhantomData<PIO2>,
 }
 
-// trait I2cCommon {
-//     fn send_byte(&self, byte: u8) -> Result<(), Error>;
-
-//     fn recv_byte(&self) -> Result<u8, Error>;
-// }
-
 macro_rules! impl_i2c {
     ($I2cX:ident, $I2cXMaster:ident) => {
 
@@ -79,7 +75,10 @@ macro_rules! impl_i2c {
             PIO2: PinId,
             PINS: I2cPins<PIO1, PIO2, $I2cX>,
         {
-            pub fn new(i2c: $I2cX, pins: PINS, /*speed: KiloHertz, _compatible_clocks: ClocksSupportI2cToken*/) -> Self {
+            pub fn new(i2c: $I2cX, pins: PINS, speed: Kilohertz) -> Self {
+                // Simplified setup: We always use 12MHz clock,
+                // and only support 100kHz
+                assert!(speed == Kilohertz(100));
                 i2c.raw.cfg.modify(|_, w| w
                     .msten().enabled()
                     // .slven().disabled()

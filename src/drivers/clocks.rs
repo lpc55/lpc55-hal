@@ -1,17 +1,19 @@
-///! API to configure the clocks.
+///!* API to configure the clocks.
 ///!
 ///! This is very incomplete (e.g., no support for PLL clocks).
+///! It is also likely buggy, and more complex than needed
 ///!
-///! It is currently used to prepare for using the USBFSD peripheral,
+///! It is currently used to prepare for using the USBFSD and
+///! Flexcomm peripherals.
 use core::marker::PhantomData;
 use crate::states::{
     main_clock::MainClock,
     // clock_state,
+    ClocksSupportFlexcommToken,
     ClocksSupportUsbfsToken,
 };
 use crate::{
     Anactrl,
-    // Pmc,
     Syscon,
 };
 
@@ -20,17 +22,43 @@ use crate::{
 #[derive(PartialEq, PartialOrd, Clone, Copy, Debug)]
 pub struct Hertz(pub u32);
 #[derive(PartialEq, PartialOrd, Clone, Copy, Debug)]
+pub struct Kilohertz(pub u32);
+#[derive(PartialEq, PartialOrd, Clone, Copy, Debug)]
 pub struct Megahertz(pub u32);
 
-impl Into<Hertz> for Megahertz {
-    fn into(self) -> Hertz {
-        Hertz(self.0 * 1_000_000)
+impl From<Megahertz> for Hertz {
+    fn from(mhz: Megahertz) -> Self {
+        Hertz(1_000_000 * mhz.0)
     }
 }
 
-impl Into<Hertz> for u32 {
-    fn into(self) -> Hertz {
-        Hertz(self)
+impl From<Kilohertz> for Hertz {
+    fn from(khz: Kilohertz) -> Self {
+        Hertz(1_000 * khz.0)
+    }
+}
+
+impl From<u32> for Hertz {
+    fn from(value: u32) -> Self {
+        Hertz(value)
+    }
+}
+
+impl From<Megahertz> for u32 {
+    fn from(mhz: Megahertz) -> Self {
+        mhz.0 * 1_000_000
+    }
+}
+
+impl From<Kilohertz> for u32 {
+    fn from(khz: Kilohertz) -> Self {
+        khz.0 * 1_000
+    }
+}
+
+impl From<Hertz> for u32 {
+    fn from(hz: Hertz) -> Self {
+        hz.0
     }
 }
 
@@ -39,12 +67,19 @@ pub trait U32Ext {
     fn hz(self) -> Hertz;
 
     /// Wrap in `MegaHertz`
+    fn khz(self) -> Kilohertz;
+
+    /// Wrap in `MegaHertz`
     fn mhz(self) -> Megahertz;
 }
 
 impl U32Ext for u32 {
     fn hz(self) -> Hertz {
         Hertz(self)
+    }
+
+    fn khz(self) -> Kilohertz {
+        Kilohertz(self)
     }
 
     fn mhz(self) -> Megahertz {
@@ -56,6 +91,10 @@ impl U32Ext for u32 {
 pub struct ClockRequirements {
     pub main_clock_source: Option<MainClock>,
     pub system_clock_freq: Option<Hertz>,
+    // pub fro1mhz: bool,
+    pub fro12mhz: bool,
+    pub fro96mhz: bool,
+    pub support_flexcomm: bool,
     pub support_usbfs: bool,
 }
 
@@ -64,12 +103,22 @@ pub struct ClockRequirements {
 pub struct Clocks {
     main_clock_source: MainClock,
     system_clock_freq: Hertz,
+    fro12mhz: bool,
+    fro96mhz: bool,
 }
 
 impl Clocks {
+    pub fn support_flexcomm_token(&self) -> Option<ClocksSupportFlexcommToken> {
+        match self.fro12mhz {
+            true => Some(ClocksSupportFlexcommToken {__: PhantomData} ),
+            false => None
+        }
+
+    }
+
     pub fn support_usbfs_token(&self) -> Option<ClocksSupportUsbfsToken> {
-        match (self.main_clock_source, self.system_clock_freq >= 12_000_000.into()) {
-            (MainClock::Fro96MHz, true) => Some(ClocksSupportUsbfsToken {__: PhantomData} ),
+        match (self.fro96mhz, self.system_clock_freq >= 12_000_000.into()) {
+            (true, true) => Some(ClocksSupportUsbfsToken {__: PhantomData} ),
             _ => None,
         }
     }
@@ -106,6 +155,28 @@ impl ClockRequirements {
         self
     }
 
+    // pub fn with_fro1mhz(mut self) -> Self {
+    //     self.fro1mhz = true;
+    //     self
+    // }
+
+    pub fn with_fro12mhz(mut self) -> Self {
+        self.fro12mhz = true;
+        self
+    }
+
+    pub fn with_fro96mhz(mut self) -> Self {
+        self.fro96mhz = true;
+        self
+    }
+
+    /// Ensures that the resulting clock configuration
+    /// supports Flexcomm drivers.
+    pub fn support_flexcomm(mut self) -> Self {
+        self.support_flexcomm = true;
+        self
+    }
+
     /// Ensures that the resulting clock configuration
     /// supports USBFS.
     pub fn support_usbfs(mut self) -> Self {
@@ -130,9 +201,17 @@ impl ClockRequirements {
     /// It's a bit ridiculous to do this in code, but no idea how to avoid it.
     ///
     /// Can be called only once, to not invalidate previous configurations
-    pub fn configure(mut self, anactrl: &mut Anactrl, /*pmc: &mut Pmc,*/ syscon: &mut Syscon) -> Result<Clocks> {
+    pub fn configure(mut self, anactrl: &mut Anactrl, syscon: &mut Syscon) -> Result<Clocks> {
         if unsafe { CONFIGURED } {
             return Err(ClocksError::AlreadyConfigured);
+        }
+
+        if self.support_flexcomm {
+            self.fro12mhz = true;
+        }
+
+        if self.support_usbfs {
+            self.fro96mhz = true;
         }
 
         // need Fro96MHz for USBFS
@@ -162,9 +241,30 @@ impl ClockRequirements {
         );
 
         let main_clock_freq: u32 = match main_clock_source {
-            MainClock::Fro12MHz => 12_000_000,
-            MainClock::Fro96MHz => 96_000_000,
+            MainClock::Fro12MHz => {
+                self.fro12mhz = true;
+                12.mhz().into()
+            },
+            MainClock::Fro96MHz => {
+                self.fro96mhz = true;
+                96.mhz().into()
+            },
         };
+
+        if self.fro12mhz {
+            self.fro96mhz = true;
+        }
+
+        if self.fro96mhz {
+            // turn it on
+            anactrl.raw.fro192m_ctrl.modify(|_, w| w.ena_96mhzclk().enable());
+        }
+
+        // TODO: what does ena_48mhzclk do??
+
+        if self.fro12mhz {
+            anactrl.raw.fro192m_ctrl.modify(|_, w| w.ena_12mhzclk().enable());
+        }
 
         let sys_divider = {
             if system_clock_freq > main_clock_freq {
@@ -186,6 +286,8 @@ impl ClockRequirements {
         let clocks = Clocks {
             main_clock_source,
             system_clock_freq: system_clock_freq.into(),
+            fro12mhz: self.fro12mhz,
+            fro96mhz: self.fro96mhz,
         };
 
         // set highest flash wait cycles
@@ -214,17 +316,8 @@ impl ClockRequirements {
             system_clock_freq_mhz += 1;
         }
         let wait_cycles = (system_clock_freq_mhz / 11) + 1;
-            // 0..11 => 1,
-            // 12..22 => 2,
-            // 23..33 => 3,
-            // 34..44 => 4,
-            // 45..55 => 5,
-            // 56..66 => 6,
-            // 67..77 => 7,
-            // 78..88 => 8,
-            // _ => 9,
-        // };
-        // dbg!(wait_cycles);
+            // 0..11 => 1, 12..22 => 2, 23..33 => 3, 34..44 => 4, 45..55 => 5,
+            // 56..66 => 6, 67..77 => 7, 78..88 => 8, _ => 9, };
         unsafe { syscon.raw.fmccr.modify(|_, w| w.flashtim().bits(wait_cycles as u8 - 1)) };
 
 

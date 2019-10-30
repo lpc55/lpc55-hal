@@ -8,8 +8,7 @@ pub mod peripherals;
 pub use peripherals::{
     anactrl::Anactrl,
     casper::Casper,
-    flexcomm::Flexcomm2,
-    flexcomm::Flexcomm4,
+    flexcomm::Flexcomm,
     gpio::Gpio,
     iocon::Iocon,
     pmc::Pmc,
@@ -72,8 +71,7 @@ pub struct Peripherals {
     pub casper: Casper,
 
     /// Flexcomm Interface Serial Communication
-    pub flexcomm2: Flexcomm2,
-    pub flexcomm4: Flexcomm4,
+    pub flexcomm: Flexcomm,
 
     /// General-purpose I/O (GPIO)
     pub gpio: Gpio,
@@ -133,8 +131,16 @@ impl Peripherals {
             // HAL peripherals
             anactrl: Anactrl::from(p.ANACTRL),
             casper: Casper::from(p.CASPER),
-            flexcomm2: Flexcomm2::from((p.FLEXCOMM2, p.I2C2, p.SPI2, p.USART2)),
-            flexcomm4: Flexcomm4::from((p.FLEXCOMM4, p.I2C4, p.SPI4, p.USART4)),
+            flexcomm: (
+                peripherals::flexcomm::Flexcomm0::from((p.FLEXCOMM0, p.I2C0, p.I2S0, p.SPI0, p.USART0)),
+                peripherals::flexcomm::Flexcomm1::from((p.FLEXCOMM1, p.I2C1, p.I2S1, p.SPI1, p.USART1)),
+                peripherals::flexcomm::Flexcomm2::from((p.FLEXCOMM2, p.I2C2, p.I2S2, p.SPI2, p.USART2)),
+                peripherals::flexcomm::Flexcomm3::from((p.FLEXCOMM3, p.I2C3, p.I2S3, p.SPI3, p.USART3)),
+                peripherals::flexcomm::Flexcomm4::from((p.FLEXCOMM4, p.I2C4, p.I2S4, p.SPI4, p.USART4)),
+                peripherals::flexcomm::Flexcomm5::from((p.FLEXCOMM5, p.I2C5, p.I2S5, p.SPI5, p.USART5)),
+                peripherals::flexcomm::Flexcomm6::from((p.FLEXCOMM6, p.I2C6, p.I2S6, p.SPI6, p.USART6)),
+                peripherals::flexcomm::Flexcomm7::from((p.FLEXCOMM7, p.I2C7, p.I2S7, p.SPI7, p.USART7)),
+            ),
             gpio: Gpio::from(p.GPIO),
             iocon: Iocon::from(p.IOCON),
             pmc: Pmc::from(p.PMC),
