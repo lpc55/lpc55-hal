@@ -11,14 +11,20 @@ pub use i2c::I2cMaster;
 
 // hopefully, rustc's type inference will improve, and
 // we can remove these types again
-pub use i2c::I2c0Master;
-pub use i2c::I2c1Master;
-pub use i2c::I2c2Master;
-pub use i2c::I2c3Master;
-pub use i2c::I2c4Master;
-pub use i2c::I2c5Master;
-pub use i2c::I2c6Master;
-pub use i2c::I2c7Master;
+// pub use i2c::I2c0Master;
+// pub use i2c::I2c1Master;
+// pub use i2c::I2c2Master;
+// pub use i2c::I2c3Master;
+// pub use i2c::I2c4Master;
+// pub use i2c::I2c5Master;
+// pub use i2c::I2c6Master;
+// pub use i2c::I2c7Master;
+
+pub mod spi;
+pub use spi::SpiMaster;
+
+// pub mod serial;
+// pub use serial::Serial;
 
 pub mod pins;
 pub use pins::{

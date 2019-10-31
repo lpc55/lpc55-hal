@@ -322,20 +322,27 @@ pub trait UsartCtsPin<PIO, USART> where PIO: PinId, USART: Usart {}
 /// USART serial clock
 pub trait UsartSclkPin<PIO, USART> where PIO: PinId, USART: Usart {}
 
+use crate::drivers::pins::types::PinType;
+pub struct NoPio;
+impl PinId for NoPio {
+    const PORT: usize = !0;
+    const NUMBER: u8 = !0;
+    const MASK: u32 = !0;
 
-// // TODO: not sure this makes things easier to read or write..
-// macro_rules! scl_pin {
-//     ($Pin:ident, $I2c:ident, $FUNC:ident) => {
-//         impl<PIO: PinId> $Pin<PIO, $I2c> for Pin<PIO, Special<pin_function::$FUNC>> {}
-//     }
-// }
+    const TYPE: PinType = PinType::D;
+}
 
-// // impl<PIO: PinId> I2cSclPin<PIO, I2c2> for Pin<PIO, Special<pin_function::FC2_TXD_SCL_MISO_WS>> {}
-// impl<PIO: PinId> I2cSdaPin<PIO, I2c2> for Pin<PIO, Special<pin_function::FC2_RXD_SDA_MOSI_DATA>> {}
-// impl<PIO: PinId> I2cSclPin<PIO, I2c4> for Pin<PIO, Special<pin_function::FC4_TXD_SCL_MISO_WS>> {}
-// impl<PIO: PinId> I2cSdaPin<PIO, I2c4> for Pin<PIO, Special<pin_function::FC4_RXD_SDA_MOSI_DATA>> {}
+// TODO: revisit this. Instead of passing in fake pins,
+// write proper drivers for the use cases.
+// Think about using a generic enum {Read, Write, ReadWrite}
+// parameter
+/// Filler type for when no Tx is necessary
+pub struct NoTx;
+/// Filler type for when no Rx is necessary
+pub struct NoRx;
+impl<USART: Usart> UsartTxPin<NoPio, USART> for NoTx {}
+impl<USART: Usart> UsartRxPin<NoPio, USART> for NoRx {}
 
-// scl_pin!(I2cSclPin, I2c2, FC2_TXD_SCL_MISO_WS);
 
 pub trait I2cPins<PIO1: PinId, PIO2: PinId, I2C: I2c> {}
 
@@ -349,6 +356,29 @@ where
 {}
 
 
+pub trait SpiPins<PIO1: PinId, PIO2: PinId, PIO3: PinId, SPI: Spi> {}
+
+impl<PIO1, PIO2, PIO3, SPI, SCK, MISO, MOSI> SpiPins<PIO1, PIO2, PIO3, SPI> for (SCK, MOSI, MISO)
+where
+    PIO1: PinId,
+    PIO2: PinId,
+    PIO3: PinId,
+    SPI: Spi,
+    SCK: SpiSckPin<PIO1, SPI>,
+    MOSI: SpiMosiPin<PIO3, SPI>,
+    MISO: SpiMisoPin<PIO2, SPI>,
+{}
+
+pub trait UsartPins<PIO1: PinId, PIO2: PinId, USART: Usart> {}
+
+impl<PIO1, PIO2, USART, TX, RX> UsartPins<PIO1, PIO2, USART> for (TX, RX)
+where
+    PIO1: PinId,
+    PIO2: PinId,
+    USART: Usart,
+    TX: UsartTxPin<PIO1, USART>,
+    RX: UsartRxPin<PIO2, USART>,
+{}
 
 // Note: Pio0_12 can be both: into_i2c_3_scl_pin() and into_i2c_6_scl_pin() [alt1 vs alt7]
 //

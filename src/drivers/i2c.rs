@@ -1,6 +1,10 @@
 use core::marker::PhantomData;
 use crate::drivers::clocks::Kilohertz;
-use crate::traits::established::blocking::i2c::{Write, WriteRead, Read};
+use crate::traits::wg::blocking::i2c::{
+    Read,
+    Write,
+    WriteRead,
+};
 use crate::peripherals::{
     flexcomm::{
         // Trait marking I2C peripherals and pins

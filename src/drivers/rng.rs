@@ -1,4 +1,4 @@
-use crate::traits::established::blocking::rng;
+use crate::traits::wg::blocking::rng;
 
 use crate::states::{
     init_state,

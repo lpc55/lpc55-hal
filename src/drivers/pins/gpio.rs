@@ -1,5 +1,5 @@
 use crate::traits::{
-    established::{
+    wg::{
         digital::v2::{
             OutputPin,
             StatefulOutputPin,
