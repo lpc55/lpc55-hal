@@ -239,8 +239,8 @@ pins!(
     pio0_8 , Pio0_8 , 0,  8, PinType::D, pin_state::Unused, pin_state::Unused;
     pio0_9 , Pio0_9 , 0,  9, PinType::A, pin_state::Unused, pin_state::Unused;
     pio0_10, Pio0_10, 0, 10, PinType::A, pin_state::Unused, pin_state::Unused;
-    pio0_11, Pio0_11, 0, 11, PinType::A, pin_state::Unused, pin_state::Unused;
-    pio0_12, Pio0_12, 0, 12, PinType::A, pin_state::Unused, pin_state::Unused;
+    pio0_11, Pio0_11, 0, 11, PinType::A, pin_state::Special<pin_function::SWCLK>, pin_state::Special{ _function: pin_function::SWCLK {} };
+    pio0_12, Pio0_12, 0, 12, PinType::A, pin_state::Special<pin_function::SWDIO>, pin_state::Special{ _function: pin_function::SWDIO {} };
     pio0_13, Pio0_13, 0, 13, PinType::I, pin_state::Unused, pin_state::Unused;
     pio0_14, Pio0_14, 0, 14, PinType::I, pin_state::Unused, pin_state::Unused;
     pio0_15, Pio0_15, 0, 15, PinType::A, pin_state::Unused, pin_state::Unused;

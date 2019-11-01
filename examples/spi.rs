@@ -65,6 +65,9 @@ fn main() -> ! {
     let ssel = pins.pio1_1.into_spi8_ssel_pin(&mut iocon);
     // let no_ssel = NoSsel;//pins.pio1_1.into_spi8_ssel1_pin(&mut iocon);
 
+    // try this: currently no way to use SWCLK pin
+    // let danger = pins.pio0_11.into_usart6_rx_pin(&mut iocon);
+
     let spi_pins = (sck, mosi, miso, ssel);
     // let spi_pins = (sck, mosi, miso, no_ssel);
 
