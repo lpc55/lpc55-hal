@@ -23,6 +23,7 @@ pub type Flexcomm = (
     Flexcomm5,
     Flexcomm6,
     Flexcomm7,
+    Flexcomm8,
 );
 
 macro_rules! flexcomm {
@@ -213,17 +214,6 @@ macro_rules! flexcomm {
                     _state: init_state::Enabled(()),
                 }
             }
-
-        // impl $i2c_hal {
-        //     pub fn disabled(mut self, syscon: &mut syscon::Syscon) -> $hal_name<init_state::Disabled> {
-        //         syscon.disable_clock(&mut self.raw);
-
-        //         $hal_name {
-        //             raw: self.raw,
-        //             _state: init_state::Disabled,
-        //         }
-        //     }
-        // }
         }
     }
 }
@@ -236,6 +226,81 @@ flexcomm!(Flexcomm4, I2c4, I2s4, Spi4, Usart4, FLEXCOMM4, I2C4, I2S4, SPI4, USAR
 flexcomm!(Flexcomm5, I2c5, I2s5, Spi5, Usart5, FLEXCOMM5, I2C5, I2S5, SPI5, USART5, fcclksel5);
 flexcomm!(Flexcomm6, I2c6, I2s6, Spi6, Usart6, FLEXCOMM6, I2C6, I2S6, SPI6, USART6, fcclksel6);
 flexcomm!(Flexcomm7, I2c7, I2s7, Spi7, Usart7, FLEXCOMM7, I2C7, I2S7, SPI7, USART7, fcclksel7);
+
+pub struct Flexcomm8<State = init_state::Unknown> {
+    pub(crate) raw_fc: raw::FLEXCOMM8,
+    pub(crate) raw_spi: raw::SPI8,
+    pub _state: State,
+}
+
+pub struct Spi8<State = init_state::Enabled> {
+    pub(crate) _raw_fc: raw::FLEXCOMM8,
+    #[allow(dead_code)]
+    pub(crate) raw: raw::SPI8,
+    pub _state: State,
+}
+
+impl core::convert::From<(raw::FLEXCOMM8, raw::SPI8)> for Flexcomm8 {
+    fn from(raw: (raw::FLEXCOMM8, raw::SPI8)) -> Self {
+        Flexcomm8::new(raw)
+    }
+}
+
+impl Flexcomm8 {
+    fn new(raw: (raw::FLEXCOMM8, raw::SPI8)) -> Self {
+        Flexcomm8 {
+            raw_fc: raw.0,
+            raw_spi: raw.1,
+            _state: init_state::Unknown,
+        }
+    }
+}
+
+impl<State> Flexcomm8<State> {
+    pub fn release(self) -> (raw::FLEXCOMM8, raw::SPI8) {
+        (self.raw_fc, self.raw_spi)
+    }
+}
+
+impl Flexcomm8 {
+    fn enabled(&mut self, syscon: &mut syscon::Syscon) {
+        syscon.reset(&mut self.raw_fc);
+        syscon.enable_clock(&mut self.raw_fc);
+    }
+
+    pub fn enabled_as_spi(
+        mut self,
+        syscon: &mut syscon::Syscon,
+        _clocks_token: &ClocksSupportFlexcommToken,
+    ) -> Spi8<init_state::Enabled> {
+
+        // NB: This is the high-speed SPI
+
+        // The FRG output frequency must not be higher than 48 MHz for SPI and I2S
+        // and not higher than 44 MHz for USART and I2C.
+        //
+        // Currently, we just use the 12MHz clock
+
+        syscon.raw.hslspiclksel.modify(|_, w| w.sel().enum_0x2()); // Fro12MHz
+
+        self.enabled(syscon);
+
+        self.raw_fc.pselid.modify(|_, w| w
+            // select SPI function on corresponding FLEXCOMM
+            .persel().spi()
+            // lock it
+            .lock().locked()
+        );
+        assert!(self.raw_fc.pselid.read().spipresent().is_present());
+
+        Spi8 {
+            _raw_fc: self.raw_fc,
+            raw: self.raw_spi,
+            _state: init_state::Enabled(()),
+        }
+    }
+
+}
 
 
 pub trait I2c {}
@@ -270,6 +335,7 @@ impl Spi for Spi4 {}
 impl Spi for Spi5 {}
 impl Spi for Spi6 {}
 impl Spi for Spi7 {}
+impl Spi for Spi8 {}
 
 pub trait Usart {}
 
@@ -296,20 +362,34 @@ pub trait I2sSdaPin<PIO, I2S> where PIO: PinId, I2S: I2s {}
 /// I2S master clock
 pub trait I2sMclkPin<PIO, I2S> where PIO: PinId, I2S: I2s {}
 
+pub enum SlaveSelect {
+    Slave0,
+    Slave1,
+    Slave2,
+    Slave3,
+    All,
+}
+
 /// SPI serial clock
 pub trait SpiSckPin<PIO, SPI> where PIO: PinId, SPI: Spi {}
 /// SPI master-out/slave-in data
 pub trait SpiMosiPin<PIO, SPI> where PIO: PinId, SPI: Spi {}
 /// SPI master-in/slave-sout data
 pub trait SpiMisoPin<PIO, SPI> where PIO: PinId, SPI: Spi {}
-/// SPI slave select 0
-pub trait SpiSsel0Pin<PIO, SPI> where PIO: PinId, SPI: Spi {}
-/// SPI slave select 1
-pub trait SpiSsel1Pin<PIO, SPI> where PIO: PinId, SPI: Spi {}
-/// SPI slave select 2
-pub trait SpiSsel2Pin<PIO, SPI> where PIO: PinId, SPI: Spi {}
-/// SPI slave select 3
-pub trait SpiSsel3Pin<PIO, SPI> where PIO: PinId, SPI: Spi {}
+/// SPI slave select
+pub trait SpiSselPin<PIO, SPI> where PIO: PinId, SPI: Spi { const SSEL: SlaveSelect; }
+
+pub struct NoSsel;
+impl<SPI: Spi> SpiSselPin<NoPio, SPI> for NoSsel { const SSEL: SlaveSelect = SlaveSelect::All; }
+
+// /// SPI slave select 0
+// pub trait SpiSsel0Pin<PIO, SPI> where PIO: PinId, SPI: Spi { const SSEL: u8 = 0; }
+// /// SPI slave select 1
+// pub trait SpiSsel1Pin<PIO, SPI> where PIO: PinId, SPI: Spi { const SSEL: u8 = 1; }
+// /// SPI slave select 2
+// pub trait SpiSsel2Pin<PIO, SPI> where PIO: PinId, SPI: Spi { const SSEL: u8 = 2; }
+// /// SPI slave select 3
+// pub trait SpiSsel3Pin<PIO, SPI> where PIO: PinId, SPI: Spi { const SSEL: u8 = 3; }
 
 /// USART transmitter output
 pub trait UsartTxPin<PIO, USART> where PIO: PinId, USART: Usart {}
@@ -356,17 +436,20 @@ where
 {}
 
 
-pub trait SpiPins<PIO1: PinId, PIO2: PinId, PIO3: PinId, SPI: Spi> {}
+pub trait SpiPins<PIO1: PinId, PIO2: PinId, PIO3: PinId, PIO4: PinId, SPI: Spi> {}
 
-impl<PIO1, PIO2, PIO3, SPI, SCK, MISO, MOSI> SpiPins<PIO1, PIO2, PIO3, SPI> for (SCK, MOSI, MISO)
-where
+impl<PIO1, PIO2, PIO3, PIO4, SPI, SCK, MISO, MOSI, SSEL>
+    SpiPins<PIO1, PIO2, PIO3, PIO4, SPI>
+for (SCK, MOSI, MISO, SSEL) where
     PIO1: PinId,
     PIO2: PinId,
     PIO3: PinId,
+    PIO4: PinId,
     SPI: Spi,
     SCK: SpiSckPin<PIO1, SPI>,
     MOSI: SpiMosiPin<PIO3, SPI>,
     MISO: SpiMisoPin<PIO2, SPI>,
+    SSEL: SpiSselPin<PIO4, SPI>,
 {}
 
 pub trait UsartPins<PIO1: PinId, PIO2: PinId, USART: Usart> {}

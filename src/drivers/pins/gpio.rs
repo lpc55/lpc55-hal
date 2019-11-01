@@ -58,6 +58,12 @@ where
     T: PinId,
     D: direction::NotOutput,
 {
+    pub fn into_output_high(self) -> Pin<T, pin_state::Gpio<direction::Output>> {
+        self.into_output(Level::High)
+    }
+    pub fn into_output_low(self) -> Pin<T, pin_state::Gpio<direction::Output>> {
+        self.into_output(Level::Low)
+    }
     pub fn into_output(self, initial: Level) -> Pin<T, pin_state::Gpio<direction::Output>> {
         match initial {
             Level::High => self.state.set[T::PORT].write(|w| unsafe { w.setp().bits(T::MASK) }),

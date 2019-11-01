@@ -11,6 +11,8 @@ use crate::{
             // Trait marking SPI peripherals and pins
             Spi,
             SpiPins,
+            SpiSselPin,
+            SlaveSelect,
 
             // Actual Spi HAL peripherals
             Spi0,
@@ -21,6 +23,7 @@ use crate::{
             Spi5,
             Spi6,
             Spi7,
+            Spi8,
         },
     },
     drivers::{
@@ -47,19 +50,24 @@ pub enum Error {
 }
 
 /// SPI peripheral operating in master mode
-pub struct SpiMaster<SCK, MOSI, MISO, SPI, PINS>
+pub struct SpiMaster<SCK, MOSI, MISO, SSEL, SPI, PINS, SSELPIN>
 where
     SCK: PinId,
     MOSI: PinId,
     MISO: PinId,
+    SSEL: PinId,
     SPI: Spi,
-    PINS: SpiPins<SCK, MOSI, MISO, SPI>,
+    PINS: SpiPins<SCK, MOSI, MISO, SSEL, SPI>,
+    SSELPIN: SpiSselPin<SSEL, SPI>,
 {
     spi: SPI,
     pins: PINS,
     _sck: PhantomData<SCK>,
     _mosi: PhantomData<MOSI>,
     _miso: PhantomData<MISO>,
+    _ssel: PhantomData<SSEL>,
+    _ssel_pin: PhantomData<SSELPIN>,
+    ssel: SlaveSelect,
 }
 
 //
@@ -74,14 +82,16 @@ macro_rules! impl_spi {
 
         /// hopefully, rustc's type inference will improve, and
         /// we can remove these types again
-        pub type $SpiMasterX<A, B, C, D> = SpiMaster<A, B, C, $SpiX, D>;
+        pub type $SpiMasterX<A, B, C, D, E, F> = SpiMaster<A, B, C, D, $SpiX, E, F>;
 
-        impl<SCK, MOSI, MISO, PINS> SpiMaster<SCK, MOSI, MISO, $SpiX, PINS>
+        impl<SCK, MOSI, MISO, SSEL, PINS, SSELPIN> SpiMaster<SCK, MOSI, MISO, SSEL, $SpiX, PINS, SSELPIN>
         where
             SCK: PinId,
             MOSI: PinId,
             MISO: PinId,
-            PINS: SpiPins<SCK, MOSI, MISO, $SpiX>,
+            SSEL: PinId,
+            PINS: SpiPins<SCK, MOSI, MISO, SSEL, $SpiX>,
+            SSELPIN: SpiSselPin<SSEL, $SpiX>,
         {
             pub fn new(spi: $SpiX, pins: PINS, mode: Mode, freq: Hertz) -> Self {
                 while spi.raw.stat.read().mstidle().bit_is_clear() { continue; }
@@ -118,6 +128,10 @@ macro_rules! impl_spi {
                 spi.raw.cfg.modify(|_, w| w
                     .enable().enabled()
                 );
+                // match pins.3.SSEL {
+                //     0...3 => {},
+                //     _ => { panic!() },
+                // }
 
                 Self {
                     spi,
@@ -125,6 +139,9 @@ macro_rules! impl_spi {
                     _sck: PhantomData,
                     _mosi: PhantomData,
                     _miso: PhantomData,
+                    _ssel: PhantomData,
+                    _ssel_pin: PhantomData,
+                    ssel: SSELPIN::SSEL,
                 }
             }
 
@@ -137,14 +154,20 @@ macro_rules! impl_spi {
                 Ok(())
             }
 
+            // pub fn ssel(&mut self, ssel: &mut SSELPIN) {
+            //     self.ssel = SSELPIN::SSEL;
+            // }
+
         }
 
-        impl<SCK, MOSI, MISO, PINS> FullDuplex<u8> for SpiMaster<SCK, MOSI, MISO, $SpiX, PINS>
+        impl<SCK, MOSI, MISO, SSEL, PINS, SSELPIN> FullDuplex<u8> for SpiMaster<SCK, MOSI, MISO, SSEL, $SpiX, PINS, SSELPIN>
         where
             SCK: PinId,
             MOSI: PinId,
             MISO: PinId,
-            PINS: SpiPins<SCK, MOSI, MISO, $SpiX>,
+            SSEL: PinId,
+            PINS: SpiPins<SCK, MOSI, MISO, SSEL, $SpiX>,
+            SSELPIN: SpiSselPin<SSEL, $SpiX>,
         {
             type Error = Error;
 
@@ -169,18 +192,87 @@ macro_rules! impl_spi {
                 if self.spi.raw.fifostat.read().txempty().bit_is_set() {
                     // NB: we set 8 bits in constructor
                     // We could probably repeat this here
-                    self.spi.raw.fifowr.write(|w| unsafe { w
-                        // control
-                        .len().bits(7) // 8 bits
-                        // data
-                        .txdata().bits(byte as u16)
-                    });
+                    use SlaveSelect::*;
+                    match self.ssel {
+                        Slave0 =>  {
+                            self.spi.raw.fifowr.write(|w| unsafe { w
+                                // control
+                                .len().bits(7) // 8 bits
+                                .txssel0_n().asserted()
+                                // data
+                                .txdata().bits(byte as u16)
+                            });
+                        },
+                        Slave1 =>  {
+                            self.spi.raw.fifowr.write(|w| unsafe { w
+                                // control
+                                .len().bits(7) // 8 bits
+                                .txssel1_n().asserted()
+                                // data
+                                .txdata().bits(byte as u16)
+                            });
+                        },
+                        Slave2 =>  {
+                            self.spi.raw.fifowr.write(|w| unsafe { w
+                                // control
+                                .len().bits(7) // 8 bits
+                                .txssel2_n().asserted()
+                                // data
+                                .txdata().bits(byte as u16)
+                            });
+                        },
+                        Slave3 =>  {
+                            self.spi.raw.fifowr.write(|w| unsafe { w
+                                // control
+                                .len().bits(7) // 8 bits
+                                .txssel3_n().asserted()
+                                // data
+                                .txdata().bits(byte as u16)
+                            });
+                        },
+                        All =>  {
+                            self.spi.raw.fifowr.write(|w| unsafe { w
+                                // control
+                                .len().bits(7) // 8 bits
+                                .txssel0_n().asserted()
+                                .txssel1_n().asserted()
+                                .txssel2_n().asserted()
+                                .txssel3_n().asserted()
+                                // data
+                                .txdata().bits(byte as u16)
+                            });
+                        },
+                    }
                     Ok(())
                 } else {
                     Err(nb::Error::WouldBlock)
                 }
             }
         }
+
+        impl<SCK, MOSI, MISO, SSEL, PINS, SSELPIN> crate::traits::wg::blocking::spi::transfer::Default<u8>
+        for
+            SpiMaster<SCK, MOSI, MISO, SSEL, $SpiX, PINS, SSELPIN>
+        where
+            SCK: PinId,
+            MOSI: PinId,
+            MISO: PinId,
+            SSEL: PinId,
+            PINS: SpiPins<SCK, MOSI, MISO, SSEL, $SpiX>,
+            SSELPIN: SpiSselPin<SSEL, $SpiX>,
+        {}
+
+        impl<SCK, MOSI, MISO, SSEL, PINS, SSELPIN> crate::traits::wg::blocking::spi::write::Default<u8>
+        for
+            SpiMaster<SCK, MOSI, MISO, SSEL, $SpiX, PINS, SSELPIN>
+        where
+            SCK: PinId,
+            MOSI: PinId,
+            MISO: PinId,
+            SSEL: PinId,
+            PINS: SpiPins<SCK, MOSI, MISO, SSEL, $SpiX>,
+            SSELPIN: SpiSselPin<SSEL, $SpiX>,
+        {}
     }
 }
 
@@ -192,3 +284,15 @@ impl_spi!(Spi4, SpiMaster4);
 impl_spi!(Spi5, SpiMaster5);
 impl_spi!(Spi6, SpiMaster6);
 impl_spi!(Spi7, SpiMaster7);
+impl_spi!(Spi8, SpiMaster8);
+
+// impl<SPI, PINS> crate::traits::wg::blocking::spi::transfer::Default<u8> for SpiMaster<SPI, PINS>
+// where
+//     SPI: Spi
+// {}
+
+// impl<SPI, PINS> embedded_hal::blocking::spi::write::Default<u8> for SpiMaster<SPI, PINS>
+// where
+//     SPI: Deref<Target = spi1::RegisterBlock>,
+// {}
+

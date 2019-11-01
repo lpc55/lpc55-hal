@@ -100,6 +100,9 @@ pub struct Peripherals {
     /// Standard counter/timer (CTIMER) - not HAL-ified.
     pub CTIMER0: raw::CTIMER0,
 
+    /// Stateful counter/timer (SCTIMER) - not HAL-ified.
+    pub SCT0: raw::SCT0,
+
     /// Flash - not HAL-ified.
     pub FLASH: raw::FLASH,
 
@@ -140,6 +143,7 @@ impl Peripherals {
                 peripherals::flexcomm::Flexcomm5::from((p.FLEXCOMM5, p.I2C5, p.I2S5, p.SPI5, p.USART5)),
                 peripherals::flexcomm::Flexcomm6::from((p.FLEXCOMM6, p.I2C6, p.I2S6, p.SPI6, p.USART6)),
                 peripherals::flexcomm::Flexcomm7::from((p.FLEXCOMM7, p.I2C7, p.I2S7, p.SPI7, p.USART7)),
+                peripherals::flexcomm::Flexcomm8::from((p.FLEXCOMM8, p.SPI8)),
             ),
             gpio: Gpio::from(p.GPIO),
             iocon: Iocon::from(p.IOCON),
@@ -152,6 +156,7 @@ impl Peripherals {
             ADC0: p.ADC0,
             CRC_ENGINE: p.CRC_ENGINE,
             CTIMER0: p.CTIMER0,
+            SCT0: p.SCT0,
             FLASH: p.FLASH,
 
             // Core peripherals
