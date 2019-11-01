@@ -11,5 +11,3 @@ core
 .idea/
 **/venv
 
-# generated stuff (goes in code proper)
-generated-flexcomm-pin-driver.rs

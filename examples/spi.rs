@@ -19,7 +19,7 @@ use hal::{
         flexcomm::{
             // the high-speed SPI
             Spi8,
-            NoSsel,
+            // NoSsel,
         },
     },
     traits::wg::spi::{
@@ -62,20 +62,20 @@ fn main() -> ! {
     let sck = pins.pio1_2.into_spi8_sck_pin(&mut iocon);
     let mosi = pins.pio0_26.into_spi8_mosi_pin(&mut iocon);
     let miso = pins.pio1_3.into_spi8_miso_pin(&mut iocon);
-    // let ssel = pins.pio1_1.into_spi8_ssel1_pin(&mut iocon);
-    let no_ssel = NoSsel;//pins.pio1_1.into_spi8_ssel1_pin(&mut iocon);
+    let ssel = pins.pio1_1.into_spi8_ssel_pin(&mut iocon);
+    // let no_ssel = NoSsel;//pins.pio1_1.into_spi8_ssel1_pin(&mut iocon);
 
-    // let spi_pins = (sck, mosi, miso, ssel);
-    let spi_pins = (sck, mosi, miso, no_ssel);
+    let spi_pins = (sck, mosi, miso, ssel);
+    // let spi_pins = (sck, mosi, miso, no_ssel);
 
     let spi_mode = Mode { polarity: Polarity::IdleLow, phase: Phase::CaptureOnFirstTransition };
 
-    // because Rust can't infer the type...
-    // let spi = SpiMaster::<_, _, _, _, Spi8, _, Pin<Pio1_1, Special<HS_SPI_SSEL1>>>
-    let spi = SpiMaster::<_, _, _, _, Spi8, _, NoSsel>
+    // because Rust can't infer the type otherwise...
+    let spi = SpiMaster::<_, _, _, _, Spi8, _, Pin<Pio1_1, Special<HS_SPI_SSEL1>>>
+    // let spi = SpiMaster::<_, _, _, _, Spi8, _, NoSsel>
         ::new(spi, spi_pins, spi_mode, 100_000.hz());
 
-    let dc = pins.pio1_5.into_gpio_pin2(&mut iocon, &mut gpio).into_output_high();
+    let dc = pins.pio1_5.into_gpio_pin(&mut iocon, &mut gpio).into_output_high();
 
     // OLED
     let mut disp: TerminalMode<_> = ssd1306::Builder::new()

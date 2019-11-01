@@ -115,6 +115,12 @@ pub mod pin_function {
     #![allow(non_camel_case_types)]
     pub trait Function {}
 
+    pub struct SWCLK;
+    impl Function for SWCLK {}
+
+    pub struct SWDIO;
+    impl Function for SWDIO {}
+
     pub struct USB0_VBUS;
     impl Function for USB0_VBUS {}
 
@@ -197,10 +203,8 @@ pub mod pin_function {
     impl Function for FC6_SCK {}
     pub struct FC6_TXD_SCL_MISO_WS;
     impl Function for FC6_TXD_SCL_MISO_WS {}
-
     pub struct FC7_CTS_SDA_SSEL0;
     impl Function for FC7_CTS_SDA_SSEL0 {}
-
     pub struct FC7_RTS_SCL_SSEL1;
     impl Function for FC7_RTS_SCL_SSEL1 {}
     pub struct FC7_RXD_SDA_MOSI_DATA;
@@ -216,8 +220,14 @@ pub mod pin_function {
     impl Function for HS_SPI_MOSI {}
     pub struct HS_SPI_MISO {}
     impl Function for HS_SPI_MISO {}
+    pub struct HS_SPI_SSEL0 {}
+    impl Function for HS_SPI_SSEL0 {}
     pub struct HS_SPI_SSEL1 {}
     impl Function for HS_SPI_SSEL1 {}
+    pub struct HS_SPI_SSEL2 {}
+    impl Function for HS_SPI_SSEL2 {}
+    pub struct HS_SPI_SSEL3 {}
+    impl Function for HS_SPI_SSEL3 {}
 }
 
 /// Contains types that indicate pin states
