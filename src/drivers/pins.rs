@@ -29,9 +29,15 @@ pub mod gpio;
 
 pub use crate::typestates::pin::{
     PinId,
-    Pin,
     PinType,
 };
+
+/// Main API to control for controlling pins:w
+pub struct Pin<T: PinId, S: state::PinState> {
+    pub(crate) id: T,
+    #[allow(dead_code)]
+    pub(crate) state: S,
+}
 
 impl Pin<Pio0_22, state::Unused> {
     pub fn into_usb0_vbus_pin(

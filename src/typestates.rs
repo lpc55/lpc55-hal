@@ -1,6 +1,6 @@
 use core::marker::PhantomData;
 
-/// Contains types that encode the state of hardware initialization
+/// Encodes the state of peripherals: Unknown, Enabled, or Disabled.
 ///
 /// The default state of peripherals is `Unknown`, which is not
 /// quite zero cost, but since we may have been jumped to from a
@@ -43,7 +43,7 @@ pub mod usbfs_mode {
     impl UsbfsMode for Host {}
 }
 
-// this should be called clock-tree or similar
+/// Encodes the state of the clock-tree: still Configurable, or Frozen.
 pub mod clock_state {
     pub trait ClockState {}
 

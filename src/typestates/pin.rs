@@ -1,9 +1,4 @@
-/// Main API to control for controlling pins:w
-pub struct Pin<T: PinId, S: state::PinState> {
-    pub(crate) id: T,
-    #[allow(dead_code)]
-    pub(crate) state: S,
-}
+//! All the traits and typestates related to pins.
 
 /// Implemented by types that identify pins
 pub trait PinId {

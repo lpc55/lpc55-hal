@@ -14,11 +14,11 @@ use crate::typestates::{
             direction,
             Level,
         },
-        Pin,
         PinId,
     },
 };
 
+use super::Pin;
 
 use crate::{
     raw::gpio::{

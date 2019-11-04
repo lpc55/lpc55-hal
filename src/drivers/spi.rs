@@ -215,7 +215,7 @@ where
                         .txdata().bits(byte as u16)
                     });
                 },
-                All =>  {
+                AllChips =>  {
                     self.spi.fifowr.write(|w| unsafe { w
                         // control
                         .len().bits(7) // 8 bits

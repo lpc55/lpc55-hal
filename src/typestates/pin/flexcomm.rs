@@ -1,3 +1,7 @@
+//! Various traits allowing to tie all the flexcomm-related pins
+//! together and have compile-time safety.
+//!
+//! We use "chip select" instead of "slave select" terminology.
 use core::ops::Deref;
 
 use crate::{
@@ -34,7 +38,7 @@ pub enum ChipSelect {
     Chip1,
     Chip2,
     Chip3,
-    All,
+    AllChips,
 }
 
 /// SPI serial clock
@@ -54,7 +58,7 @@ pub struct NoMiso;
 impl<SPI: Spi> SpiMisoPin<NoPio, SPI> for NoMiso {}
 /// Filler type for when no Cs is necessary
 pub struct NoCs;
-impl<SPI: Spi> SpiCsPin<NoPio, SPI> for NoCs { const CS: ChipSelect = ChipSelect::All; }
+impl<SPI: Spi> SpiCsPin<NoPio, SPI> for NoCs { const CS: ChipSelect = ChipSelect::AllChips; }
 
 // /// SPI chip select 0
 // pub trait SpiCs0Pin<PIO, SPI> where PIO: PinId, SPI: Spi { const CS: u8 = 0; }
