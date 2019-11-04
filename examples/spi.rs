@@ -11,30 +11,26 @@ use lpc55s6x_hal as hal;
 
 use hal::{
     drivers::{
-        Pin,
         Pins,
         SpiMaster,
     },
-    peripherals::{
-        flexcomm::{
-            // the high-speed SPI
-            Spi8,
-            // NoSsel,
+    typestates::{
+        pin::flexcomm::{
+            NoMiso,
+            NoCs,
         },
     },
     traits::wg::spi::{
-        // FullDuplex,
         Mode,
         Phase,
         Polarity,
     },
-    states::pin_function::HS_SPI_SSEL1,
-    states::pin_state::Special,
-    drivers::pins::Pio1_1,
 };
 
-use ssd1306;
-use ssd1306::prelude::*;
+use ssd1306::{
+    self,
+    prelude::*,
+};
 
 
 #[entry]
@@ -55,47 +51,48 @@ fn main() -> ! {
 
     let token = clocks.support_flexcomm_token().unwrap();
 
+    // SPI8 is the high-speed SPI
     let spi = hal.flexcomm.8.enabled_as_spi(&mut syscon, &token);
 
     let pins = Pins::take().unwrap();
 
     let sck = pins.pio1_2.into_spi8_sck_pin(&mut iocon);
     let mosi = pins.pio0_26.into_spi8_mosi_pin(&mut iocon);
-    let miso = pins.pio1_3.into_spi8_miso_pin(&mut iocon);
-    let ssel = pins.pio1_1.into_spi8_ssel_pin(&mut iocon);
-    // let no_ssel = NoSsel;//pins.pio1_1.into_spi8_ssel1_pin(&mut iocon);
+    // let miso = pins.pio1_3.into_spi8_miso_pin(&mut iocon);
+    let miso = NoMiso;
+    // let cs = pins.pio1_1.into_spi8_cs_pin(&mut iocon);
+    let cs = NoCs;
 
     // try this: currently no way to use SWCLK pin
     // let danger = pins.pio0_11.into_usart6_rx_pin(&mut iocon);
 
-    let spi_pins = (sck, mosi, miso, ssel);
-    // let spi_pins = (sck, mosi, miso, no_ssel);
+    let spi_pins = (sck, mosi, miso, cs);
 
-    let spi_mode = Mode { polarity: Polarity::IdleLow, phase: Phase::CaptureOnFirstTransition };
+    let spi_mode = Mode {
+        polarity: Polarity::IdleLow,
+        phase: Phase::CaptureOnFirstTransition,
+    };
 
-    // because Rust can't infer the type otherwise...
-    let spi = SpiMaster::<_, _, _, _, Spi8, _, Pin<Pio1_1, Special<HS_SPI_SSEL1>>>
-    // let spi = SpiMaster::<_, _, _, _, Spi8, _, NoSsel>
-        ::new(spi, spi_pins, spi_mode, 100_000.hz());
+    let spi = SpiMaster::init(spi, spi_pins, spi_mode, 100_000.hz());
 
     let dc = pins.pio1_5.into_gpio_pin(&mut iocon, &mut gpio).into_output_high();
 
     // OLED
-    let mut disp: TerminalMode<_> = ssd1306::Builder::new()
+    let mut display: TerminalMode<_> = ssd1306::Builder::new()
         .size(DisplaySize::Display128x32)
         // .size(DisplaySize::Display70x40)  // <-- TODO
         // .with_rotation(DisplayRotation::Rotate90)
         .connect_spi(spi, dc).into();
 
-    disp.init().unwrap();
-    disp.clear().ok();
+    display.init().unwrap();
+    display.clear().ok();
 
     loop {
         for c in 97..123 {
-            let _ = disp.write_str(unsafe { core::str::from_utf8_unchecked(&[c]) });
+            let _ = display.write_str(unsafe { core::str::from_utf8_unchecked(&[c]) });
         }
         for c in 65..91 {
-            let _ = disp.write_str(unsafe { core::str::from_utf8_unchecked(&[c]) });
+            let _ = display.write_str(unsafe { core::str::from_utf8_unchecked(&[c]) });
         }
     }
 }

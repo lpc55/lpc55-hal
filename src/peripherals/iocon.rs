@@ -3,7 +3,7 @@ use crate::{
     peripherals::{
         syscon,
     },
-    states::{
+    typestates::{
         init_state,
     }
 };

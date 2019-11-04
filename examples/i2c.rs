@@ -13,10 +13,6 @@ use hal::{
     drivers::{
         Pins,
         I2cMaster,
-        // I2c4Master,
-    },
-    peripherals::{
-        flexcomm::I2c4,
     },
 };
 
@@ -49,10 +45,7 @@ fn main() -> ! {
     let scl = pins.pio1_20.into_i2c4_scl_pin(&mut iocon);
     let sda = pins.pio1_21.into_i2c4_sda_pin(&mut iocon);
 
-    // because Rust can't infer the type...
-    let i2c = I2cMaster::<_, _, I2c4, _>::new(i2c, (scl, sda), 100.khz());
-    // Or:
-    // let i2c = I2c4Master::new(i2c, (scl, sda), 100.khz());
+    let i2c = I2cMaster::new(i2c, (scl, sda), 100.khz());
 
     // let on = true;
     // let display_on = ([0xAE | (on as u8), 0, 0, 0, 0, 0, 0], 1);
@@ -69,22 +62,22 @@ fn main() -> ! {
     // }
 
     // OLED
-    let mut disp: TerminalMode<_> = ssd1306::Builder::new()
+    let mut display: TerminalMode<_> = ssd1306::Builder::new()
         .size(DisplaySize::Display128x32)
         // .size(DisplaySize::Display70x40)  // <-- TODO
         // .with_rotation(DisplayRotation::Rotate90)
         .with_i2c_addr(0x3c)
         .connect_i2c(i2c).into();
 
-    disp.init().unwrap();
-    disp.clear().ok();
+    display.init().ok();
+    display.clear().ok();
 
     loop {
         for c in 97..123 {
-            let _ = disp.write_str(unsafe { core::str::from_utf8_unchecked(&[c]) });
+            display.write_str(unsafe { core::str::from_utf8_unchecked(&[c]) }).ok();
         }
         for c in 65..91 {
-            let _ = disp.write_str(unsafe { core::str::from_utf8_unchecked(&[c]) });
+            display.write_str(unsafe { core::str::from_utf8_unchecked(&[c]) }).ok();
         }
     }
 }

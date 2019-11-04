@@ -19,7 +19,7 @@ use crate::{
             Fro1MhzUtickClock,
         },
     },
-    states::{
+    typestates::{
         init_state,
     },
 };

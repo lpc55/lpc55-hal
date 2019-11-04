@@ -1,6 +1,6 @@
 use crate::traits::wg::blocking::rng;
 
-use crate::states::{
+use crate::typestates::{
     init_state,
 };
 

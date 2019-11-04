@@ -1,6 +1,6 @@
 use crate::{
     raw,
-    states::init_state,
+    typestates::init_state,
     peripherals::syscon,
 };
 

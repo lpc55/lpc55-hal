@@ -7,21 +7,36 @@ use crate::traits::{
     }
 };
 
-use crate::states::{
-    pin_state,
-    gpio_state::{
-        direction,
-        Level,
+use crate::typestates::{
+    pin::{
+        state,
+        gpio::{
+            direction,
+            Level,
+        },
+        Pin,
+        PinId,
     },
 };
 
-use super::types::{
-    Pin,
-    PinId,
+
+use crate::{
+    raw::gpio::{
+        CLR,
+        DIRSET,
+        PIN,
+        SET,
+    },
+    reg_cluster,
 };
 
+reg_cluster!(DIRSET, DIRSET, raw::GPIO, dirset);
+reg_cluster!(PIN, PIN, raw::GPIO, pin);
+reg_cluster!(SET, SET, raw::GPIO, set);
+reg_cluster!(CLR, CLR, raw::GPIO, clr);
 
-impl<T> OutputPin for Pin<T, pin_state::Gpio<direction::Output>>
+
+impl<T> OutputPin for Pin<T, state::Gpio<direction::Output>>
 where
     T: PinId,
 {
@@ -40,7 +55,7 @@ where
     }
 }
 
-impl<T> StatefulOutputPin for Pin<T, pin_state::Gpio<direction::Output>>
+impl<T> StatefulOutputPin for Pin<T, state::Gpio<direction::Output>>
 where
     T: PinId,
 {
@@ -53,18 +68,18 @@ where
     }
 }
 
-impl<T, D> Pin<T, pin_state::Gpio<D>>
+impl<T, D> Pin<T, state::Gpio<D>>
 where
     T: PinId,
     D: direction::NotOutput,
 {
-    pub fn into_output_high(self) -> Pin<T, pin_state::Gpio<direction::Output>> {
+    pub fn into_output_high(self) -> Pin<T, state::Gpio<direction::Output>> {
         self.into_output(Level::High)
     }
-    pub fn into_output_low(self) -> Pin<T, pin_state::Gpio<direction::Output>> {
+    pub fn into_output_low(self) -> Pin<T, state::Gpio<direction::Output>> {
         self.into_output(Level::Low)
     }
-    pub fn into_output(self, initial: Level) -> Pin<T, pin_state::Gpio<direction::Output>> {
+    pub fn into_output(self, initial: Level) -> Pin<T, state::Gpio<direction::Output>> {
         match initial {
             Level::High => self.state.set[T::PORT].write(|w| unsafe { w.setp().bits(T::MASK) }),
             Level::Low => self.state.clr[T::PORT].write(|w| unsafe { w.clrp().bits(T::MASK) }),
@@ -75,7 +90,7 @@ where
         Pin {
             id: self.id,
 
-            state: pin_state::Gpio {
+            state: state::Gpio {
                 dirset: crate::reg_proxy::RegClusterProxy::new(),
                 pin: crate::reg_proxy::RegClusterProxy::new(),
                 set: crate::reg_proxy::RegClusterProxy::new(),

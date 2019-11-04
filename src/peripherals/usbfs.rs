@@ -4,7 +4,7 @@ use crate::peripherals::{
     pmc,
     syscon,
 };
-use crate::states::{
+use crate::typestates::{
     init_state,
     usbfs_mode,
     // ValidUsbClockToken,

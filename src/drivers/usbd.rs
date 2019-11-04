@@ -3,6 +3,13 @@ use core::{
         compiler_fence, Ordering,
     },
 };
+
+pub mod prelude {
+    pub use super::UsbBus;
+    pub use super::UsbError as UsbError;
+    pub use super::Result as UsbResult;
+}
+
 pub mod constants;
 
 pub mod endpoint;
@@ -27,10 +34,13 @@ use cortex_m::interrupt::{
     Mutex,
 };
 
-use usb_device::{
+pub use usb_device::{
     Result,
-    UsbDirection,
     UsbError,
+};
+
+use usb_device::{
+    UsbDirection,
     endpoint::{
         EndpointType,
         EndpointAddress,
@@ -50,14 +60,11 @@ use crate::{
 use crate::{
     Pin,
     drivers::pins::PinId,
-    states::{
-        pin_state,
-        pin_function,
-    },
+    typestates::pin,
 };
 
 pub trait Usb0VbusPin: Send { }
-impl<P> Usb0VbusPin for Pin<P, pin_state::Special<pin_function::USB0_VBUS>> where P: PinId + Send {}
+impl<P> Usb0VbusPin for Pin<P, pin::state::Special<pin::function::USB0_VBUS>> where P: PinId + Send {}
 
 /// Implements the `usb_device::bus::UsbBus` trait.
 ///

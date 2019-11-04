@@ -3,8 +3,16 @@
 //! Typically, these drivers take ownership of one or more HAL peripherals,
 //! and expose functionality defined in a separate trait.
 
+pub mod prelude {
+    pub use super::i2c::prelude::*;
+    pub use super::spi::prelude::*;
+    pub use super::usbd::prelude::*;
+}
+
 pub mod clocks;
 pub use clocks::ClockRequirements;
+
+// pub mod flash;
 
 pub mod i2c;
 pub use i2c::I2cMaster;

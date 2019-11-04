@@ -10,10 +10,11 @@ use hal::{
     prelude::*,
     drivers::pins::Level,
     drivers::pins,
-    states,
+    typestates::pin,
 };
 
-type RedLed = hal::Pin<pins::PIO1_6, states::pin_state::Gpio<states::gpio_state::direction::Output>>;
+type RedLed = hal::Pin<pins::Pio1_6, pin::state::Gpio<pin::gpio::direction::Output>>;
+
 #[rtfm::app(device = crate::hal::raw, peripherals = true)]
 const APP: () = {
     struct Resources {
@@ -31,11 +32,11 @@ const APP: () = {
         // setup red LED
         let mut syscon = hal::Syscon::from(dp.SYSCON);
         let mut gpio = hal::Gpio::from(dp.GPIO).enabled(&mut syscon);
-        // let iocon = hal::Iocon::from(dp.IOCON);
+        let mut iocon = hal::Iocon::from(dp.IOCON).enabled(&mut syscon);
 
         let pins = hal::Pins::take().unwrap();
         let red_led = pins.pio1_6
-            .into_gpio_pin(&mut gpio)
+            .into_gpio_pin(&mut iocon, &mut gpio)
             .into_output(Level::High);
 
         // let clock = hal::syscon::Fro1MhzUtickClock::take()

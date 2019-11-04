@@ -14,3 +14,5 @@ pub use embedded_hal as wg;
 //
 // Idea is to try and have (peripheral) drivers implement
 // a well-designed trait.
+
+// pub use flash;

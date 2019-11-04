@@ -33,12 +33,14 @@ fn main() -> ! {
     let mut gpio = hal.gpio.enabled(&mut syscon);
     let mut iocon = hal.iocon.enabled(&mut syscon);
 
-    let usb0_vbus_pin = pins::Pio0_22::take().unwrap().into_usb0_vbus_pin(&mut iocon);
-    iocon.disabled(&mut syscon).release(); // save the environment :)
-
     let mut red_led = pins::Pio1_6::take().unwrap()
-        .into_gpio_pin(&mut gpio)
+        .into_gpio_pin(&mut iocon, &mut gpio)
         .into_output(hal::drivers::pins::Level::High); // start turned off
+
+    let usb0_vbus_pin = pins::Pio0_22::take().unwrap()
+        .into_usb0_vbus_pin(&mut iocon);
+
+    iocon.disabled(&mut syscon).release(); // save the environment :)
 
 
     let clocks = hal::ClockRequirements::default()

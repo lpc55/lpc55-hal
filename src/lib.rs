@@ -8,6 +8,7 @@ pub mod peripherals;
 pub use peripherals::{
     anactrl::Anactrl,
     casper::Casper,
+    flash::Flash,
     flexcomm::Flexcomm,
     gpio::Gpio,
     iocon::Iocon,
@@ -24,6 +25,7 @@ pub mod drivers;
 
 pub use drivers::{
     ClockRequirements,
+    // Flash,
     I2cMaster,
     Pin,
     Pins,
@@ -42,7 +44,7 @@ pub mod macros;
 // currently, all sorts of traits
 pub mod prelude;
 
-pub mod states;
+pub mod typestates;
 
 /// All the HAL peripherals
 pub use {
@@ -69,6 +71,9 @@ pub struct Peripherals {
 
     /// Cryptographic Accelerator and Signal Processing Engine with RAM sharing
     pub casper: Casper,
+
+    /// Flash
+    pub flash: Flash,
 
     /// Flexcomm Interface Serial Communication
     pub flexcomm: Flexcomm,
@@ -103,9 +108,6 @@ pub struct Peripherals {
     /// Stateful counter/timer (SCTIMER) - not HAL-ified.
     pub SCT0: raw::SCT0,
 
-    /// Flash - not HAL-ified.
-    pub FLASH: raw::FLASH,
-
     /// CPUID - core peripheral
     pub CPUID: raw::CPUID,
 
@@ -134,6 +136,7 @@ impl Peripherals {
             // HAL peripherals
             anactrl: Anactrl::from(p.ANACTRL),
             casper: Casper::from(p.CASPER),
+            flash: Flash::from(p.FLASH),
             flexcomm: (
                 peripherals::flexcomm::Flexcomm0::from((p.FLEXCOMM0, p.I2C0, p.I2S0, p.SPI0, p.USART0)),
                 peripherals::flexcomm::Flexcomm1::from((p.FLEXCOMM1, p.I2C1, p.I2S1, p.SPI1, p.USART1)),
@@ -157,7 +160,6 @@ impl Peripherals {
             CRC_ENGINE: p.CRC_ENGINE,
             CTIMER0: p.CTIMER0,
             SCT0: p.SCT0,
-            FLASH: p.FLASH,
 
             // Core peripherals
             CPUID: cp.CPUID,

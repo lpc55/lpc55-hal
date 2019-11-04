@@ -15,13 +15,14 @@ fn main() -> ! {
 
     let mut syscon = hal.syscon;
     let mut gpio = hal.gpio.enabled(&mut syscon);
+    let mut iocon = hal.iocon.enabled(&mut syscon);
 
     let pins = hal::Pins::take().unwrap();
 
     // R = pio1_6
     let mut red = pins
         .pio1_6
-        .into_gpio_pin(&mut gpio)
+        .into_gpio_pin(&mut iocon, &mut gpio)
         // on = low, off = high
         .into_output(Level::High);
 

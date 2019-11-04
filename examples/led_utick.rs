@@ -25,6 +25,7 @@ fn main() -> ! {
     let hal = hal::new();
     let mut syscon = hal.syscon;
     let mut gpio = hal.gpio.enabled(&mut syscon);
+    let mut iocon = hal.iocon.enabled(&mut syscon);
     let pins = hal::Pins::take().unwrap();
     let fro1mhz = hal::peripherals::syscon::Fro1MhzUtickClock::take()
         .unwrap()
@@ -39,17 +40,17 @@ fn main() -> ! {
 
     let mut red = pins
         .pio1_6
-        .into_gpio_pin(&mut gpio)
+        .into_gpio_pin(&mut iocon, &mut gpio)
         .into_output(Level::High);
 
     let mut green = pins
         .pio1_7
-        .into_gpio_pin(&mut gpio)
+        .into_gpio_pin(&mut iocon, &mut gpio)
         .into_output(Level::High);
 
     let mut blue = pins
         .pio1_4
-        .into_gpio_pin(&mut gpio)
+        .into_gpio_pin(&mut iocon, &mut gpio)
         .into_output(Level::High);
 
     loop {

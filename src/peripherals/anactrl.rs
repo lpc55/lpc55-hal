@@ -1,7 +1,7 @@
 //! API for analog control (ANACTRL) - always on
 
 // use core::marker::PhantomData;
-// use crate::states::Fro96MHzEnabledToken;
+// use crate::typestates::Fro96MHzEnabledToken;
 // use crate::{ raw,};
 
 // UM says:

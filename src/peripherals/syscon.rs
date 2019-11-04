@@ -19,7 +19,7 @@
 // use cortex_m_semihosting::dbg;
 
 // use crate::raw;
-use crate::{clock, states::init_state};
+use crate::{clock, typestates::init_state};
 
 crate::wrap_always_on_peripheral!(Syscon, SYSCON);
 

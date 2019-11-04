@@ -113,7 +113,7 @@ data = [list(map(str.strip, row))[:-1] for row in csv.reader(data.split("\n"))]
 #     (2, FC3_CTS_SDA_SSEL0): [
 #         (into_usart3_cts_pin, Usart3, UsartCtsPin),
 #         (into_i2c3_sda_pin, I2c3, I2cSdaPin),
-#         (into_spi_ssel0_pin, Spi3, SpiSselPin),
+#         (into_spi_cs_pin, Spi3, SpiCsPin),
 #     ]
 # }
 
@@ -156,10 +156,10 @@ for PIN, alt, FUNCTION in data:
         if PERIPHERAL == "USART" and KIND == "CLK":
             KIND = "SCLK"
         if KIND.startswith("SSEL"):
-            slave = KIND[-1]
+            chip = KIND[-1]
             KIND = KIND[:-1]
         else:
-            slave = None
+            chip = None
 
         peripheral = PERIPHERAL.lower()
         Peripheral = first_upper(peripheral)
@@ -172,7 +172,7 @@ for PIN, alt, FUNCTION in data:
             f"        (into_{peripheral}{i}_{kind}_pin, {Peripherali}, {PeripheralKindPin}),"
         )
 
-        implementations.append((PeripheralKindPin, Peripherali, FUNCTION, slave))
+        implementations.append((PeripheralKindPin, Peripherali, FUNCTION, chip))
 
     print(f"    ]")
     print(f"}}")
@@ -180,8 +180,8 @@ for PIN, alt, FUNCTION in data:
 # assert len(implementations) > len(set(tuple(implementations)))
 # impl SpiSckPin<Pio1_2, Spi8> for Pin<Pio1_2, Special<HS_SPI_SCK>> {}
 # impl SpiMosiPin<Pio0_26, Spi8> for Pin<Pio0_26, Special<HS_SPI_MOSI>> {}
-for PeripheralKindPin, Peripherali, FUNCTION, slave in sorted(set(implementations)):
-    if slave is None:
+for PeripheralKindPin, Peripherali, FUNCTION, chip in sorted(set(implementations)):
+    if chip is None:
         print(
             f"impl<PIO: PinId> {PeripheralKindPin}<PIO, {Peripherali}> for Pin<PIO, Special<{FUNCTION}>> {{}}"
         )
@@ -189,5 +189,5 @@ for PeripheralKindPin, Peripherali, FUNCTION, slave in sorted(set(implementation
         print(
             f"impl<PIO: PinId> {PeripheralKindPin}<PIO, {Peripherali}> for Pin<PIO, Special<{FUNCTION}>> {{"
         )
-        print(f"    const SSEL: SlaveSelect = SlaveSelect::Slave{slave};")
+        print(f"    const CS: ChipSelect = ChipSelect::Chip{chip};")
         print(f"}}")

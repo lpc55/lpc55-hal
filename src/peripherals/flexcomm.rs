@@ -1,18 +1,22 @@
+use core::ops::Deref;
+
 use crate::{
     raw,
-    states::init_state,
+    typestates::{
+        init_state,
+        ClocksSupportFlexcommToken,
+        pin::{
+            flexcomm::{
+                I2c,
+                I2s,
+                Spi,
+                Usart,
+            },
+        },
+    },
     peripherals::syscon,
 };
 
-use crate::states::{
-    // pin_function,
-    // pin_state::Special,
-    ClocksSupportFlexcommToken,
-};
-use crate::drivers::pins::{
-    // Pin,
-    PinId,
-};
 
 pub type Flexcomm = (
     Flexcomm0,
@@ -50,6 +54,15 @@ macro_rules! flexcomm {
             pub _state: State,
         }
 
+        impl Deref for $i2c_hal {
+            type Target = raw::i2c0::RegisterBlock;
+            fn deref(&self) -> &Self::Target {
+                &self.raw
+            }
+        }
+
+        impl I2c for $i2c_hal {}
+
         pub struct $i2s_hal<State = init_state::Enabled> {
             pub(crate) _raw_fc: raw::$fc_pac,
             pub(crate) _raw_i2c: raw::$i2c_pac,
@@ -59,6 +72,8 @@ macro_rules! flexcomm {
             pub(crate) _raw_usart: raw::$usart_pac,
             pub _state: State,
         }
+
+        impl I2s for $i2s_hal {}
 
         pub struct $spi_hal<State = init_state::Enabled> {
             pub(crate) _raw_fc: raw::$fc_pac,
@@ -70,6 +85,15 @@ macro_rules! flexcomm {
             pub _state: State,
         }
 
+        impl Deref for $spi_hal {
+            type Target = raw::spi0::RegisterBlock;
+            fn deref(&self) -> &Self::Target {
+                &self.raw
+            }
+        }
+
+        impl Spi for $spi_hal {}
+
         pub struct $usart_hal<State = init_state::Enabled> {
             pub(crate) _raw_fc: raw::$fc_pac,
             pub(crate) _raw_i2c: raw::$i2c_pac,
@@ -79,6 +103,8 @@ macro_rules! flexcomm {
             pub(crate) raw: raw::$usart_pac,
             pub _state: State,
         }
+
+        impl Usart for $usart_hal {}
 
         impl core::convert::From<(raw::$fc_pac, raw::$i2c_pac, raw::$i2s_pac, raw::$spi_pac, raw::$usart_pac)> for $fc_hal {
             fn from(raw: (raw::$fc_pac, raw::$i2c_pac, raw::$i2s_pac, raw::$spi_pac, raw::$usart_pac)) -> Self {
@@ -240,6 +266,15 @@ pub struct Spi8<State = init_state::Enabled> {
     pub _state: State,
 }
 
+impl Deref for Spi8 {
+    type Target = raw::spi0::RegisterBlock;
+    fn deref(&self) -> &Self::Target {
+        &self.raw
+    }
+}
+
+impl Spi for Spi8 {}
+
 impl core::convert::From<(raw::FLEXCOMM8, raw::SPI8)> for Flexcomm8 {
     fn from(raw: (raw::FLEXCOMM8, raw::SPI8)) -> Self {
         Flexcomm8::new(raw)
@@ -301,174 +336,3 @@ impl Flexcomm8 {
     }
 
 }
-
-
-pub trait I2c {}
-
-impl I2c for I2c0 {}
-impl I2c for I2c1 {}
-impl I2c for I2c2 {}
-impl I2c for I2c3 {}
-impl I2c for I2c4 {}
-impl I2c for I2c5 {}
-impl I2c for I2c6 {}
-impl I2c for I2c7 {}
-
-pub trait I2s {}
-
-impl I2s for I2s0 {}
-impl I2s for I2s1 {}
-impl I2s for I2s2 {}
-impl I2s for I2s3 {}
-impl I2s for I2s4 {}
-impl I2s for I2s5 {}
-impl I2s for I2s6 {}
-impl I2s for I2s7 {}
-
-pub trait Spi {}
-
-impl Spi for Spi0 {}
-impl Spi for Spi1 {}
-impl Spi for Spi2 {}
-impl Spi for Spi3 {}
-impl Spi for Spi4 {}
-impl Spi for Spi5 {}
-impl Spi for Spi6 {}
-impl Spi for Spi7 {}
-impl Spi for Spi8 {}
-
-pub trait Usart {}
-
-impl Usart for Usart0 {}
-impl Usart for Usart1 {}
-impl Usart for Usart2 {}
-impl Usart for Usart3 {}
-impl Usart for Usart4 {}
-impl Usart for Usart5 {}
-impl Usart for Usart6 {}
-impl Usart for Usart7 {}
-
-/// I2C serial clock
-pub trait I2cSclPin<PIO, I2C> where PIO: PinId, I2C: I2c {}
-/// I2C serial data
-pub trait I2cSdaPin<PIO, I2C> where PIO: PinId, I2C: I2c {}
-
-/// I2S serial clock
-pub trait I2sSckPin<PIO, I2S> where PIO: PinId, I2S: I2s {}
-/// I2S word select
-pub trait I2sWsPin<PIO, I2S> where PIO: PinId, I2S: I2s {}
-/// I2S serial data
-pub trait I2sSdaPin<PIO, I2S> where PIO: PinId, I2S: I2s {}
-/// I2S master clock
-pub trait I2sMclkPin<PIO, I2S> where PIO: PinId, I2S: I2s {}
-
-pub enum SlaveSelect {
-    Slave0,
-    Slave1,
-    Slave2,
-    Slave3,
-    All,
-}
-
-/// SPI serial clock
-pub trait SpiSckPin<PIO, SPI> where PIO: PinId, SPI: Spi {}
-/// SPI master-out/slave-in data
-pub trait SpiMosiPin<PIO, SPI> where PIO: PinId, SPI: Spi {}
-/// SPI master-in/slave-sout data
-pub trait SpiMisoPin<PIO, SPI> where PIO: PinId, SPI: Spi {}
-/// SPI slave select
-pub trait SpiSselPin<PIO, SPI> where PIO: PinId, SPI: Spi { const SSEL: SlaveSelect; }
-
-pub struct NoSsel;
-impl<SPI: Spi> SpiSselPin<NoPio, SPI> for NoSsel { const SSEL: SlaveSelect = SlaveSelect::All; }
-
-// /// SPI slave select 0
-// pub trait SpiSsel0Pin<PIO, SPI> where PIO: PinId, SPI: Spi { const SSEL: u8 = 0; }
-// /// SPI slave select 1
-// pub trait SpiSsel1Pin<PIO, SPI> where PIO: PinId, SPI: Spi { const SSEL: u8 = 1; }
-// /// SPI slave select 2
-// pub trait SpiSsel2Pin<PIO, SPI> where PIO: PinId, SPI: Spi { const SSEL: u8 = 2; }
-// /// SPI slave select 3
-// pub trait SpiSsel3Pin<PIO, SPI> where PIO: PinId, SPI: Spi { const SSEL: u8 = 3; }
-
-/// USART transmitter output
-pub trait UsartTxPin<PIO, USART> where PIO: PinId, USART: Usart {}
-/// USART receiver input
-pub trait UsartRxPin<PIO, USART> where PIO: PinId, USART: Usart {}
-/// USART request-to-send output
-pub trait UsartRtsPin<PIO, USART> where PIO: PinId, USART: Usart {}
-/// USART clear-to-send input
-pub trait UsartCtsPin<PIO, USART> where PIO: PinId, USART: Usart {}
-/// USART serial clock
-pub trait UsartSclkPin<PIO, USART> where PIO: PinId, USART: Usart {}
-
-use crate::drivers::pins::types::PinType;
-pub struct NoPio;
-impl PinId for NoPio {
-    const PORT: usize = !0;
-    const NUMBER: u8 = !0;
-    const MASK: u32 = !0;
-
-    const TYPE: PinType = PinType::D;
-}
-
-// TODO: revisit this. Instead of passing in fake pins,
-// write proper drivers for the use cases.
-// Think about using a generic enum {Read, Write, ReadWrite}
-// parameter
-/// Filler type for when no Tx is necessary
-pub struct NoTx;
-/// Filler type for when no Rx is necessary
-pub struct NoRx;
-impl<USART: Usart> UsartTxPin<NoPio, USART> for NoTx {}
-impl<USART: Usart> UsartRxPin<NoPio, USART> for NoRx {}
-
-
-pub trait I2cPins<PIO1: PinId, PIO2: PinId, I2C: I2c> {}
-
-impl<PIO1, PIO2, I2C, SCL, SDA> I2cPins<PIO1, PIO2, I2C> for (SCL, SDA)
-where
-    PIO1: PinId,
-    PIO2: PinId,
-    I2C: I2c,
-    SCL: I2cSclPin<PIO1, I2C>,
-    SDA: I2cSdaPin<PIO2, I2C>,
-{}
-
-
-pub trait SpiPins<PIO1: PinId, PIO2: PinId, PIO3: PinId, PIO4: PinId, SPI: Spi> {}
-
-impl<PIO1, PIO2, PIO3, PIO4, SPI, SCK, MISO, MOSI, SSEL>
-    SpiPins<PIO1, PIO2, PIO3, PIO4, SPI>
-for (SCK, MOSI, MISO, SSEL) where
-    PIO1: PinId,
-    PIO2: PinId,
-    PIO3: PinId,
-    PIO4: PinId,
-    SPI: Spi,
-    SCK: SpiSckPin<PIO1, SPI>,
-    MOSI: SpiMosiPin<PIO3, SPI>,
-    MISO: SpiMisoPin<PIO2, SPI>,
-    SSEL: SpiSselPin<PIO4, SPI>,
-{}
-
-pub trait UsartPins<PIO1: PinId, PIO2: PinId, USART: Usart> {}
-
-impl<PIO1, PIO2, USART, TX, RX> UsartPins<PIO1, PIO2, USART> for (TX, RX)
-where
-    PIO1: PinId,
-    PIO2: PinId,
-    USART: Usart,
-    TX: UsartTxPin<PIO1, USART>,
-    RX: UsartRxPin<PIO2, USART>,
-{}
-
-// Note: Pio0_12 can be both: into_i2c_3_scl_pin() and into_i2c_6_scl_pin() [alt1 vs alt7]
-//
-// pin.into_I2C3_SCL_pin()
-//
-// what about: let scl_pin: <_, Special<I2c4, Scl>> = pins.pio1_20.into();
-// what about: let scl_pin = Pin<Pio1_20, Special<I2c4, Scl>>::from(pins.pio1_20);
-//
-// what about... `I2cMaster(i2c, (p0_12.into(), p1_1.into()))` <-- too much magic/work in `From`?
-

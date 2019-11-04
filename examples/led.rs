@@ -15,7 +15,7 @@ fn main() -> ! {
     let mut syscon = hal.syscon;
     // dbg!(syscon.get_num_wait_states());
     let mut gpio = hal.gpio.enabled(&mut syscon);
-    // let iocon = hal.iocon;
+    let mut iocon = hal.iocon.enabled(&mut syscon);
 
     // let mut cp = hal::raw::CorePeripherals::take().unwrap();
     // let stim = &mut cp.ITM.stim[0];
@@ -36,7 +36,7 @@ fn main() -> ! {
     let pins = hal::Pins::take().unwrap();
     let mut red = pins
         .pio1_6
-        .into_gpio_pin(&mut gpio)
+        .into_gpio_pin(&mut iocon, &mut gpio)
         .into_output(hal::drivers::pins::Level::High); // start turned off
 
     // let iocon = iocon.disabled(&mut syscon);

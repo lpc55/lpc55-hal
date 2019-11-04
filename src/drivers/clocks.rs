@@ -6,7 +6,7 @@
 ///! It is currently used to prepare for using the USBFSD and
 ///! Flexcomm peripherals.
 use core::marker::PhantomData;
-use crate::states::{
+use crate::typestates::{
     main_clock::MainClock,
     // clock_state,
     ClocksSupportFlexcommToken,

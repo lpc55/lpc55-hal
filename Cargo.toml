@@ -21,6 +21,7 @@ bare-metal = "0.2"
 cortex-m = "0.6"
 # cortex-m-semihosting = "0.3"
 embedded-hal = { version = "0.2", features = ["unproven"] }
+generic-array = "0.13.2"
 
 lpc55s6x-pac = "0.0.5"
 # lpc55s6x-pac = { path = "../lpc55s6x-pac" }
