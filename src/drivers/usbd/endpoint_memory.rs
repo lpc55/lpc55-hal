@@ -77,13 +77,14 @@ impl EndpointBuffer {
 
 pub struct EndpointMemoryAllocator {
     next_free_offset: usize,
-    const ALIGN: usize = 64;
 }
 
 // NOTE: This is a bump allocator.
 // Think about https://fitzgeraldnick.com/2019/11/01/always-bump-downwards.html
 // (cf. https://lib.rs/crates/bumpalo)
 impl EndpointMemoryAllocator {
+    const ALIGN: usize = 64;
+
     pub fn new() -> Self {
         // keep endpoint registers at top
         Self { next_free_offset: EP_REGISTERS_SIZE }

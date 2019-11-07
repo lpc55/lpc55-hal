@@ -3,8 +3,14 @@
 
 pub extern crate lpc55s6x_pac as raw;
 
-pub mod peripherals;
+// currently, all sorts of traits
+pub mod prelude;
 
+pub mod time;
+pub mod traits;
+pub mod typestates;
+
+pub mod peripherals;
 pub use peripherals::{
     anactrl::Anactrl,
     casper::Casper,
@@ -19,10 +25,7 @@ pub use peripherals::{
     utick::Utick,
 };
 
-pub mod traits;
-
 pub mod drivers;
-
 pub use drivers::{
     ClockRequirements,
     // Flash,
@@ -32,24 +35,17 @@ pub use drivers::{
     UsbBus,
 };
 
-pub mod clock;
-pub mod sleep;
-
 #[macro_use]
 pub(crate) mod reg_proxy;
 
 #[macro_use]
 pub mod macros;
 
-// currently, all sorts of traits
-pub mod prelude;
 
-pub mod typestates;
-
-/// All the HAL peripherals
-pub use {
-    peripherals::usbfs::EnabledUsbfsDevice,
-};
+// /// All the HAL peripherals
+// pub use {
+//     peripherals::usbfs::EnabledUsbfsDevice,
+// };
 
 /// This is the main (monolithic) entry point to the HAL for non-RTFM applications.
 /// For RTFM, use `hal::<Peripheral>::from(<raw_peripheral>)` as needed.

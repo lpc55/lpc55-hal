@@ -5,7 +5,10 @@
 ///!
 ///! It is currently used to prepare for using the USBFSD and
 ///! Flexcomm peripherals.
+
+use core::cmp::min;
 use core::marker::PhantomData;
+
 use crate::typestates::{
     main_clock::MainClock,
     // clock_state,
@@ -13,79 +16,15 @@ use crate::typestates::{
     ClocksSupportUsbfsToken,
 };
 use crate::{
-    Anactrl,
-    Syscon,
+    peripherals::{
+        anactrl::Anactrl,
+        syscon::Syscon,
+    },
+    time::{
+        Hertz,
+        U32Ext,
+    },
 };
-
-// use cortex_m_semihosting::dbg;
-
-#[derive(PartialEq, PartialOrd, Clone, Copy, Debug)]
-pub struct Hertz(pub u32);
-#[derive(PartialEq, PartialOrd, Clone, Copy, Debug)]
-pub struct Kilohertz(pub u32);
-#[derive(PartialEq, PartialOrd, Clone, Copy, Debug)]
-pub struct Megahertz(pub u32);
-
-impl From<Megahertz> for Hertz {
-    fn from(mhz: Megahertz) -> Self {
-        Hertz(1_000_000 * mhz.0)
-    }
-}
-
-impl From<Kilohertz> for Hertz {
-    fn from(khz: Kilohertz) -> Self {
-        Hertz(1_000 * khz.0)
-    }
-}
-
-impl From<u32> for Hertz {
-    fn from(value: u32) -> Self {
-        Hertz(value)
-    }
-}
-
-impl From<Megahertz> for u32 {
-    fn from(mhz: Megahertz) -> Self {
-        mhz.0 * 1_000_000
-    }
-}
-
-impl From<Kilohertz> for u32 {
-    fn from(khz: Kilohertz) -> Self {
-        khz.0 * 1_000
-    }
-}
-
-impl From<Hertz> for u32 {
-    fn from(hz: Hertz) -> Self {
-        hz.0
-    }
-}
-
-pub trait U32Ext {
-    /// Wrap in `Hertz`
-    fn hz(self) -> Hertz;
-
-    /// Wrap in `MegaHertz`
-    fn khz(self) -> Kilohertz;
-
-    /// Wrap in `MegaHertz`
-    fn mhz(self) -> Megahertz;
-}
-
-impl U32Ext for u32 {
-    fn hz(self) -> Hertz {
-        Hertz(self)
-    }
-
-    fn khz(self) -> Kilohertz {
-        Kilohertz(self)
-    }
-
-    fn mhz(self) -> Megahertz {
-        Megahertz(self)
-    }
-}
 
 #[derive(Debug, Default)]
 pub struct ClockRequirements {
@@ -98,7 +37,6 @@ pub struct ClockRequirements {
     pub support_usbfs: bool,
 }
 
-/// The PhantomData makes this unconstructable
 #[derive(Debug)]
 pub struct Clocks {
     main_clock_source: MainClock,
@@ -117,13 +55,74 @@ impl Clocks {
     }
 
     pub fn support_usbfs_token(&self) -> Option<ClocksSupportUsbfsToken> {
-        match (self.fro96mhz, self.system_clock_freq >= 12_000_000.into()) {
+        match (self.fro96mhz, self.system_clock_freq >= 12.mhz().into()) {
             (true, true) => Some(ClocksSupportUsbfsToken {__: PhantomData} ),
             _ => None,
         }
     }
 }
 
+/// Output of Pll is: M/(2NP) times input
+///
+/// "There may be several ways to obtain the same PLL output frequency.
+/// PLL power depends on Fcco (a lower frequency uses less power) and the divider used.
+/// Bypassing the input and/or output divider saves power."
+
+pub struct Pll {
+    n: u8,
+    m: u16,
+    p: u8,
+    selp: u16,
+    seli: u8,
+}
+
+impl Pll {
+    // allow user to override if they know better...
+    pub unsafe fn new(n: u8, m: u16, p: u8) -> Pll {
+        // UM 4.6.6.3.2
+        let selp = min((m >> 2) + 1, 31);
+        let seli = min(63, match m {
+            m if m >= 8000 => 1,
+            m if m >= 122 => 8000 / m,
+            _ => 2 * (m >> 2) + 3,
+        }) as u8;
+        // let seli = min(2*(m >> 2) + 3, 63);
+        Pll { n, m, p, selp, seli }
+    }
+}
+
+
+// generated via `scripts/generate-pll-settings.py`,
+// massaged a bit by hand
+pub fn get_pll(freq: u32) -> Pll {
+    assert!(freq >= 5);
+    assert!(freq <= 100);
+    // let ns: [u32; 9] = [1, 2, 3, 4, 6, 8, 12, 16, 24];
+    let ns: [u32; 2] = [1, 2];
+    // let ps: [u32; 11] = [2, 3, 4, 6, 8, 9, 12, 16, 18, 24, 30];
+    let ps: [u32; 5] = [6, 8, 12, 16, 24];
+
+    for n in ns.iter() {
+        for p in ps.iter() {
+            for m in 3..=97 {
+                if 2 * freq * (*n) * (*p) == 96 * m {
+                    // UM 4.6.6.3.2
+                    let selp = (m >> 2) + 1; // <= 31
+                    let seli = 2 * (m >> 2) + 3; // <= 63
+                    return Pll {
+                        n: *n as u8,
+                        m: m as u16,
+                        p: *p as u8,
+                        selp: selp as u16,
+                        seli: seli as u8,
+                    }
+                }
+            }
+        }
+    }
+
+    unreachable!();
+}
 
 static mut CONFIGURED: bool = false;
 
@@ -226,21 +225,21 @@ impl ClockRequirements {
         }
 
         // need >= 12MHz for USBFS
-        if self.system_clock_freq.is_some() && self.system_clock_freq.unwrap() < 12_000_000.into() {
+        if self.system_clock_freq.is_some() && self.system_clock_freq.unwrap() < 12.mhz().into() {
                 return Err(ClocksError::UsbfsNotFeasible);
         }
 
-        let system_clock_freq: u32 = self.system_clock_freq.unwrap_or(Megahertz(12).into()).0;
+        let system_clock_freq: Hertz = self.system_clock_freq.unwrap_or(12.mhz().into());
 
         let main_clock_source = self.main_clock_source.unwrap_or(
-            if system_clock_freq > 12_000_000 {
+            if system_clock_freq > 12.mhz().into() {
                 MainClock::Fro96MHz
             } else {
                 MainClock::Fro12MHz
             }
         );
 
-        let main_clock_freq: u32 = match main_clock_source {
+        let main_clock_freq: Hertz = match main_clock_source {
             MainClock::Fro12MHz => {
                 self.fro12mhz = true;
                 12.mhz().into()
@@ -270,10 +269,10 @@ impl ClockRequirements {
             if system_clock_freq > main_clock_freq {
                 return Err(ClocksError::NotFeasible);
             }
-            if main_clock_freq % system_clock_freq != 0 {
+            if main_clock_freq.0 % system_clock_freq.0 != 0 {
                 return Err(ClocksError::NotFeasible);
             }
-            main_clock_freq / system_clock_freq
+            main_clock_freq.0 / system_clock_freq.0
         };
 
         if sys_divider >= 256 {
@@ -311,8 +310,8 @@ impl ClockRequirements {
 
         // fix wait cycles
         // TODO
-        let mut system_clock_freq_mhz = system_clock_freq / 1_000_000;
-        if system_clock_freq % 1_000_000 != 0 {
+        let mut system_clock_freq_mhz = system_clock_freq.0 / 1_000_000;
+        if system_clock_freq.0 % 1_000_000 != 0 {
             system_clock_freq_mhz += 1;
         }
         let wait_cycles = (system_clock_freq_mhz / 11) + 1;

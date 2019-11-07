@@ -1,5 +1,5 @@
 use core::marker::PhantomData;
-use crate::drivers::clocks::Kilohertz;
+use crate::time::Kilohertz;
 use crate::traits::wg::blocking::i2c::{
     Read,
     Write,

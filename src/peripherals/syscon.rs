@@ -19,7 +19,13 @@
 // use cortex_m_semihosting::dbg;
 
 // use crate::raw;
-use crate::{clock, typestates::init_state};
+use crate::{
+    time::{
+        self,
+        clock,
+    },
+    typestates::init_state,
+};
 
 crate::wrap_always_on_peripheral!(Syscon, SYSCON);
 
@@ -358,7 +364,7 @@ impl Fro1MhzUtickClock<init_state::Enabled> {
     }
 }
 
-impl<State> clock::Frequency for Fro1MhzUtickClock<State> {
+impl<State> time::Frequency for Fro1MhzUtickClock<State> {
     fn hz(&self) -> u32 {
         1_000_000
     }

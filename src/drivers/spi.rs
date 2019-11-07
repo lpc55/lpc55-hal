@@ -23,11 +23,7 @@ use crate::typestates::pin::{
     },
     PinId,
 };
-use crate::{
-    drivers::{
-        clocks::Hertz,
-    }
-};
+use crate::time::Hertz;
 
 
 pub mod prelude {
@@ -98,7 +94,7 @@ where
             .loop_().disabled()
         );
 
-        let div: u32 = 12_000_000 / u32::from(freq) - 1;
+        let div: u32 = 12_000_000 / freq.0 - 1;
         assert!(div <= 0xFFFF);
         spi.div.modify(|_, w| unsafe { w.divval().bits(div as u16) } );
 

@@ -48,7 +48,7 @@ fn main() -> ! {
 
     let mut utick = hal.utick.enabled(&mut syscon, &clock);
 
-    let delay = hal::clock::Ticks {
+    let delay = hal::time::Ticks {
         value: 500_000,
         clock: &clock,
     }; // 500 ms = 0.5 s
