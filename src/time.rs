@@ -22,6 +22,18 @@ pub struct Kilohertz(pub u32);
 #[derive(PartialEq, PartialOrd, Clone, Copy, Debug)]
 pub struct Megahertz(pub u32);
 
+impl From<Kilohertz> for Hertz {
+    fn from(khz: Kilohertz) -> Self {
+        Hertz(1_000 * khz.0)
+    }
+}
+
+impl From<Megahertz> for Kilohertz {
+    fn from(mhz: Megahertz) -> Self {
+        Kilohertz(1_000 * mhz.0)
+    }
+}
+
 impl From<Megahertz> for Hertz {
     fn from(mhz: Megahertz) -> Self {
         Hertz(1_000_000 * mhz.0)

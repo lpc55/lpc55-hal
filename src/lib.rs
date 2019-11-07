@@ -3,8 +3,10 @@
 
 pub extern crate lpc55s6x_pac as raw;
 
-// currently, all sorts of traits
 pub mod prelude;
+
+#[macro_use]
+pub mod macros;
 
 pub mod time;
 pub mod traits;
@@ -30,22 +32,12 @@ pub use drivers::{
     ClockRequirements,
     // Flash,
     I2cMaster,
+    SpiMaster,
     Pin,
     Pins,
     UsbBus,
 };
 
-#[macro_use]
-pub(crate) mod reg_proxy;
-
-#[macro_use]
-pub mod macros;
-
-
-// /// All the HAL peripherals
-// pub use {
-//     peripherals::usbfs::EnabledUsbfsDevice,
-// };
 
 /// This is the main (monolithic) entry point to the HAL for non-RTFM applications.
 /// For RTFM, use `hal::<Peripheral>::from(<raw_peripheral>)` as needed.
@@ -190,8 +182,3 @@ impl From<(raw::Peripherals, raw::CorePeripherals)> for Peripherals {
 pub fn get_cycle_count() -> u32 {
     raw::DWT::get_cycle_count()
 }
-
-extern "C" {
-    pub fn POWER_SetVoltageForFreq(freq: u32);
-}
-

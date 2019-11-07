@@ -53,7 +53,7 @@ fn main() -> ! {
         clock: &clock,
     }; // 500 ms = 0.5 s
 
-    let mut sleep = hal::sleep::Busy::wrap(&mut utick);
+    let mut sleep = hal::time::Busy::wrap(&mut utick);
 
     loop {
         sleep.sleep(delay);

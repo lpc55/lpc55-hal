@@ -16,6 +16,7 @@ use crate::typestates::{
         },
         PinId,
     },
+    reg_proxy::RegClusterProxy,
 };
 
 use super::Pin;
@@ -91,10 +92,10 @@ where
             id: self.id,
 
             state: state::Gpio {
-                dirset: crate::reg_proxy::RegClusterProxy::new(),
-                pin: crate::reg_proxy::RegClusterProxy::new(),
-                set: crate::reg_proxy::RegClusterProxy::new(),
-                clr: crate::reg_proxy::RegClusterProxy::new(),
+                dirset: RegClusterProxy::new(),
+                pin: RegClusterProxy::new(),
+                set: RegClusterProxy::new(),
+                clr: RegClusterProxy::new(),
 
                 _direction: direction::Output,
             },

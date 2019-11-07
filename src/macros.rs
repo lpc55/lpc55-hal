@@ -3,6 +3,33 @@
 //
 // TODO: is the trait thing maybe better after all? boilerplate is bad...
 
+
+#[macro_export]
+macro_rules! reg {
+    ($ty:ident, $target:ty, $peripheral:path, $field:ident) => {
+        unsafe impl $crate::traits::reg_proxy::Reg for $ty {
+            type Target = $target;
+
+            fn get() -> *const Self::Target {
+                unsafe { &(*<$peripheral>::ptr()).$field as *const $ty }
+            }
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! reg_cluster {
+    ($ty:ident, $target:ty, $peripheral:path, $field:ident) => {
+        unsafe impl $crate::traits::reg_proxy::RegCluster for $ty {
+            type Target = $target;
+
+            fn get() -> *const [Self::Target] {
+                unsafe { &(*<$peripheral>::ptr()).$field as *const [$ty] }
+            }
+        }
+    };
+}
+
 #[macro_export]
 macro_rules! wrap_always_on_peripheral {
     ($hal_name:ident, $pac_name:ident) => {

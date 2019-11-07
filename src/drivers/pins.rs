@@ -32,6 +32,9 @@ pub use crate::typestates::pin::{
     PinType,
 };
 
+use crate::typestates::reg_proxy::RegClusterProxy;
+
+
 /// Main API to control for controlling pins:w
 pub struct Pin<T: PinId, S: state::PinState> {
     pub(crate) id: T,
@@ -159,10 +162,10 @@ macro_rules! pins {
                     Pin {
                         id: self.id,
                         state: state::Gpio {
-                            dirset: crate::reg_proxy::RegClusterProxy::new(),
-                            pin: crate::reg_proxy::RegClusterProxy::new(),
-                            set: crate::reg_proxy::RegClusterProxy::new(),
-                            clr: crate::reg_proxy::RegClusterProxy::new(),
+                            dirset: RegClusterProxy::new(),
+                            pin: RegClusterProxy::new(),
+                            set: RegClusterProxy::new(),
+                            clr: RegClusterProxy::new(),
 
                             _direction: direction::Unknown,
                         },

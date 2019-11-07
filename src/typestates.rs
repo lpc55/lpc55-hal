@@ -86,3 +86,5 @@ pub struct ClocksSupportUsbfsToken {pub(crate) __: PhantomData<()>}
 
 pub mod flash_state {
 }
+
+pub mod reg_proxy;

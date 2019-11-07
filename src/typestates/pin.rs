@@ -28,6 +28,7 @@ pub enum PinType {
 pub mod state {
     use super::gpio::direction::Direction;
     use super::function::Function;
+    use crate::typestates::reg_proxy::RegClusterProxy;
 
     /// Implemented by types that indicate pin state
     pub trait PinState {}
@@ -38,10 +39,10 @@ pub mod state {
 
     /// Marks a [`Pin`]  as being assigned to general-purpose I/O
     pub struct Gpio<D: Direction> {
-        pub(crate) dirset: crate::reg_proxy::RegClusterProxy<raw::gpio::DIRSET>,
-        pub(crate) pin: crate::reg_proxy::RegClusterProxy<raw::gpio::PIN>,
-        pub(crate) set: crate::reg_proxy::RegClusterProxy<raw::gpio::SET>,
-        pub(crate) clr: crate::reg_proxy::RegClusterProxy<raw::gpio::CLR>,
+        pub(crate) dirset: RegClusterProxy<raw::gpio::DIRSET>,
+        pub(crate) pin: RegClusterProxy<raw::gpio::PIN>,
+        pub(crate) set: RegClusterProxy<raw::gpio::SET>,
+        pub(crate) clr: RegClusterProxy<raw::gpio::CLR>,
 
         pub(crate) _direction: D,
     }

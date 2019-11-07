@@ -68,6 +68,7 @@ impl Clocks {
 /// PLL power depends on Fcco (a lower frequency uses less power) and the divider used.
 /// Bypassing the input and/or output divider saves power."
 
+#[allow(dead_code)]
 pub struct Pll {
     n: u8,
     m: u16,
