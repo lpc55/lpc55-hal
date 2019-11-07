@@ -7,6 +7,35 @@
 
 crate::wrap_always_on_peripheral!(Pmc, PMC);
 
+// The UM does not list everything.
+// This is what `fsl_power.h` from the SDK reveals:
+//
+// kPDRUNCFG_PD_DCDC         = (1UL << 0),
+// kPDRUNCFG_PD_BIAS         = (1UL << 1),
+// kPDRUNCFG_PD_BODCORE      = (1UL << 2),
+// kPDRUNCFG_PD_BODVBAT      = (1UL << 3),
+// kPDRUNCFG_PD_FRO1M        = (1UL << 4),
+// kPDRUNCFG_PD_FRO192M      = (1UL << 5),
+// kPDRUNCFG_PD_FRO32K       = (1UL << 6),
+// kPDRUNCFG_PD_XTAL32K      = (1UL << 7),
+// kPDRUNCFG_PD_XTAL32M      = (1UL << 8),
+// kPDRUNCFG_PD_PLL0         = (1UL << 9),
+// kPDRUNCFG_PD_PLL1         = (1UL << 10),
+// kPDRUNCFG_PD_USB0_PHY     = (1UL << 11),
+// kPDRUNCFG_PD_USB1_PHY     = (1UL << 12),
+// kPDRUNCFG_PD_COMP         = (1UL << 13),
+// kPDRUNCFG_PD_TEMPSENS     = (1UL << 14),
+// kPDRUNCFG_PD_GPADC        = (1UL << 15),
+// kPDRUNCFG_PD_LDOMEM       = (1UL << 16),
+// kPDRUNCFG_PD_LDODEEPSLEEP = (1UL << 17),
+// kPDRUNCFG_PD_LDOUSBHS     = (1UL << 18),
+// kPDRUNCFG_PD_LDOGPADC     = (1UL << 19),
+// kPDRUNCFG_PD_LDOXO32M     = (1UL << 20),
+// kPDRUNCFG_PD_LDOFLASHNV   = (1UL << 21),
+// kPDRUNCFG_PD_RNG          = (1UL << 22),
+// kPDRUNCFG_PD_PLL0_SSCG    = (1UL << 23),
+// kPDRUNCFG_PD_ROM          = (1UL << 24),
+
 impl Pmc {
     /// Enables the power for a peripheral or other hardware component
     pub fn power_on<P: PowerControl>(&mut self, peripheral: &mut P) {
@@ -72,10 +101,12 @@ pub trait PowerControl {
 //     }
 // }
 
+// TODO: use the clr/set registers
 macro_rules! impl_power_control {
     ($power_control:ty, $register:ident) => {
         impl PowerControl for $power_control {
             fn powered_on(&self, pmc: &mut Pmc) {
+                // pmc.raw.pdruncfg0clr.write(|w| w.bits(1u32 << <proper offset>));
                 pmc.raw.pdruncfg0.modify(|_, w| w.$register().poweredon());
             }
 

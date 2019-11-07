@@ -1,8 +1,8 @@
 #![no_main]
 #![no_std]
 
-// extern crate panic_semihosting;
-extern crate panic_halt;
+extern crate panic_semihosting;
+// extern crate panic_halt;
 use cortex_m_rt::entry;
 // use cortex_m_semihosting::{dbg, hprintln};
 
@@ -44,16 +44,18 @@ fn main() -> ! {
 
 
     let clocks = hal::ClockRequirements::default()
-        .system_freq(48.mhz())
-        // .support_usbfs()
-        .configure(&mut anactrl, /*&mut pmc,*/ &mut syscon)
+        // .system_frequency(24.mhz())
+        // .system_frequency(72.mhz())
+        // .system_frequency(25.mhz())
+        .support_usbfs()
+        .configure(&mut anactrl, &mut pmc, &mut syscon)
         .unwrap();
         // .expect("Clock configuration failed");
 
     let token = clocks.support_usbfs_token()
         .unwrap();
         // .expect(
-        //     "Fro96MHz is not enabled or CPU freq below 12MHz, both of which the USB needs");
+        //     "Fro96MHz is not enabled or CPU freq below 24MHz, both of which the USB needs");
 
     let usbfsd = hal.usbfs.enabled_as_device(
         &mut anactrl,

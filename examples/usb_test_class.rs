@@ -31,9 +31,9 @@ fn main() -> ! {
 
     let clocks = hal::ClockRequirements::default()
         // .fro96mhz_main_clock()
-        .system_freq(12.mhz())
+        .system_frequency(12.mhz())
         .support_usbfs()
-        .configure(&mut anactrl, /*&mut pmc,*/ &mut syscon)
+        .configure(&mut anactrl, &mut pmc, &mut syscon)
         .expect("Clock configuration failed");
 
     let token = clocks.support_usbfs_token().expect(

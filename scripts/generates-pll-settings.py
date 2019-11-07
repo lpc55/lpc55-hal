@@ -4,7 +4,7 @@ P0 = range(1, 2 ** 8)
 M = range(1, 2 ** 16)
 P1 = range(1, 2 ** 5)
 
-P0 = [1, 2, 3, 4, 6, 8, 12, 16, 24]
+P0 = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 16, 24]
 M = [
     3,
     4,
@@ -47,12 +47,15 @@ M = [
     97,
 ]
 M = range(3, 98)
-P1 = [2, 3, 4, 6, 8, 9, 12, 16, 18, 24, 30]
+M = range(1, 256)
+P1 = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 16, 18, 24, 30]
+
+P0 = range(1, 11)
+M = range(1, 256)
+P1 = range(1, 33)
 
 
-IPython.embed()
-
-sel = 96
+sel = 12
 presettings = [((sel / p0) * m, p0, m) for p0 in P0 for m in M]
 
 valid_presettings = [_ for _ in presettings if 275 <= _[0] <= 550]
@@ -66,7 +69,7 @@ def weight(s):
 
 
 sols = {}
-for i in range(5, 101):
+for i in range(5, 151):
     solutions = [s for s in settings if s[0] == i]
 
     best = min(solutions, key=weight)

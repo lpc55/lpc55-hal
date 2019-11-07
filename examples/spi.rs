@@ -39,14 +39,15 @@ fn main() -> ! {
     let hal = hal::new();
 
     let mut anactrl = hal.anactrl;
+    let mut pmc = hal.pmc;
     let mut syscon = hal.syscon;
     let mut gpio = hal.gpio.enabled(&mut syscon);
     let mut iocon = hal.iocon.enabled(&mut syscon);
 
     let clocks = hal::ClockRequirements::default()
         // .system_freq(96.mhz())
-        .support_flexcomm()
-        .configure(&mut anactrl, &mut syscon)
+        // .support_flexcomm()
+        .configure(&mut anactrl, &mut pmc, &mut syscon)
         .unwrap();
 
     let token = clocks.support_flexcomm_token().unwrap();

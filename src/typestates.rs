@@ -30,37 +30,15 @@ pub mod init_state {
 
 pub mod pin;
 
-pub mod usbfs_mode {
-    pub trait UsbfsMode {}
-
-    pub struct Unknown;
-    impl UsbfsMode for Unknown {}
-
-    pub struct Device;
-    impl UsbfsMode for Device {}
-
-    pub struct Host;
-    impl UsbfsMode for Host {}
-}
-
-/// Encodes the state of the clock-tree: still Configurable, or Frozen.
-pub mod clock_state {
-    pub trait ClockState {}
-
-    pub struct Configurable;
-    impl ClockState for Configurable {}
-
-    pub struct Frozen;
-    impl ClockState for Frozen {}
-}
-
 /// Using generics for this seems quite painful
 pub mod main_clock {
-    #[derive(Copy, Clone, Debug)]
+
+    #[derive(Copy, Clone, Debug, PartialEq)]
     pub enum MainClock {
         // Unknown,
-        Fro12MHz,
-        Fro96MHz,
+        Fro12Mhz,
+        Fro96Mhz,
+        Pll0,
     }
     // pub trait MainClock {}
 
@@ -72,6 +50,19 @@ pub mod main_clock {
 
     // pub struct Fro96Mhz;
     // impl MainClock for Fro96Mhz {}
+}
+
+pub mod usbfs_mode {
+    pub trait UsbfsMode {}
+
+    pub struct Unknown;
+    impl UsbfsMode for Unknown {}
+
+    pub struct Device;
+    impl UsbfsMode for Device {}
+
+    pub struct Host;
+    impl UsbfsMode for Host {}
 }
 
 /// Application can only obtain this token from

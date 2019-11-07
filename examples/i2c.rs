@@ -1,8 +1,8 @@
 #![no_main]
 #![no_std]
 
-// extern crate panic_semihosting;
-extern crate panic_halt;
+extern crate panic_semihosting;
+// extern crate panic_halt;
 use cortex_m_rt::entry;
 use core::fmt::Write;
 
@@ -26,13 +26,14 @@ fn main() -> ! {
     let hal = hal::new();
 
     let mut anactrl = hal.anactrl;
+    let mut pmc = hal.pmc;
     let mut syscon = hal.syscon;
     let mut iocon = hal.iocon.enabled(&mut syscon);
 
     let clocks = hal::ClockRequirements::default()
-        // .system_freq(96.mhz())
-        .support_flexcomm()
-        .configure(&mut anactrl, &mut syscon)
+        .system_frequency(150.mhz())
+        // .support_flexcomm()
+        .configure(&mut anactrl, &mut pmc, &mut syscon)
         .unwrap();
 
     // cortex_m_semihosting::hprintln!("clocks = {:?}", &clocks).ok();

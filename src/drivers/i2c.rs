@@ -63,6 +63,7 @@ where
     I2C: I2c,
     PINS: I2cPins<PIO1, PIO2, I2C>,
 {
+    /// Only 100.khz() is currently supported.
     pub fn new(i2c: I2C, pins: PINS, speed: Kilohertz) -> Self {
         // Simplified setup: We always use 12MHz clock,
         // and only support 100kHz
