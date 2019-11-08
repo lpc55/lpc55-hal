@@ -1,5 +1,6 @@
 use core::marker::PhantomData;
-use crate::time::Kilohertz;
+use core::cmp::min;
+use crate::time::Hertz;
 use crate::traits::wg::blocking::i2c::{
     Read,
     Write,
@@ -63,11 +64,13 @@ where
     I2C: I2c,
     PINS: I2cPins<PIO1, PIO2, I2C>,
 {
-    /// Only 100.khz() is currently supported.
-    pub fn new(i2c: I2C, pins: PINS, speed: Kilohertz) -> Self {
-        // Simplified setup: We always use 12MHz clock,
-        // and only support 100kHz
-        assert!(speed == Kilohertz(100));
+    /// Weird crashes happen when running system at 150Mhz PLL.
+    /// Suggested use: 100khz or 400khz
+    pub fn new<Speed: Into<Hertz>>(i2c: I2C, pins: PINS, speed: Speed) -> Self {
+        // Simplified setup: We always use 12MHz clock, and only support 100kHz
+        let speed: Hertz = speed.into();
+        let speed: u32 = speed.0;
+        assert!(speed <= 1_000_000);
         i2c.cfg.modify(|_, w| w
             .msten().enabled()
             // .slven().disabled()
@@ -75,11 +78,48 @@ where
             // ...etc.
         );
 
-        // DIVVAL = 10 - 1, MSTSCLHIGH = MSTSCLLOW = 6 - 2
-        i2c.clkdiv.modify(|_, w| unsafe { w.divval().bits(10 - 1) } );
+        // use cortex_m_semihosting::hprintln;
+
+        // logic from `fsl_i2c.c` in SDK
+        let mut best_div: u16 = 0;
+        let mut best_scl: u8 = 0;
+        let mut best_err: u32 = 0;
+        for scl in (2..=9).rev() {
+            let denominator = 2 * scl * speed;
+            let div = min(10_000, 12_000_000 / denominator);
+            let err = 12_000_000 - div * denominator;
+            if err < best_err || best_err == 0 {
+                // first time, or smaller error
+                best_div = div as u16; // limited by 10_000
+                best_scl = scl as u8; // limited by 9
+                best_err = err;
+            }
+            if err == 0 || div >= 10_000 {
+                // clamped at 10k means next scl is smaller means err is larger
+                break;
+            }
+        }
+
+        // Weird suggestion from UM.
+        // UM also claims both that:
+        // - DIV must be 1 (?!)
+        // - Frequency after clkdiv must be <= 2 mhz
+        //
+        // if speed.0 == 400 {
+        //     best_div = 14;
+        //     best_scl = 0;
+        // }
+
+        // hprintln!("speed {}, div {}, scl {}", speed, best_div, best_scl).ok();
+
+        // best_div = 10; best_scl = 6;
+        // 100 kbits/s: div = 10, scl = 6
+        // 400 kbits/s: div = 3, scl = 5
+        // 1 mbit/s: div = 1, scl = 6
+        i2c.clkdiv.modify(|_, w| unsafe { w.divval().bits(best_div - 1) } );
         i2c.msttime.modify(|_, w| w
-            .mstsclhigh().clocks_4()
-            .mstscllow().clocks_4()
+            .mstsclhigh().bits(best_scl - 2)
+            .mstscllow().bits(best_scl - 2)
         );
 
         // or whatever...
@@ -98,16 +138,21 @@ where
 
     #[inline(always)]
     fn return_on_error(&self) -> Result<()> {
+        // use cortex_m_semihosting::dbg;
         if self.i2c.stat.read().mststate().is_nack_data() {
+            // dbg!(Error::NackData);
             return Err(Error::NackData);
         }
         if self.i2c.stat.read().mststate().is_nack_address() {
+            // dbg!(Error::NackData);
             return Err(Error::NackAddress);
         }
         if self.i2c.stat.read().mstarbloss().is_arbitration_loss() {
+            // dbg!(Error::NackData);
             return Err(Error::ArbitrationLoss);
         }
         if self.i2c.stat.read().mstststperr().is_error() {
+            // dbg!(Error::NackData);
             return Err(Error::StartStop);
         }
         Ok(())
@@ -124,6 +169,7 @@ where
     type Error = Error;
 
     fn write(&mut self, addr: u8, bytes: &[u8]) -> Result<()> {
+        // use cortex_m_semihosting::dbg;
         self.return_on_error()?;
 
         // Write the slave address with the RW bit set to 0 to the master data register MSTDAT.
@@ -136,6 +182,7 @@ where
 
         self.return_on_error()?;
         if !self.i2c.stat.read().mststate().is_transmit_ready() {
+            // dbg!(Error::Bus);
             return Err(Error::Bus);
         }
 
@@ -151,6 +198,7 @@ where
             // Error handling
             self.return_on_error()?;
             if !self.i2c.stat.read().mststate().is_transmit_ready() {
+                // dbg!(Error::Bus);
                 return Err(Error::Bus);
             }
         }
@@ -162,6 +210,7 @@ where
 
         self.return_on_error()?;
         if !self.i2c.stat.read().mststate().is_idle() {
+            // dbg!(Error::Bus);
             return Err(Error::Bus);
         }
 

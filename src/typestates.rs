@@ -1,5 +1,3 @@
-use core::marker::PhantomData;
-
 /// Encodes the state of peripherals: Unknown, Enabled, or Disabled.
 ///
 /// The default state of peripherals is `Unknown`, which is not
@@ -67,12 +65,12 @@ pub mod usbfs_mode {
 
 /// Application can only obtain this token from
 /// a frozen Clocks (clock-tree configuration)
-pub struct ClocksSupportFlexcommToken {pub(crate) __: PhantomData<()>}
+pub struct ClocksSupportFlexcommToken {pub(crate) __: ()}
 
 /// Application can only obtain this token from
 /// a frozen Clocks (clock-tree configuration) for
 /// which USB clocks have been configured properly.
-pub struct ClocksSupportUsbfsToken {pub(crate) __: PhantomData<()>}
+pub struct ClocksSupportUsbfsToken {pub(crate) __: ()}
 
 
 pub mod flash_state {

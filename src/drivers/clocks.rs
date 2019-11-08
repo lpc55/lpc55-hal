@@ -7,7 +7,6 @@
 ///! Flexcomm peripherals.
 
 use core::cmp::min;
-use core::marker::PhantomData;
 
 use crate::typestates::{
     main_clock::MainClock,
@@ -51,7 +50,7 @@ pub struct Clocks {
 
 impl Clocks {
     pub fn support_flexcomm_token(&self) -> Option<ClocksSupportFlexcommToken> {
-        Some(ClocksSupportFlexcommToken {__: PhantomData} )
+        Some(ClocksSupportFlexcommToken{__: ()})
     }
 
     pub fn support_usbfs_token(&self) -> Option<ClocksSupportUsbfsToken> {
@@ -59,7 +58,7 @@ impl Clocks {
         let can_latch_sof = self.main_clock == MainClock::Fro96Mhz;
 
         if fast_enough && can_latch_sof {
-            Some(ClocksSupportUsbfsToken {__: PhantomData} )
+            Some(ClocksSupportUsbfsToken{__: ()})
         } else {
             None
         }

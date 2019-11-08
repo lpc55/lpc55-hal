@@ -16,7 +16,7 @@ use super::{
 pub trait I2c: Deref<Target = raw::i2c0::RegisterBlock> {}
 pub trait I2s {}
 pub trait Spi: Deref<Target = raw::spi0::RegisterBlock> {}
-pub trait Usart {}
+pub trait Usart: Deref<Target = raw::usart0::RegisterBlock> {}
 
 
 /// I2C serial clock

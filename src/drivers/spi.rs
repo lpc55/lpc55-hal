@@ -19,12 +19,13 @@ use crate::typestates::pin::{
         // Trait marking I2C peripherals and pins
         Spi,
         SpiPins,
-            ChipSelect,
+        ChipSelect,
     },
     PinId,
 };
-use crate::time::Hertz;
-
+use crate::time::{
+    Hertz,
+};
 
 pub mod prelude {
     pub use super::SpiMaster;
@@ -77,10 +78,12 @@ where
     PINS: SpiPins<SCK, MOSI, MISO, CS, SPI>,
     // CSPIN: SpiSselPin<CS, SPI>,
 {
-    pub fn init(spi: SPI, pins: PINS, mode: Mode, freq: Hertz) -> Self {
+    pub fn new<Speed: Into<Hertz>>(spi: SPI, pins: PINS, speed: Speed, mode: Mode) -> Self {
+        let speed: Hertz = speed.into();
+        let speed: u32 = speed.0;
+
         while spi.stat.read().mstidle().bit_is_clear() { continue; }
 
-        // FIFO would be 8 entries of 16 bits; we don't use it
         spi.fifocfg.modify(|_, w| w
             .enabletx().disabled()
             .enablerx().disabled()
@@ -94,7 +97,7 @@ where
             .loop_().disabled()
         );
 
-        let div: u32 = 12_000_000 / freq.0 - 1;
+        let div: u32 = 12_000_000 / speed - 1;
         assert!(div <= 0xFFFF);
         spi.div.modify(|_, w| unsafe { w.divval().bits(div as u16) } );
 

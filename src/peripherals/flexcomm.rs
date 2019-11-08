@@ -104,6 +104,13 @@ macro_rules! flexcomm {
             pub _state: State,
         }
 
+        impl Deref for $usart_hal {
+            type Target = raw::usart0::RegisterBlock;
+            fn deref(&self) -> &Self::Target {
+                &self.raw
+            }
+        }
+
         impl Usart for $usart_hal {}
 
         impl core::convert::From<(raw::$fc_pac, raw::$i2c_pac, raw::$i2s_pac, raw::$spi_pac, raw::$usart_pac)> for $fc_hal {

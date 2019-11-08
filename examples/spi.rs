@@ -74,7 +74,7 @@ fn main() -> ! {
         phase: Phase::CaptureOnFirstTransition,
     };
 
-    let spi = SpiMaster::init(spi, spi_pins, spi_mode, 100_000.hz());
+    let spi = SpiMaster::new(spi, spi_pins, 100.khz(), spi_mode);
 
     let dc = pins.pio1_5.into_gpio_pin(&mut iocon, &mut gpio).into_output_high();
 
