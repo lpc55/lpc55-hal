@@ -1,17 +1,20 @@
 use crate::time::Hertz;
 
+#[derive(Clone,Copy,Debug)]
 pub enum WordLength {
     DataBits7,
     DataBits8,
     DataBits9,
 }
 
+#[derive(Clone,Copy,Debug)]
 pub enum Parity {
     ParityNone,
     ParityEven,
     ParityOdd,
 }
 
+#[derive(Clone,Copy,Debug)]
 pub enum StopBits {
     #[doc = "1 stop bit"]
     STOP1,
@@ -23,6 +26,7 @@ pub enum StopBits {
     // STOP1P5,
 }
 
+#[derive(Clone,Copy,Debug)]
 pub struct Config {
     pub speed: Hertz,
     pub wordlength: WordLength,

@@ -40,15 +40,49 @@ impl From<Megahertz> for Hertz {
     }
 }
 
+#[derive(PartialEq, PartialOrd, Clone, Copy, Debug)]
+pub struct Baud(pub u32);
+#[derive(PartialEq, PartialOrd, Clone, Copy, Debug)]
+pub struct Kilobaud(pub u32);
+#[derive(PartialEq, PartialOrd, Clone, Copy, Debug)]
+pub struct Megabaud(pub u32);
+
+impl From<Kilobaud> for Baud {
+    fn from(kbd: Kilobaud) -> Self {
+        Baud(1_000 * kbd.0)
+    }
+}
+
+impl From<Megabaud> for Kilobaud {
+    fn from(mbd: Megabaud) -> Self {
+        Kilobaud(1_000 * mbd.0)
+    }
+}
+
+impl From<Megabaud> for Baud {
+    fn from(mbd: Megabaud) -> Self {
+        Baud(1_000_000 * mbd.0)
+    }
+}
+
 pub trait U32Ext {
     /// Wrap in `Hertz`
     fn hz(self) -> Hertz;
 
-    /// Wrap in `MegaHertz`
+    /// Wrap in `Kilohertz`
     fn khz(self) -> Kilohertz;
 
-    /// Wrap in `MegaHertz`
+    /// Wrap in `Megahertz`
     fn mhz(self) -> Megahertz;
+
+    /// Wrap in `Baud`
+    fn bps(self) -> Baud;
+
+    /// Wrap in `Kilobaud`
+    fn kbps(self) -> Kilobaud;
+
+    /// Wrap in `Megabaud`
+    fn mbps(self) -> Megabaud;
 }
 
 impl U32Ext for u32 {
@@ -62,6 +96,18 @@ impl U32Ext for u32 {
 
     fn mhz(self) -> Megahertz {
         Megahertz(self)
+    }
+
+    fn bps(self) -> Baud {
+        Baud(self)
+    }
+
+    fn kbps(self) -> Kilobaud {
+        Kilobaud(self)
+    }
+
+    fn mbps(self) -> Megabaud {
+        Megabaud(self)
     }
 }
 

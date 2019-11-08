@@ -1,4 +1,5 @@
 use core::fmt;
+use core::ops::Deref;
 use core::marker::PhantomData;
 
 use crate::{
@@ -59,16 +60,35 @@ where
 
 // such a Serial can be split() into (Tx, Rx)
 
+// TODO: Consider removing the USART parameter from Tx and Rx
+// TODO: Remove code duplication between Tx and Rx
+
 /// Serial transmitter
 pub struct Tx<USART: Usart> {
-    raw: raw::usart0::RegisterBlock,
+    addr: usize,
     _usart: PhantomData<USART>,
 }
 
 /// Serial receiver
 pub struct Rx<USART: Usart> {
-    raw: raw::usart0::RegisterBlock,
+    addr: usize,
     _usart: PhantomData<USART>,
+}
+
+impl<USART: Usart> Deref for Tx<USART> {
+    type Target = raw::usart0::RegisterBlock;
+    fn deref(&self) -> &Self::Target {
+        let ptr = self.addr as *const _;
+        unsafe { &*ptr }
+    }
+}
+
+impl<USART: Usart> Deref for Rx<USART> {
+    type Target = raw::usart0::RegisterBlock;
+    fn deref(&self) -> &Self::Target {
+        let ptr = self.addr as *const _;
+        unsafe { &*ptr }
+    }
 }
 
 impl<TX, RX, USART, PINS> Serial<TX, RX, USART, PINS>
@@ -78,6 +98,8 @@ where
     USART: Usart,
     PINS: UsartPins<TX, RX, USART>,
 {
+    const CLOCK_SPEED: u32 = 12_000_000;
+
     pub fn new(usart: USART, pins: PINS, config: config::Config) -> Self {
         use self::config::*;
 
@@ -85,8 +107,8 @@ where
         let speed: u32 = speed.0;
 
         usart.fifocfg.modify(|_, w| w
-            .enabletx().disabled()
-            .enablerx().disabled()
+            .enabletx().enabled()
+            .enablerx().enabled()
         );
 
         usart.fifotrig.modify(|_, w| unsafe { w
@@ -133,11 +155,11 @@ where
         // SDK says: "Smaller values of OSR can make the sampling position within a data bit less
         // accurate and may potentially cause more noise errors or incorrect data."
         for osr in (9..=16).rev() {
-            let brg = 12_000_000 / (osr * speed);
+            let brg = Self::CLOCK_SPEED / (osr * speed);
             if brg >= 0xffff {
                 continue;
             }
-            let realized_speed = 12_000_000 / (osr * brg);
+            let realized_speed = Self::CLOCK_SPEED / (osr * brg);
             let diff = if speed > realized_speed { speed - realized_speed} else { realized_speed - speed };
             if diff < best_diff {
                 best_diff = diff;
@@ -146,7 +168,7 @@ where
             }
         }
 
-        // TODO: return Result
+        // TODO: return Result instead of panicking
         if best_brg >= 0xffff {
             panic!("baudrate not supported");
         }
@@ -162,20 +184,33 @@ where
         }
     }
 
+    fn addr(&self) -> usize {
+        &(*self.usart) as *const _ as usize
+    }
+
     pub fn split(self) -> (Tx<USART>, Rx<USART>) {
         // so umm... Tx/Rx "promise" to not step on each others' toes
+        //
+        // Tx:
+        // - reads stat, fifostat
+        // - writes fifowr
+        //
+        // Rx:
+        // - reads fifostat and fiford
+        // - modifies fifocfg + fifostat on buffer overflow
+
         (
             Tx {
-                raw: unsafe { core::ptr::read(&(*self.usart) as *const _) },
+                addr: self.addr(),
                 _usart: PhantomData,
             },
             Rx {
-                // raw: *self.usart,
-                raw: unsafe { core::ptr::read(&(*self.usart) as *const _) },
+                addr: self.addr(),
                 _usart: PhantomData,
             },
         )
     }
+
     pub fn release(self) -> (USART, PINS) {
         (self.usart, self.pins)
     }
@@ -192,7 +227,7 @@ where
 
     fn read(&mut self) -> nb::Result<u8, Error> {
         let mut rx: Rx<USART> = Rx {
-            raw: unsafe { core::ptr::read(&(*self.usart) as *const _) },
+            addr: self.addr(),
             _usart: PhantomData,
         };
         rx.read()
@@ -203,11 +238,14 @@ impl<USART: Usart> serial::Read<u8> for Rx<USART> {
     type Error = Error;
 
     fn read(&mut self) -> nb::Result<u8, Error> {
-        if self.raw.fifostat.read().rxnotempty().bit() {
+        let fifostat = self.fifostat.read();
+
+        if fifostat.rxnotempty().bit() {
 
             // SDK uses stat, and e.g. framerrint instead of framerr,
             // but that's not in the SDK
-            let fiford = self.raw.fiford.read();
+            let fiford = self.fiford.read();
+
             if fiford.framerr().bit_is_set() {
                 return Err(nb::Error::Other(Error::Framing));
             }
@@ -220,18 +258,17 @@ impl<USART: Usart> serial::Read<u8> for Rx<USART> {
                 return Err(nb::Error::Other(Error::Noise));
             }
 
-            let fifostat = self.raw.fifostat.read();
-
             if fifostat.rxerr().bit_is_set() {
                 // clear by writing 1
-                self.raw.fifocfg.modify(|_, w| w.emptyrx().set_bit());
-                self.raw.fifostat.modify(|_, w| w.rxerr().set_bit());
+                self.fifocfg.modify(|_, w| w.emptyrx().set_bit());
+                self.fifostat.modify(|_, w| w.rxerr().set_bit());
                 return Err(nb::Error::Other(Error::Overrun));
             }
 
             Ok(fiford.rxdata().bits() as u8)
 
         } else {
+            // cortex_m_semihosting::hprintln!("not rxnotempty").ok();
             Err(nb::Error::WouldBlock)
         }
     }
@@ -249,7 +286,7 @@ where
 
     fn flush(&mut self) -> nb::Result<(), Self::Error> {
         let mut tx: Tx<USART> = Tx {
-            raw: unsafe { core::ptr::read(&(*self.usart) as *const _) },
+            addr: self.addr(),
             _usart: PhantomData,
         };
         tx.flush()
@@ -257,7 +294,7 @@ where
 
     fn write(&mut self, byte: u8) -> nb::Result<(), Self::Error> {
         let mut tx: Tx<USART> = Tx {
-            raw: unsafe { core::ptr::read(&(*self.usart) as *const _) },
+            addr: self.addr(),
             _usart: PhantomData,
         };
         tx.write(byte)
@@ -268,7 +305,7 @@ impl<USART: Usart> serial::Write<u8> for Tx<USART> {
     type Error = Error;
 
     fn flush(&mut self) -> nb::Result<(), Self::Error> {
-        if self.raw.stat.read().txidle().bit() {
+        if self.stat.read().txidle().bit() {
             Ok(())
         } else {
             Err(nb::Error::WouldBlock)
@@ -276,10 +313,11 @@ impl<USART: Usart> serial::Write<u8> for Tx<USART> {
     }
 
     fn write(&mut self, byte: u8) -> nb::Result<(), Self::Error> {
-        if self.raw.fifostat.read().txnotfull().bit() {
+        if self.fifostat.read().txnotfull().bit() {
             // TODO: figure out if we need to perform an 8-bit write
             // This would not be possible via svd2rust API, and need some acrobatics
-            self.raw.fifowr.write(|w| unsafe { w.bits(byte as u32) } );
+            self.fifowr.write(|w| unsafe { w.bits(byte as u32) } );
+
             Ok(())
         } else {
             Err(nb::Error::WouldBlock)
