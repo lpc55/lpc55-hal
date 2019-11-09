@@ -1,9 +1,3 @@
-use core::{
-    sync::atomic::{
-        compiler_fence, Ordering,
-    },
-};
-
 pub mod prelude {
     pub use super::UsbBus;
     pub use super::UsbError as UsbError;
@@ -304,16 +298,13 @@ impl<PINS: Send+Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
 
             // non-CONTROL
             for ep in &self.endpoints[1..=self.max_endpoint] {
-                compiler_fence(Ordering::SeqCst);
                 bit <<= 1;
                 let i = ep.index() as usize;
 
                 // OUT = READ
                 let out_offset = 2*i;
                 let out_int = ((intstat_r.bits() >> out_offset) & 0x1) != 0;
-                compiler_fence(Ordering::SeqCst);
                 let out_inactive = eps.eps[i].ep_out[0].read().a().is_not_active();
-                compiler_fence(Ordering::SeqCst);
 
                 if out_int {
                     assert!(out_inactive);
@@ -331,7 +322,6 @@ impl<PINS: Send+Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
                 let in_int = ((intstat_r.bits() >> in_offset) & 0x1) != 0;
                 // WHYY is this sometimes still active?
                 let in_inactive = eps.eps[i].ep_in[0].read().a().is_not_active();
-                compiler_fence(Ordering::SeqCst);
                 if in_int && !in_inactive {
                     // cortex_m_semihosting::hprintln!(
                     //     "IN is active for EP {}, but an IN interrupt fired", i,
@@ -348,7 +338,6 @@ impl<PINS: Send+Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
                     ep_in_complete |= bit;
                     // clear it
                     usb.intstat.write(|w| unsafe { w.bits(1u32 << in_offset) } );
-                    compiler_fence(Ordering::SeqCst);
                     assert!(eps.eps[i].ep_in[0].read().a().is_not_active());
 
                     // let err_code = usb.info.read().err_code().bits();

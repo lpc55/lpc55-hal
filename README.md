@@ -6,12 +6,13 @@ LPC55S6x HAL provides a high-level interface to the features of these LPC55S6x M
 convenient and efficient. It leverages Rust's type system to prevent common mistakes, such as attempting
 to use an uninitialized peripheral; these will be caught by compile-time errors.
 
-This library implements the [embedded-hal][embedded-hal], a collection of traits intended to abstract
+This library implements the [`embedded-hal`][embedded-hal], a collection of traits intended to abstract
 over platform-dependencies, allowing firmware and drivers to be quite portable.
 
+It also implements the [`usb-device`][usb-device] framework.
+
 Moreover, this library is compatible with the Cortex-M implementation of [RTFM][cortex-m-rtfm],
-a concurrency framework supporting preemptive multitasking with minimal footprint, which it does by
-delegating the scheduling to hardware.
+a concurrency framework supporting preemptive multitasking with minimal footprint.
 
 [![crates.io][crates-image]][crates-link]
 [![Documentation][docs-image]][docs-link]
@@ -21,6 +22,14 @@ delegating the scheduling to hardware.
 ## Status
 
 Very much work-in-progress!
+
+Current peripherals that mostly work:
+- I2C, SPI, Serial (with all pins)
+- USB FS device
+
+Next up will be:
+- Flash (towards [littleFS][littlefs])
+- CASPER (towards even faster [`salty`][salty])
 
 See also the low-level companion library [LPC55S6x PAC][lpc55s6x-pac].
 
@@ -58,16 +67,21 @@ make run-example EXAMPLE=rtfm_led  # or any other example
 
 [Apache-2.0][apache2-link] or [MIT][mit-link].
 
-Parts of the code are directly lifted from the [LPC8xx HALs][lpc8xx-hal].
+Parts of the code are directly lifted from the [LPC8xx HAL][lpc8xx-hal], others
+from the various [STM32 HALs][stm32-rs].
 
-[//]: # (links)
+[//]: # "links"
 
 [nxp-lpc55s6x]: https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/lpc5500-cortex-m33:LPC5500_SERIES
 [cortex-m33]: https://developer.arm.com/ip-products/processors/cortex-m/cortex-m33
 [embedded-hal]: https://lib.rs/embedded-hal
+[usb-device]: https://lib.rs/usb-device
 [cortex-m-rtfm]: https://lib.rs/cortex-m-rtfm
 [lpc55s6x-pac]: https://lib.rs/lpc55s6x-pac
 [lpc8xx-hal]: https://github.com/lpc-rs/lpc8xx-hal
+[stm32-rs]: https://github.com/stm32-rs
+[littlefs]: https://github.com/ARMmbed/littlefs
+[salty]: https://github.com/nickray/salty
 [examples]: https://github.com/nickray/lpc55s6x-hal/tree/master/examples
 [lpcxpresso55s69]: https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/lpc5500-cortex-m33/lpcxpresso55s69-development-board:LPC55S69-EVK
 [jlink-fw]: https://www.segger.com/products/debug-probes/j-link/models/other-j-links/lpcxpresso-on-board/

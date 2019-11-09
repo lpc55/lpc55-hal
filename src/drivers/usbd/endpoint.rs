@@ -1,8 +1,5 @@
 use core::{
     cmp::min,
-    sync::atomic::{
-        compiler_fence, Ordering,
-    },
 };
 
 use cortex_m::interrupt::{Mutex, CriticalSection};
@@ -207,9 +204,7 @@ impl Endpoint {
             let ep_out_offset = i << 1;
             let ep_out_mask = 1u32 << ep_out_offset;
 
-            compiler_fence(Ordering::SeqCst);
             let ep_out_int = (usb.intstat.read().bits() & ep_out_mask) != 0;
-            compiler_fence(Ordering::SeqCst);
 
             let ep_out_is_active = epl.eps[i].ep_out[0].read().a().is_active();
 
@@ -221,20 +216,15 @@ impl Endpoint {
                 return Err(UsbError::WouldBlock);
             }
 
-            compiler_fence(Ordering::SeqCst);
-
             let out_buf = self.out_buf.as_ref().unwrap().borrow(cs);
             let nbytes = epl.eps[i].ep_out[0].read().nbytes().bits() as usize;
-            compiler_fence(Ordering::SeqCst);
 
             // let count = min((out_buf.capacity() - nbytes) as usize, buf.len());
             let count = (out_buf.capacity() - nbytes) as usize;
 
             out_buf.read(&mut buf[..count]);
-            compiler_fence(Ordering::SeqCst);
 
             unsafe { usb.intstat.write(|w| w.bits(ep_out_mask)) };
-            compiler_fence(Ordering::SeqCst);
 
             // self.reset_out_buf(cs, epl);
             epl.eps[i].ep_out[0].modify(|_, w| w
@@ -244,7 +234,6 @@ impl Endpoint {
                 // .d().enabled()
                 // .s().not_stalled()
             );
-            compiler_fence(Ordering::SeqCst);
 
             Ok(count)
 

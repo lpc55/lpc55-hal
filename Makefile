@@ -50,17 +50,17 @@ build-examples-verbosely:
 #
 
 jlink:
-	JLinkGDBServer -device LPC55S69 -if SWD
 	JLinkGDBServer -strict -device LPC55S69 -if SWD -vd
+
 # jlink:
 # 	scripts/jlink
 
-fg-jlink:
-	-pkill JLinkGDBServer
-	JLinkGDBServer -device LPC55S69 -if SWD &> jlink.log &
+# fg-jlink:
+# 	-pkill JLinkGDBServer
+# 	JLinkGDBServer -device LPC55S69 -if SWD &> jlink.log &
 
-stop-jlink:
-	pkill JLinkGDBServer
+# stop-jlink:
+# 	pkill JLinkGDBServer
 
 EXAMPLE := led
 
@@ -92,4 +92,4 @@ update-venv: venv
 	venv/bin/pip install -U -r dev-requirements.txt
 
 test-serial:
-	venv/bin/python test_serial.py
+	venv/bin/python scripts/test_serial.py
