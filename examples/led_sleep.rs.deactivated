@@ -12,6 +12,8 @@ use lpc55s6x_hal as hal;
 #[entry]
 fn main() -> ! {
     let hal = hal::new();
+    let anactrl = hal.anactrl;
+    let pmc = hal.pmc;
     let mut syscon = hal.syscon;
     // dbg!(syscon.get_num_wait_states());
     let mut gpio = hal.gpio.enabled(&mut syscon);
@@ -39,18 +41,17 @@ fn main() -> ! {
         .into_gpio_pin(&mut iocon, &mut gpio)
         .into_output(hal::drivers::pins::Level::High); // start turned off
 
-    // let iocon = iocon.disabled(&mut syscon);
-    // iocon.release();
+    let clocks = hal::ClockRequirements::default()
+        .configure(&mut anactrl, &mut pmc, &mut syscon)
+        .unwrap();
 
-    let clock = hal::peripherals::syscon::Fro1MhzUtickClock::take()
-        .unwrap()
-        .enable(&mut syscon);
+    let token = clocks.support_utick_token().unwrap();
 
-    let mut utick = hal.utick.enabled(&mut syscon, &clock);
+    let mut utick = hal.utick.enabled(&mut syscon, &token);
 
     let delay = hal::time::Ticks {
         value: 500_000,
-        clock: &clock,
+        // clock: &clock,
     }; // 500 ms = 0.5 s
 
     let mut sleep = hal::time::Busy::wrap(&mut utick);

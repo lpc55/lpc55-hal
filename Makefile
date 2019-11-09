@@ -33,18 +33,6 @@ fetch-docs:
 		-o ref/gdbextensions-jlink.pdf
 
 #
-# Maintenance
-#
-
-VERSION := $(shell grep version Cargo.toml|head -1|cut -d' ' -f 3|tr -d '"')
-version:
-	echo $(VERSION)
-
-tag:
-	git tag -a $(VERSION) -m"v$(VERSION)"
-	git push origin $(VERSION)
-
-#
 # CI
 #
 

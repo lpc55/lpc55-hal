@@ -4,35 +4,47 @@
 // extern crate panic_semihosting;  // 4004 bytes
 extern crate panic_halt; // 672 bytes
 
-// use cortex_m::asm;
 use cortex_m_rt::entry;
-// use nb::block;
 
-use hal::{drivers::pins::Level, prelude::*};
 use lpc55s6x_hal as hal;
+use hal::{
+    drivers::pins::Level,
+    prelude::*,
+};
 
-// macro_rules! kitt {
-//     ($( $led:ident ),+ ) => ({
-//         $led.set_low().unwrap();
-//         utick.start(1_000_000u32);
-//         utick.blocking_wait();
-//         $led.set_high().unwrap();
-//     }, *);
-// }
+macro_rules! kitt {
+    ($utick:ident, $($led:ident),+ ) => ($(
+
+        // low = on
+        $led.set_low().unwrap();
+
+        $utick.start(1_000_000u32);
+        $utick.blocking_wait();
+
+        // high = off
+        $led.set_high().unwrap();
+
+    )*);
+}
 
 #[entry]
 fn main() -> ! {
     let hal = hal::new();
+
+    let mut anactrl = hal.anactrl;
+    let mut pmc = hal.pmc;
     let mut syscon = hal.syscon;
+
+    let clocks = hal::ClockRequirements::default()
+        .configure(&mut anactrl, &mut pmc, &mut syscon)
+        .unwrap();
+
+    let token = clocks.support_utick_token().unwrap();
+    let mut utick = hal.utick.enabled(&mut syscon, &token);
+
     let mut gpio = hal.gpio.enabled(&mut syscon);
     let mut iocon = hal.iocon.enabled(&mut syscon);
     let pins = hal::Pins::take().unwrap();
-    let fro1mhz = hal::peripherals::syscon::Fro1MhzUtickClock::take()
-        .unwrap()
-        .enable(&mut syscon);
-    let mut utick = hal.utick.enabled(&mut syscon, &fro1mhz);
-    // let (utick, fro1mhz) = utick.disabled(&mut syscon);
-    // let mut utick = utick.enabled(&mut syscon, fro1mhz);
 
     // R = pio1_6
     // G = pio1_7
@@ -54,21 +66,6 @@ fn main() -> ! {
         .into_output(Level::High);
 
     loop {
-        // kitt!(red, green, blue);
-        red.set_low().unwrap();
-        utick.start(1_000_000u32);
-        // block!(utick.wait()).unwrap();
-        utick.blocking_wait();
-        red.set_high().unwrap();
-
-        green.set_low().unwrap();
-        utick.start(1_000_000u32);
-        utick.blocking_wait();
-        green.set_high().unwrap();
-
-        blue.set_low().unwrap();
-        utick.start(1_000_000u32);
-        utick.blocking_wait();
-        blue.set_high().unwrap();
+        kitt!(utick, red, green, blue);
     }
 }

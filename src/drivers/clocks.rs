@@ -13,6 +13,7 @@ use crate::typestates::{
     // clock_state,
     ClocksSupportFlexcommToken,
     ClocksSupportUsbfsToken,
+    ClocksSupportUtickToken,
 };
 use crate::{
     peripherals::{
@@ -62,6 +63,10 @@ impl Clocks {
         } else {
             None
         }
+    }
+
+    pub fn support_utick_token(&self) -> Option<ClocksSupportUtickToken> {
+        Some(ClocksSupportUtickToken{__: ()})
     }
 }
 
@@ -184,9 +189,14 @@ impl ClockRequirements {
         // unsafe { pmc.raw.pdruncfgclr0.write(|w| w.bits(1u32 << 5)) };
         // but it's hidden in UM, so let's assume this is always cleared
 
-        // turn on both 12mhz and 96mhz clocks
+        // turn on 1mhz, 12mhz and 96mhz clocks
         anactrl.raw.fro192m_ctrl.modify(|_, w| w.ena_96mhzclk().enable());
         anactrl.raw.fro192m_ctrl.modify(|_, w| w.ena_12mhzclk().enable());
+        // TODO: not clear what the difference of these two is; eg. are both needed?
+        syscon.raw.clock_ctrl.modify(|_, w| w
+            .fro1mhz_clk_ena().enable()
+            .fro1mhz_utick_ena().enable()
+        );
 
         let (main_clock, sys_divider) = match freq {
             freq if freq <= 12.mhz() && 12 % freq.0 == 0 => {

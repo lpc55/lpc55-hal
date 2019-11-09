@@ -72,6 +72,9 @@ pub struct ClocksSupportFlexcommToken {pub(crate) __: ()}
 /// which USB clocks have been configured properly.
 pub struct ClocksSupportUsbfsToken {pub(crate) __: ()}
 
+/// Application can only obtain this token from
+/// a frozen Clocks (clock-tree configuration)
+pub struct ClocksSupportUtickToken {pub(crate) __: ()}
 
 pub mod flash_state {
 }

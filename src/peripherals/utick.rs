@@ -7,6 +7,9 @@
 //!
 //! # Examples: led.rs, led_utick.rs
 
+// TODO: move this to drivers section,
+// possibly merge with ctimers when they're implemented
+
 use embedded_hal::timer;
 use nb;
 use void::Void;
@@ -14,56 +17,34 @@ use void::Void;
 use crate::{
     raw,
     peripherals::{
-        syscon::{
-            self,
-            Fro1MhzUtickClock,
-        },
+        syscon,
     },
     typestates::{
         init_state,
+        ClocksSupportUtickToken,
     },
 };
 
 crate::wrap_stateful_peripheral!(Utick, UTICK0);
 
-pub type EnabledUtick<'fro1mhz> =
-    Utick<init_state::Enabled<&'fro1mhz Fro1MhzUtickClock<init_state::Enabled>>>;
+pub type EnabledUtick = Utick<init_state::Enabled>;
 
 impl<State> Utick<State> {
-    /// Enable the UTICK
-    ///
-    /// Consume a UTICK in `Disabled` state, return an instance in `Enabled` state.
-    pub fn enabled<'fro1mhz>(
+    pub fn enabled(
         mut self,
         syscon: &mut syscon::Syscon,
-        fro1mhz: &'fro1mhz Fro1MhzUtickClock<init_state::Enabled>,
-    ) -> EnabledUtick<'fro1mhz> {
+        _clocktree_token: &ClocksSupportUtickToken,
+    ) -> EnabledUtick {
         syscon.enable_clock(&mut self.raw);
         syscon.reset(&mut self.raw);
 
-        // Below is no longer needed, since we require passing in an enabled FRO1MHZ.
-        // Maybe these references will have to go again though due to RTFM...
-        //
-        // NB: UM says bit 4 (FRO_HF_FREQM_ENA), which is incorrect
-        // Empirically, it is enough to enable `fro1mhz_utick_ena`,
-        // even if `fro1mhz_clk_ena` is explicitly disabled.
-        // unsafe { &*crate::raw::SYSCON::ptr() }
-        //     .clock_ctrl
-        //     .modify(|_, w| w.fro1mhz_utick_ena().enable());
-
         Utick {
             raw: self.raw,
-            _state: init_state::Enabled(fro1mhz),
+            _state: init_state::Enabled(()),
         }
     }
 
-    /// Disable the UTICK
-    ///
-    /// Consume a UTICK in `Enabled` state, return an instance in `Disabled` state.
     pub fn disabled(mut self, syscon: &mut syscon::Syscon) -> Utick<init_state::Disabled> {
-        // unsafe { &*crate::raw::SYSCON::ptr() }
-        //     .clock_ctrl
-        //     .modify(|_, w| w.fro1mhz_utick_ena().disable());
         syscon.disable_clock(&mut self.raw);
 
         Utick {
@@ -73,7 +54,9 @@ impl<State> Utick<State> {
     }
 }
 
-impl timer::Cancel for EnabledUtick<'_> {
+// TODO: This does not feel like it belongs here.
+
+impl timer::Cancel for EnabledUtick {
     type Error = Void;
 
     fn cancel(&mut self) -> Result<(), Self::Error> {
@@ -84,7 +67,7 @@ impl timer::Cancel for EnabledUtick<'_> {
 }
 
 // TODO: also implement Periodic for UTICK
-impl timer::CountDown for EnabledUtick<'_> {
+impl timer::CountDown for EnabledUtick {
     type Time = u32;
 
     fn start<T>(&mut self, timeout: T)
@@ -117,17 +100,9 @@ impl timer::CountDown for EnabledUtick<'_> {
     }
 }
 
-impl EnabledUtick<'_> {
+// TODO: Either get rid of `nb` or get rid of this
+impl EnabledUtick {
     pub fn blocking_wait(&mut self) {
         while self.raw.stat.read().active().bit_is_set() {}
     }
 }
-
-/// A clock that is usable by the micro-tick timer (UTICK)
-///
-/// This trait is implemented for all clocks that are supported by the UTICK,
-/// which is just FRO1MHZ.
-/// The user shouldn't need to implement this trait themselves.
-pub trait Clock {}
-
-impl Clock for Fro1MhzUtickClock<init_state::Enabled> {}

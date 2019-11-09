@@ -19,13 +19,13 @@
 // use cortex_m_semihosting::dbg;
 
 // use crate::raw;
-use crate::{
-    time::{
-        self,
-        clock,
-    },
-    typestates::init_state,
-};
+// use crate::{
+//     time::{
+//         self,
+//         clock,
+//     },
+//     typestates::init_state,
+// };
 
 crate::wrap_always_on_peripheral!(Syscon, SYSCON);
 
@@ -309,65 +309,3 @@ impl_reset_control!(raw::UTICK0, utick_rst, presetctrl1);
 
 impl_reset_control!(raw::USBFSH, usb0_hostm_rst, usb0_hosts_rst, presetctrl2);
 
-static mut FRO1MHZUTICKCLOCK_TAKEN: bool = false;
-
-pub struct Fro1MhzUtickClock<State = init_state::Disabled> {
-    _state: State,
-}
-
-impl Fro1MhzUtickClock<init_state::Disabled> {
-    pub fn take() -> Option<Self> {
-        if unsafe { FRO1MHZUTICKCLOCK_TAKEN } {
-            None
-        } else {
-            Some(unsafe {
-                FRO1MHZUTICKCLOCK_TAKEN = true;
-                Fro1MhzUtickClock::steal()
-            })
-        }
-    }
-
-    pub fn release(self) {
-        unsafe { FRO1MHZUTICKCLOCK_TAKEN = false };
-    }
-
-    pub unsafe fn steal() -> Self {
-        Fro1MhzUtickClock {
-            _state: init_state::Disabled,
-        }
-    }
-
-    /// Enable the FRO1MHZ UTICK clock
-    pub fn enable(self, syscon: &mut Syscon) -> Fro1MhzUtickClock<init_state::Enabled> {
-        syscon
-            .raw
-            .clock_ctrl
-            .modify(|_, w| w.fro1mhz_utick_ena().enable());
-
-        Fro1MhzUtickClock {
-            _state: init_state::Enabled(()),
-        }
-    }
-}
-
-impl Fro1MhzUtickClock<init_state::Enabled> {
-    /// Disable the FRO1MHZ UTICK clock
-    pub fn disable(self, syscon: &mut Syscon) -> Fro1MhzUtickClock<init_state::Disabled> {
-        syscon
-            .raw
-            .clock_ctrl
-            .modify(|_, w| w.fro1mhz_utick_ena().disable());
-
-        Fro1MhzUtickClock {
-            _state: init_state::Disabled,
-        }
-    }
-}
-
-impl<State> time::Frequency for Fro1MhzUtickClock<State> {
-    fn hz(&self) -> u32 {
-        1_000_000
-    }
-}
-
-impl clock::Enabled for Fro1MhzUtickClock<init_state::Enabled> {}
