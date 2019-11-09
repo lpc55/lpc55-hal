@@ -244,8 +244,8 @@ impl ClockRequirements {
                     .pden_pll0_sscg().poweredon()
                 );
 
-                // TODO: wait at least 6 ms
-                // SDK uses DWT cycles for fastest possible clock speed to do this
+                // wait at least 6 ms for PLL to stabilize
+                crate::wait_at_least(6_000);
 
                 (MainClock::Pll0, 1)
             }

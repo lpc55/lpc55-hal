@@ -24,8 +24,7 @@ Very much work-in-progress!
 
 See also the low-level companion library [LPC55S6x PAC][lpc55s6x-pac].
 
-Until `cortex-m-rtfm` v0.5 is released, it needs to be manually enabled in the `dev-dependencies`,
-and the `rtfm_led` example unhidden.
+This HAL is intended to work with `cortex-m-rtfm` v0.5.
 
 ## Documentation
 

@@ -1,5 +1,39 @@
-// #![allow(non_camel_case_types)]
 #![no_std]
+
+//! This HAL takes a layered approach.
+//!
+//! 1. raw PAC peripherals
+//! 1. HAL peripheral wrappers (under `peripherals`)
+//! 1. HAL drivers (under `drivers`, typically take ownership of one or more peripherals)
+//!
+//! The middle layer is quite thin, notably we model pins and the clock tree
+//! as drivers.
+//!
+//! In as much as possible, it is a goal for this HAL that drivers implement
+//! general interfaces (under `traits`).
+//!
+//! The main intended use case of this HAL is in the context of RTFM.
+//!
+//! To get started without RTFM, try something like:
+//! ```
+//! let hal = hal::new(); // layer 2
+//! let pins = hal::Pins::take().unwrap(); // layer 3
+//!
+//! let mut syscon = hal.syscon;
+//! let mut gpio = hal.gpio.enabled(&mut syscon);
+//! let mut iocon = hal.iocon.enabled(&mut syscon);
+//!
+//! let mut red_led = pins.pio1_6
+//!     .into_gpio_pin(&mut iocon, &mut gpio)
+//!     .into_output(Level::High);
+//!
+//! loop {
+//!     red.set_low().unwrap();
+//!     hal::wait_at_least(300_000);
+//!     red.set_high().unwrap();
+//!     hal::wait_at_least(300_000);
+//! }
+//! ```
 
 pub extern crate lpc55s6x_pac as raw;
 
@@ -179,6 +213,26 @@ impl From<(raw::Peripherals, raw::CorePeripherals)> for Peripherals {
     }
 }
 
+pub fn enable_cycle_counter() {
+    unsafe { &mut raw::CorePeripherals::steal().DWT }.enable_cycle_counter();
+}
+
 pub fn get_cycle_count() -> u32 {
     raw::DWT::get_cycle_count()
+}
+
+/// Delay of last resort :-))
+pub fn wait_at_least(delay_usecs: u32) {
+    enable_cycle_counter();
+    let max_cpu_speed = 150_000_000; // via PLL
+    let period = max_cpu_speed / 1_000_000;
+
+    let current = get_cycle_count() as u64;
+    let mut target = current + period as u64 * delay_usecs as u64;
+    if target > 0xFFFF_FFFF {
+        // wait for wraparound
+        target -= 0xFFFF_FFFF;
+        while target < get_cycle_count() as u64 { continue; }
+    }
+    while target > get_cycle_count() as u64 { continue; }
 }
