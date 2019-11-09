@@ -2,6 +2,11 @@
 Hardware Abstraction Layer (HAL) for [NXP LPC55S6x][nxp-lpc55s6x] [Cortex-M33][cortex-m33] microcontrollers,
 written in Rust.
 
+[![Build Status][build-image]][build-link]
+[![crates.io][crates-image]][crates-link]
+![LICENSE][license-image]
+[![Documentation][docs-image]][docs-link]
+
 LPC55S6x HAL provides a high-level interface to the features of these LPC55S6x MCUs, which is safe,
 convenient and efficient. It leverages Rust's type system to prevent common mistakes, such as attempting
 to use an uninitialized peripheral; these will be caught by compile-time errors.
@@ -13,11 +18,6 @@ It also implements the [`usb-device`][usb-device] framework.
 
 Moreover, this library is compatible with the Cortex-M implementation of [RTFM][cortex-m-rtfm],
 a concurrency framework supporting preemptive multitasking with minimal footprint.
-
-[![crates.io][crates-image]][crates-link]
-[![Documentation][docs-image]][docs-link]
-![LICENSE][license-image]
-[![Build Status][build-image]][build-link]
 
 ## Status
 
@@ -42,9 +42,9 @@ The API documentation is located at <https://docs.rs/lpc55s6x-hal>.
 In addition, `make fetch-docs` downloads various vendor-supplied documentation:
 
 - [LPC55S6x Data Sheet][datasheet]
-- [LPC55S6x User Manual][usermanual]
+- [LPC55S6x User Manual][usermanual] (requires an NXP account)
 - [LPC55S6x Errata][errata]
-- [Cortex-M33 Generic User Guide][genericuserguide] (requires an NXP account)
+- [Cortex-M33 Generic User Guide][genericuserguide]
 - [LPCXpresso55S69 Development Board User Manual][evkusermanual] (requires an NXP account)
 
 ## Examples
@@ -82,14 +82,14 @@ from the various [STM32 HALs][stm32-rs].
 [stm32-rs]: https://github.com/stm32-rs
 [littlefs]: https://github.com/ARMmbed/littlefs
 [salty]: https://github.com/nickray/salty
-[examples]: https://github.com/nickray/lpc55s6x-hal/tree/master/examples
+[examples]: https://github.com/nickray/lpc55s6x-hal/tree/main/examples
 [lpcxpresso55s69]: https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/lpc5500-cortex-m33/lpcxpresso55s69-development-board:LPC55S69-EVK
 [jlink-fw]: https://www.segger.com/products/debug-probes/j-link/models/other-j-links/lpcxpresso-on-board/
 
 [crates-image]: https://img.shields.io/crates/v/lpc55s6x-hal.svg?style=flat-square
 [crates-link]: https://crates.io/crates/lpc55s6x-hal
-[build-image]: https://img.shields.io/circleci/build/github/nickray/lpc55s6x-hal/master.svg?style=flat-square
-[build-link]: https://circleci.com/gh/nickray/lpc55s6x-hal/tree/master
+[build-image]: https://img.shields.io/circleci/build/github/nickray/lpc55s6x-hal/main.svg?style=flat-square
+[build-link]: https://circleci.com/gh/nickray/lpc55s6x-hal/tree/main
 [docs-image]: https://docs.rs/lpc55s6x-hal/badge.svg?style=flat-square
 [docs-link]: https://docs.rs/lpc55s6x-hal
 
