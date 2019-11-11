@@ -6,6 +6,7 @@ written in Rust.
 [![crates.io][crates-image]][crates-link]
 ![LICENSE][license-image]
 [![Documentation][docs-image]][docs-link]
+[![Documentation (master)][docs-master-image]][docs-master-link]
 
 LPC55S6x HAL provides a high-level interface to the features of these LPC55S6x MCUs, which is safe,
 convenient and efficient. It leverages Rust's type system to prevent common mistakes, such as attempting
@@ -92,6 +93,8 @@ from the various [STM32 HALs][stm32-rs].
 [build-link]: https://circleci.com/gh/nickray/lpc55s6x-hal/tree/main
 [docs-image]: https://docs.rs/lpc55s6x-hal/badge.svg?style=flat-square
 [docs-link]: https://docs.rs/lpc55s6x-hal
+[docs-master-image]: https://img.shields.io/badge/docs-master-blue?style=flat-square
+[docs-master-link]: https://lpc55-hal.netlify.com
 
 [license-image]: https://img.shields.io/badge/license-Apache2.0%2FMIT-blue.svg??style=flat-square
 [apache2-link]: https://spdx.org/licenses/Apache-2.0.html
