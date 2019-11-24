@@ -33,14 +33,14 @@ void = { version = "1", default-features = false }
 # salty = { path = "../salty", features = ["haase"] }
 
 [dev-dependencies]
-# aes-soft = "0.3"
+aes-soft = "0.3"
 cortex-m-rt = "0.6"
-# cortex-m-rtfm = "0.5.1"
+cortex-m-rtfm = "0.5.1"
 cortex-m-semihosting = "0.3"
 heapless = "0.5"
 panic-halt  = "0.2"
 panic-semihosting = { version = "0.5", features = ["jlink-quirks"] }
-salty = { path = "../salty", features = ["haase"] }
+# salty = { path = "../salty", features = ["haase"] }
 # salty = { path = "../salty", features = ["tweetnacl"] }
 ssd1306 = "0.3.0-alpha.2"
 
