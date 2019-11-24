@@ -135,6 +135,12 @@ pub struct Peripherals {
     /// Standard counter/timer (CTIMER) - not HAL-ified.
     pub CTIMER0: raw::CTIMER0,
 
+    /// Group GPIO input interrupt 0 - not HAL-ified.
+    pub GINT0: raw::GINT0,
+
+    /// Group GPIO input interrupt 1 - not HAL-ified.
+    pub GINT1: raw::GINT1,
+
     /// Stateful counter/timer (SCTIMER) - not HAL-ified.
     pub SCT0: raw::SCT0,
 
@@ -189,6 +195,8 @@ impl Peripherals {
             ADC0: p.ADC0,
             CRC_ENGINE: p.CRC_ENGINE,
             CTIMER0: p.CTIMER0,
+            GINT0: p.GINT0,
+            GINT1: p.GINT1,
             SCT0: p.SCT0,
 
             // Core peripherals

@@ -221,6 +221,7 @@ impl_clock_control!(raw::FLEXCOMM7, fc7, ahbclkctrl1);
 impl_clock_control!(raw::FLEXCOMM8, hs_lspi, ahbclkctrl2);
 impl_clock_control!(raw::IOCON, iocon, ahbclkctrl0);
 impl_clock_control!(raw::GINT0, gint, ahbclkctrl0);
+impl_clock_control!(raw::GINT1, gint, ahbclkctrl0);
 impl_clock_control!(raw::PINT, pint, ahbclkctrl0);
 
 impl_clock_control!(raw::USB0, usb0_dev, ahbclkctrl1);
