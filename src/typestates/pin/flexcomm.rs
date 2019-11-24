@@ -85,6 +85,7 @@ impl PinId for NoPio {
     const PORT: usize = !0;
     const NUMBER: u8 = !0;
     const MASK: u32 = !0;
+    const OFFSET: usize = !0;
 
     const TYPE: PinType = PinType::D;
 }

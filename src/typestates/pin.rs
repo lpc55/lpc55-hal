@@ -12,6 +12,11 @@ pub trait PinId {
     /// `0x00000004` for [`PIO0_2`], and so forth.
     const MASK: u32;
 
+    /// This is `0x00000001` for [`PIO0_0`], `0x00000002` for [`PIO0_1`],
+    /// This is `0x00000041` for [`PIO1_0`], `0x00000012` for [`PIO1_1`],
+    /// etc.
+    const OFFSET: usize;
+
     const TYPE: PinType;
 }
 
@@ -38,8 +43,15 @@ pub mod state {
     impl PinState for Unused {}
 
     /// Marks a [`Pin`]  as being assigned to general-purpose I/O
+    ///
+    /// TODO: It would be much nicer to use B or W instead of PIN,
+    /// as then each pin could have just its own register to read
+    /// and write to. This needs some work on the SVD.
     pub struct Gpio<D: Direction> {
+        // pub(crate) b: RegClusterProxy<raw::gpio::B>,
+        // pub(crate) w: RegClusterProxy<raw::gpio::W>,
         pub(crate) dirset: RegClusterProxy<raw::gpio::DIRSET>,
+        pub(crate) dirclr: RegClusterProxy<raw::gpio::DIRCLR>,
         pub(crate) pin: RegClusterProxy<raw::gpio::PIN>,
         pub(crate) set: RegClusterProxy<raw::gpio::SET>,
         pub(crate) clr: RegClusterProxy<raw::gpio::CLR>,

@@ -33,6 +33,9 @@ use crate::{
 
 // UM 41.4.7 says: need >= 12Mhz for USBFS
 // Empirically, this does not enumerate though
+// TODO: It seems even Fro12Mhz works, but e.g.
+// PLL at 13.mhz does not - might also be a bug
+// in PLL code ofc
 const MIN_USBFS_FREQ: Megahertz = Megahertz(24);
 const DEFAULT_FREQ: Megahertz = Megahertz(12);
 

@@ -10,6 +10,7 @@
 // TODO: move this to drivers section,
 // possibly merge with ctimers when they're implemented
 
+use core::convert::Infallible;
 use embedded_hal::timer;
 use nb;
 use void::Void;
@@ -57,7 +58,7 @@ impl<State> Utick<State> {
 // TODO: This does not feel like it belongs here.
 
 impl timer::Cancel for EnabledUtick {
-    type Error = Void;
+    type Error = Infallible;
 
     fn cancel(&mut self) -> Result<(), Self::Error> {
         // A value of 0 stops the timer.

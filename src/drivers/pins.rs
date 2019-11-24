@@ -162,7 +162,10 @@ macro_rules! pins {
                     Pin {
                         id: self.id,
                         state: state::Gpio {
+                            // b: RegClusterProxy::new(),
+                            // w: RegClusterProxy::new(),
                             dirset: RegClusterProxy::new(),
+                            dirclr: RegClusterProxy::new(),
                             pin: RegClusterProxy::new(),
                             set: RegClusterProxy::new(),
                             clr: RegClusterProxy::new(),
@@ -199,8 +202,9 @@ macro_rules! pins {
 
             impl PinId for $pin {
                 const PORT: usize = $port;
-                const NUMBER: u8    = $number;
-                const MASK: u32   = 0x1 << $number;
+                const NUMBER: u8 = $number;
+                const MASK: u32 = 0x1 << $number;
+                const OFFSET: usize = (0x20 << $port) + (0x1 << $number);
                 const TYPE: PinType = $type;
             }
         )*

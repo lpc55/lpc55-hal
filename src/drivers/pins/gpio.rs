@@ -1,6 +1,7 @@
 use crate::traits::{
     wg::{
         digital::v2::{
+            InputPin,
             OutputPin,
             StatefulOutputPin,
         },
@@ -23,15 +24,21 @@ use super::Pin;
 
 use crate::{
     raw::gpio::{
+        // B,
+        // W,
         CLR,
         DIRSET,
+        DIRCLR,
         PIN,
         SET,
     },
     reg_cluster,
 };
 
+// reg_cluster!(B, B, raw::GPIO, b);
+// reg_cluster!(W, W, raw::GPIO, w);
 reg_cluster!(DIRSET, DIRSET, raw::GPIO, dirset);
+reg_cluster!(DIRCLR, DIRCLR, raw::GPIO, dirclr);
 reg_cluster!(PIN, PIN, raw::GPIO, pin);
 reg_cluster!(SET, SET, raw::GPIO, set);
 reg_cluster!(CLR, CLR, raw::GPIO, clr);
@@ -41,7 +48,7 @@ impl<T> OutputPin for Pin<T, state::Gpio<direction::Output>>
 where
     T: PinId,
 {
-    type Error = void::Void;
+    type Error = core::convert::Infallible;
 
     /// Set the pin output to HIGH
     fn set_high(&mut self) -> Result<(), Self::Error> {
@@ -69,6 +76,23 @@ where
     }
 }
 
+impl<T> InputPin for Pin<T, state::Gpio<direction::Input>>
+where
+    T: PinId,
+{
+    type Error = core::convert::Infallible;
+
+    fn is_high(&self) -> Result<bool, Self::Error> {
+        // Ok(self.state.b[T::OFFSET].b_.read().pbyte())
+        Ok(self.state.pin[T::PORT].read().port().bits() & T::MASK == T::MASK)
+    }
+
+    fn is_low(&self) -> Result<bool, Self::Error> {
+        // Ok(!self.state.b.b_[T::OFFSET].read().pbyte())
+        Ok(!self.state.pin[T::PORT].read().port().bits() & T::MASK == T::MASK)
+    }
+}
+
 impl<T, D> Pin<T, state::Gpio<D>>
 where
     T: PinId,
@@ -92,12 +116,45 @@ where
             id: self.id,
 
             state: state::Gpio {
+                // b: RegClusterProxy::new(),
+                // w: RegClusterProxy::new(),
                 dirset: RegClusterProxy::new(),
+                dirclr: RegClusterProxy::new(),
                 pin: RegClusterProxy::new(),
                 set: RegClusterProxy::new(),
                 clr: RegClusterProxy::new(),
 
                 _direction: direction::Output,
+            },
+        }
+    }
+}
+
+impl<T, D> Pin<T, state::Gpio<D>>
+where
+    T: PinId,
+    D: direction::NotInput,
+{
+    pub fn into_input(self) -> Pin<T, state::Gpio<direction::Input>> {
+
+        // currently, `into_gpio_pin()` sets `.digimode().digital()` in IOCON,
+        // meaning input is enabled for all pins
+
+        self.state.dirclr[T::PORT].write(|w| unsafe { w.dirclrp().bits(T::MASK) });
+
+        Pin {
+            id: self.id,
+
+            state: state::Gpio {
+                // b: RegClusterProxy::new(),
+                // w: RegClusterProxy::new(),
+                dirset: RegClusterProxy::new(),
+                dirclr: RegClusterProxy::new(),
+                pin: RegClusterProxy::new(),
+                set: RegClusterProxy::new(),
+                clr: RegClusterProxy::new(),
+
+                _direction: direction::Input,
             },
         }
     }
