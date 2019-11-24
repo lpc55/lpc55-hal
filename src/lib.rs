@@ -44,7 +44,11 @@ pub mod macros;
 
 pub mod time;
 pub mod traits;
+
 pub mod typestates;
+pub use typestates::{
+    init_state::Enabled,
+};
 
 pub mod peripherals;
 pub use peripherals::{
@@ -80,6 +84,10 @@ pub fn new() -> Peripherals {
         raw::Peripherals::take().expect("raw device peripherals already taken elsewhere"),
         raw::CorePeripherals::take().expect("raw core peripherals already taken elsewhere"),
     ))
+}
+
+pub fn from(raw: (raw::Peripherals, raw::CorePeripherals)) -> Peripherals {
+    Peripherals::from(raw)
 }
 
 /// This is the entry point to the HAL API.
