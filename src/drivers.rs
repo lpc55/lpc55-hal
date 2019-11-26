@@ -20,6 +20,9 @@ pub use pins::{
 
 // pub mod flash;
 
+pub mod gint;
+pub use gint::GroupInterrupt;
+
 pub mod i2c;
 pub use i2c::I2cMaster;
 

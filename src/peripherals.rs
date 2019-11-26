@@ -23,6 +23,7 @@ pub mod anactrl;
 pub mod casper;
 pub mod flash;
 pub mod flexcomm;
+pub mod gint;
 pub mod gpio;
 pub mod iocon;
 pub mod pmc;

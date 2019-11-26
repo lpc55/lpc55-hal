@@ -1,3 +1,5 @@
+use core::ops::Deref;
+
 // TODO: is this renaming confusing?
 // Using the name as is is not so nice
 // `wg` is for "Rust Embedded Working Group (WG)"
@@ -53,3 +55,6 @@ pub mod reg_proxy {
     }
 
 }
+
+// maybe put in submodule?
+pub trait Gint: Deref<Target = crate::raw::gint0::RegisterBlock> {}

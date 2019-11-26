@@ -39,7 +39,7 @@ pub extern crate lpc55s6x_pac as raw;
 
 pub mod prelude;
 
-#[macro_use]
+// #[macro_use]
 pub mod macros;
 
 pub mod time;
@@ -57,6 +57,7 @@ pub use peripherals::{
     flash::Flash,
     flexcomm::Flexcomm,
     gpio::Gpio,
+    gint::Gint,
     iocon::Iocon,
     pmc::Pmc,
     rng::Rng,
@@ -108,6 +109,9 @@ pub struct Peripherals {
     /// Flexcomm Interface Serial Communication
     pub flexcomm: Flexcomm,
 
+    /// Group GPIO Input Interrupt
+    pub gint: Gint,
+
     /// General-purpose I/O (GPIO)
     pub gpio: Gpio,
 
@@ -134,12 +138,6 @@ pub struct Peripherals {
 
     /// Standard counter/timer (CTIMER) - not HAL-ified.
     pub CTIMER0: raw::CTIMER0,
-
-    /// Group GPIO input interrupt 0 - not HAL-ified.
-    pub GINT0: raw::GINT0,
-
-    /// Group GPIO input interrupt 1 - not HAL-ified.
-    pub GINT1: raw::GINT1,
 
     /// Stateful counter/timer (SCTIMER) - not HAL-ified.
     pub SCT0: raw::SCT0,
@@ -184,6 +182,7 @@ impl Peripherals {
                 peripherals::flexcomm::Flexcomm7::from((p.FLEXCOMM7, p.I2C7, p.I2S7, p.SPI7, p.USART7)),
                 peripherals::flexcomm::Flexcomm8::from((p.FLEXCOMM8, p.SPI8)),
             ),
+            gint: Gint::from((p.GINT0, p.GINT1)),
             gpio: Gpio::from(p.GPIO),
             iocon: Iocon::from(p.IOCON),
             pmc: Pmc::from(p.PMC),
@@ -195,8 +194,6 @@ impl Peripherals {
             ADC0: p.ADC0,
             CRC_ENGINE: p.CRC_ENGINE,
             CTIMER0: p.CTIMER0,
-            GINT0: p.GINT0,
-            GINT1: p.GINT1,
             SCT0: p.SCT0,
 
             // Core peripherals
