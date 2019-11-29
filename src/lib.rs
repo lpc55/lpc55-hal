@@ -16,7 +16,7 @@
 //!
 //! To get started without RTFM, try something like:
 //! ```
-//! let hal = hal::new(); // layer 2
+//! let hal = hal::Peripherals::take().unwrap(); // layer 2
 //! let pins = hal::Pins::take().unwrap(); // layer 3
 //!
 //! let mut syscon = hal.syscon;
@@ -78,16 +78,26 @@ pub use drivers::{
 };
 
 
-/// This is the main (monolithic) entry point to the HAL for non-RTFM applications.
-/// For RTFM, use `hal::<Peripheral>::from(<raw_peripheral>)` as needed.
 pub fn new() -> Peripherals {
-    Peripherals::from((
-        raw::Peripherals::take().expect("raw device peripherals already taken elsewhere"),
-        raw::CorePeripherals::take().expect("raw core peripherals already taken elsewhere"),
-    ))
+    take().unwrap()
 }
 
+/// This is the main (monolithic) entry point to the HAL for non-RTFM applications.
+/// For RTFM, use `hal::<Peripheral>::from(<raw_peripheral>)` as needed.
+pub fn take() -> Option<Peripherals> {
+    Some(Peripherals::from((
+        raw::Peripherals::take()?,//.expect("raw device peripherals already taken elsewhere"),
+        raw::CorePeripherals::take()?,//.expect("raw core peripherals already taken elsewhere"),
+    )))
+}
+
+#[cfg(not(feature = "rtfm-peripherals"))]
 pub fn from(raw: (raw::Peripherals, raw::CorePeripherals)) -> Peripherals {
+    Peripherals::from(raw)
+}
+
+#[cfg(feature = "rtfm-peripherals")]
+pub fn from(raw: (raw::Peripherals, rtfm::Peripherals)) -> Peripherals {
     Peripherals::from(raw)
 }
 
@@ -160,12 +170,17 @@ pub struct Peripherals {
     /// System Control Block (SCB) - core peripheral
     pub SCB: raw::SCB,
 
+    #[cfg(not(feature = "rtfm-peripherals"))]
     /// SysTick: System Timer - core peripheral
+    #[cfg(not(feature = "rtfm-peripherals"))]
     pub SYST: raw::SYST,
 }
 
-impl Peripherals {
-    fn new(p: raw::Peripherals, cp: raw::CorePeripherals) -> Self {
+#[cfg(feature = "rtfm-peripherals")]
+impl From<(raw::Peripherals, rtfm::Peripherals)> for Peripherals {
+    fn from(raw: (raw::Peripherals, rtfm::Peripherals)) -> Self {
+        let cp = raw.1;
+        let p = raw.0;
         Peripherals {
             // HAL peripherals
             anactrl: Anactrl::from(p.ANACTRL),
@@ -203,27 +218,82 @@ impl Peripherals {
             MPU: cp.MPU,
             NVIC: cp.NVIC,
             SCB: cp.SCB,
-            SYST: cp.SYST,
         }
     }
-
-    pub fn take() -> Option<Self> {
-        Some(Self::new(
-            raw::Peripherals::take()?,
-            raw::CorePeripherals::take()?,
-        ))
-    }
-
-    pub unsafe fn steal() -> Self {
-        Self::new(raw::Peripherals::steal(), raw::CorePeripherals::steal())
-    }
-
 }
 
 impl From<(raw::Peripherals, raw::CorePeripherals)> for Peripherals {
     fn from(raw: (raw::Peripherals, raw::CorePeripherals)) -> Self {
-        Peripherals::new(raw.0, raw.1)
+        let cp = raw.1;
+        let p = raw.0;
+        Peripherals {
+            // HAL peripherals
+            anactrl: Anactrl::from(p.ANACTRL),
+            casper: Casper::from(p.CASPER),
+            flash: Flash::from(p.FLASH),
+            flexcomm: (
+                peripherals::flexcomm::Flexcomm0::from((p.FLEXCOMM0, p.I2C0, p.I2S0, p.SPI0, p.USART0)),
+                peripherals::flexcomm::Flexcomm1::from((p.FLEXCOMM1, p.I2C1, p.I2S1, p.SPI1, p.USART1)),
+                peripherals::flexcomm::Flexcomm2::from((p.FLEXCOMM2, p.I2C2, p.I2S2, p.SPI2, p.USART2)),
+                peripherals::flexcomm::Flexcomm3::from((p.FLEXCOMM3, p.I2C3, p.I2S3, p.SPI3, p.USART3)),
+                peripherals::flexcomm::Flexcomm4::from((p.FLEXCOMM4, p.I2C4, p.I2S4, p.SPI4, p.USART4)),
+                peripherals::flexcomm::Flexcomm5::from((p.FLEXCOMM5, p.I2C5, p.I2S5, p.SPI5, p.USART5)),
+                peripherals::flexcomm::Flexcomm6::from((p.FLEXCOMM6, p.I2C6, p.I2S6, p.SPI6, p.USART6)),
+                peripherals::flexcomm::Flexcomm7::from((p.FLEXCOMM7, p.I2C7, p.I2S7, p.SPI7, p.USART7)),
+                peripherals::flexcomm::Flexcomm8::from((p.FLEXCOMM8, p.SPI8)),
+            ),
+            gint: Gint::from((p.GINT0, p.GINT1)),
+            gpio: Gpio::from(p.GPIO),
+            iocon: Iocon::from(p.IOCON),
+            pmc: Pmc::from(p.PMC),
+            syscon: Syscon::from(p.SYSCON),
+            usbfs: Usbfs::from((p.USB0, p.USBFSH)),
+            utick: Utick::from(p.UTICK0),
+
+            // Raw peripherals
+            ADC0: p.ADC0,
+            CRC_ENGINE: p.CRC_ENGINE,
+            CTIMER0: p.CTIMER0,
+            SCT0: p.SCT0,
+
+            // Core peripherals
+            CPUID: cp.CPUID,
+            DCB: cp.DCB,
+            DWT: cp.DWT,
+            MPU: cp.MPU,
+            NVIC: cp.NVIC,
+            SCB: cp.SCB,
+            #[cfg(not(feature = "rtfm-peripherals"))]
+            SYST: cp.SYST,
+        }
     }
+}
+
+impl Peripherals {
+
+    #[cfg(not(feature = "rtfm-peripherals"))]
+    pub fn take() -> Option<Self> {
+        Some(Self::from((
+            raw::Peripherals::take()?,
+            raw::CorePeripherals::take()?,
+        )))
+    }
+
+    // rtfm::Peripherals::take does not exist
+    //
+    // #[cfg(feature = "rtfm-peripherals")]
+    // pub fn take() -> Option<Self> {
+    //     Some(Self::from((
+    //         raw::Peripherals::take()?,
+    //         rtfm::Peripherals::take()?,
+    //     )))
+    // }
+
+    #[cfg(not(feature = "rtfm-peripherals"))]
+    pub unsafe fn steal() -> Self {
+        Self::from((raw::Peripherals::steal(), raw::CorePeripherals::steal()))
+    }
+
 }
 
 pub fn enable_cycle_counter() {
