@@ -6,14 +6,14 @@
 //! In an RTFM setup, RTFM owns Peripherals and CorePeripherals,
 //! so here use
 //! ```
-//! use lpc55_hal as hal;
+//! use lpc55s6x_hal as hal;
 //!
 //! let syscon = hal::Syscon::from(device::SYSCON);
 //! ```
 //!
 //! In a non-RTFM setup, to use a fully HAL-driven approach:
 //! ```
-//! use lpc55_hal as hal;
+//! use lpc55s6x_hal as hal;
 //!
 //! let hal = hal::new()
 //! let syscon = hal.syscon;
@@ -31,3 +31,4 @@ pub mod rng;
 pub mod syscon;
 pub mod usbfs;
 pub mod utick;
+pub mod puf;
