@@ -1,19 +1,19 @@
 [package]
-name = "lpc55s6x-hal"
+name = "lpc55-hal"
 version = "0.0.2"
 edition = "2018"
 description   = "Hardware Abstraction Layer (HAL) for the NXP LPC55S6x ARM Cortex-33 microcontrollers"
-repository = "https://github.com/nickray/lpc55s6x-hal"
+repository = "https://github.com/nickray/lpc55-hal"
 license = "Apache-2.0 OR MIT"
 readme = "README.md"
-documentation = "https://docs.rs/lpc55s6x-hal"
+documentation = "https://docs.rs/lpc55-hal"
 keywords = ["no-std", "cortex-m", "nxp", "lpc", "embedded-hal-impl"]
 categories = ["embedded", "no-std"]
 authors = ["Nicolas Stalder <n@stalder.io>", "Hanno Braun <hanno@braun-robotics.com>"]
 build = "build.rs"
 
 [badges]
-circle-ci = { repository = "nickray/lpc55s6x-hal" }
+circle-ci = { repository = "nickray/lpc55-hal" }
 
 [dependencies]
 bare-metal = "0.2"
