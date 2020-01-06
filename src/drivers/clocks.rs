@@ -140,8 +140,8 @@ impl ClockRequirements {
     // generated via `scripts/generate-pll-settings.py`,
     // massaged a bit by hand
     fn get_pll(freq: u32) -> Pll {
-        assert!(freq >= 5);
-        assert!(freq <= 150);
+        debug_assert!(freq >= 5);
+        debug_assert!(freq <= 150);
         // let ns: [u32; 9] = [1, 2, 3, 4, 6, 8, 12, 16, 24];
         // let ns: [u32; 2] = [1, 2];
         // let ps: [u32; 11] = [2, 3, 4, 6, 8, 9, 12, 16, 18, 24, 30];
@@ -263,7 +263,7 @@ impl ClockRequirements {
                 (MainClock::Pll0, 1)
             }
         };
-        assert!(sys_divider < 256);
+        debug_assert!(sys_divider < 256);
         let sys_divider = sys_divider as u8;
 
         if self.support_usbfs && main_clock != MainClock::Fro96Mhz {

@@ -42,6 +42,7 @@ pub struct Pin<T: PinId, S: state::PinState> {
     pub(crate) state: S,
 }
 
+
 impl Pin<Pio0_22, state::Unused> {
     pub fn into_usb0_vbus_pin(
         self,

@@ -17,8 +17,6 @@ pub use embedded_hal as wg;
 // Idea is to try and have (peripheral) drivers implement
 // a well-designed trait.
 
-// pub use flash;
-
 pub mod reg_proxy {
     /// Implemented for registers that `RegProxy` can proxy
     ///
@@ -58,3 +56,6 @@ pub mod reg_proxy {
 
 // maybe put in submodule?
 pub trait Gint: Deref<Target = crate::raw::gint0::RegisterBlock> {}
+
+pub mod flash;
+

@@ -69,7 +69,7 @@ pub use peripherals::{
 pub mod drivers;
 pub use drivers::{
     ClockRequirements,
-    // Flash,
+    FlashGordon,
     I2cMaster,
     SpiMaster,
     Pin,
@@ -149,6 +149,9 @@ pub struct Peripherals {
     /// Standard counter/timer (CTIMER) - not HAL-ified.
     pub CTIMER0: raw::CTIMER0,
 
+    pub FLASH_CMPA: raw::FLASH_CMPA,
+    pub FLASH_CFPA0: raw::FLASH_CFPA0,
+
     /// Stateful counter/timer (SCTIMER) - not HAL-ified.
     pub SCT0: raw::SCT0,
 
@@ -209,6 +212,8 @@ impl From<(raw::Peripherals, rtfm::Peripherals)> for Peripherals {
             ADC0: p.ADC0,
             CRC_ENGINE: p.CRC_ENGINE,
             CTIMER0: p.CTIMER0,
+            FLASH_CMPA: p.FLASH_CMPA,
+            FLASH_CFPA0: p.FLASH_CFPA0,
             SCT0: p.SCT0,
 
             // Core peripherals
@@ -254,6 +259,8 @@ impl From<(raw::Peripherals, raw::CorePeripherals)> for Peripherals {
             ADC0: p.ADC0,
             CRC_ENGINE: p.CRC_ENGINE,
             CTIMER0: p.CTIMER0,
+            FLASH_CMPA: p.FLASH_CMPA,
+            FLASH_CFPA0: p.FLASH_CFPA0,
             SCT0: p.SCT0,
 
             // Core peripherals
@@ -303,6 +310,7 @@ pub fn enable_cycle_counter() {
 pub fn get_cycle_count() -> u32 {
     raw::DWT::get_cycle_count()
 }
+
 
 /// Delay of last resort :-))
 pub fn wait_at_least(delay_usecs: u32) {

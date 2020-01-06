@@ -28,4 +28,5 @@ impl<State> Flash<State> {
             _state: init_state::Disabled,
         }
     }
+
 }

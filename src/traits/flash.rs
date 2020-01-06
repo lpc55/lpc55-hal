@@ -1,27 +1,33 @@
-use crate::{
-    states::{
-        flash_state::{
-        },
-    },
+use generic_array::{
+    ArrayLength,
+    GenericArray,
 };
 
-use generic_array::{ArrayLength, GenericArray};
-/
 /// Flash operation error
 #[derive(Copy, Clone, Debug)]
-pub enum FlashError {
-    /// Flash program and erase controller failed to unlock
-    UnlockFailed,
-    /// Address to be programmed contains a value different from '0xFFFF' before programming
-    ProgrammingError,
-    /// Programming a write-protected address of the Flash memory
-    WriteProtectionError,
-    /// Programming and erase controller is busy
-    Busy
+pub enum Error {
+    /// Flash controller is not done yet
+    Busy,
+    /// Error detected (by command execution, or because no command could be executed)
+    Illegal,
+    /// Set during read if ECC decoding logic detects correctable or uncorrectable error
+    EccError,
+    /// (Legal) command failed
+    Failure,
 }
 
+//     /// Flash program and erase controller failed to unlock
+//     UnlockFailed,
+//     /// Address to be programmed contains a value different from '0xFFFF' before programming
+//     ProgrammingError,
+//     /// Programming a write-protected address of the Flash memory
+//     WriteProtectionError,
+//     /// Programming and erase controller is busy
+//     Busy
+// }
+
 /// A type alias for the result of a Flash operation.
-pub type FlashResult = Result<(), FlashError>;
+pub type Result = core::result::Result<(), Error>;
 
 // pub trait FlashOps: Locking + WriteErase + Read {}
 
@@ -53,10 +59,10 @@ pub trait Read<ReadSize: ArrayLength<u8>> {
 pub trait WriteErase<EraseSize: ArrayLength<u8>, WriteSize: ArrayLength<u8>> {
 
     /// check flash status
-    fn status(&self) -> FlashResult;
+    fn status(&self) -> Result;
 
     /// Erase specified flash page.
-    fn erase_page(&mut self, page: u8) -> FlashResult;
+    fn erase_page(&mut self, page: usize) -> Result;
 
     /// The smallest possible write, depends on platform
     /// TODO: can we typecheck/typehint whether `address` must be aligned?
@@ -64,9 +70,9 @@ pub trait WriteErase<EraseSize: ArrayLength<u8>, WriteSize: ArrayLength<u8>> {
                     address: usize,
                     array: &GenericArray<u8, WriteSize>,
                     // cs: &CriticalSection,
-                    ) -> FlashResult;
+                    ) -> Result;
 
-    fn write(&mut self, address: usize, data: &[u8]) -> FlashResult {
+    fn write(&mut self, address: usize, data: &[u8]) -> Result {
         assert!(data.len() % WriteSize::to_usize() == 0);
         assert!(address % WriteSize::to_usize() == 0);
 
@@ -84,66 +90,10 @@ pub trait WriteErase<EraseSize: ArrayLength<u8>, WriteSize: ArrayLength<u8>> {
 
     // probably not so useful, as only applicable after mass erase
     // /// Faster programming
-    // fn program_sixtyfour_bytes(&self, address: usize, data: [u8; 64]) -> FlashResult {
+    // fn program_sixtyfour_bytes(&self, address: usize, data: [u8; 64]) -> Result {
 
-    /// Erase all Flash pages
-    fn erase_all_pages(&mut self) -> FlashResult;
+    // /// Erase all Flash pages
+    // fn erase_all_pages(&mut self) -> Result;
 }
 
-pub struct UnlockGuard<'a, FlashT: Locking> where FlashT: 'a {
-    flash: &'a mut FlashT,
-    should_lock: bool
-}
-
-impl<'a, FlashT: Locking> Drop for UnlockGuard<'a, FlashT> {
-    fn drop(&mut self) {
-        if self.should_lock {
-            self.flash.lock();
-        }
-    }
-}
-
-impl<'a, FlashT: Locking> core::ops::Deref for UnlockGuard<'a, FlashT> {
-    type Target = FlashT;
-
-    fn deref(&self) -> &FlashT {
-        &self.flash
-    }
-}
-
-impl<'a, FlashT: Locking> core::ops::DerefMut for UnlockGuard<'a, FlashT> {
-    fn deref_mut(&mut self) -> &mut FlashT {
-        &mut self.flash
-    }
-}
-
-pub trait LockingImpl where Self: Sized {
-    fn is_locked(&self) -> bool;
-    fn unlock(&mut self);
-    fn lock(&mut self);
-
-    // fn unlocked(&mut self) -> UnlockGuard<Self> {
-    //     let locked = self.is_locked();
-    //     // unlocking an unlocked flash stalls...
-    //     if locked {
-    //         self.unlock();
-    //     }
-    //     UnlockGuard { flash: self, should_lock: locked }
-    // }
-}
-
-pub trait Locking: LockingImpl where Self: Sized {
-    // fn is_locked(&self) -> bool;
-    // fn unlock(&mut self);
-    // fn lock(&mut self);
-
-    fn unlocked(&mut self) -> UnlockGuard<Self> {
-        let locked = self.is_locked();
-        // unlocking an unlocked flash stalls...
-        if locked {
-            self.unlock();
-        }
-        UnlockGuard { flash: self, should_lock: locked }
-    }
-}
 

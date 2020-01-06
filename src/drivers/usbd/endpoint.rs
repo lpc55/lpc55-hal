@@ -47,7 +47,7 @@ impl Endpoint {
 
     pub fn buf_addroff(&self, buf: &EndpointBuffer) -> u16 {
         // need to be 64 byte aligned
-        assert!(buf.addr() & ((1 << 6) - 1) == 0);
+        debug_assert!(buf.addr() & ((1 << 6) - 1) == 0);
         // the bits above 21:6 are stored in databufstart
         (buf.addr() >> 6) as u16
     }
@@ -76,6 +76,18 @@ impl Endpoint {
             .s().not_stalled()
         );
     }
+
+    // pub fn enable_out_interrupt(&self, usb: &USB0) {
+    //     // usb.inten.modify(|r, w| unsafe { w.bits(r.bits() | ((1 << 10) - 1)) } );
+    //     let i = self.index;
+    //     usb.inten.modify(|r, w| unsafe { w.ep_int_en().bits(1 << (i << 1)) });
+    // }
+
+    // pub fn enable_in_interrupt(&self, usb: &USB0) {
+    //     // usb.inten.modify(|r, w| unsafe { w.bits(r.bits() | ((1 << 10) - 1)) } );
+    //     let i = self.index;
+    //     usb.inten.modify(|r, w| unsafe { w.ep_int_en().bits(1 << ((i << 1) + 1)) });
+    // }
 
     // SETUP
     pub fn is_setup_buf_set(&self) -> bool { self.setup_buf.is_some() }
@@ -112,7 +124,7 @@ impl Endpoint {
 
         let i = self.index as usize;
         if i > 0 {
-            assert!(epl.eps[i].ep_in[0].read().a().is_not_active());
+            debug_assert!(epl.eps[i].ep_in[0].read().a().is_not_active());
             // while epl.eps[i].ep_in[0].read().a().is_active() {}
         }
 
@@ -140,11 +152,11 @@ impl Endpoint {
         };
 
         // no support for Isochronous endpoints
-        assert!(ep_type != EndpointType::Isochronous);
+        debug_assert!(ep_type != EndpointType::Isochronous);
 
         // clear all the interrupts
         usb.intstat.write(|w| unsafe { w.bits(!0) } );
-        assert!(usb.intstat.read().bits() == 0);
+        debug_assert!(usb.intstat.read().bits() == 0);
 
         self.reset_out_buf(cs, epl);
         if self.index == 0 {
@@ -178,7 +190,7 @@ impl Endpoint {
             if epl.eps[i].ep_in[0].read().a().is_active() {
                 // NB: With this test in place, `bench_bulk_read` from TestClass fails.
                 // cortex_m_semihosting::hprintln!("can't write yet, EP {} IN still active", i).ok();
-                return Err(UsbError::WouldBlock);
+                // return Err(UsbError::WouldBlock);
             }
             in_buf.write(buf);
             epl.eps[i].ep_in[0].modify(|_, w| w
@@ -257,7 +269,7 @@ impl Endpoint {
                 }
                 setup_buf.read(&mut buf[..8]);
 
-                assert!(usb.intstat.read().ep0out().bit_is_set());
+                debug_assert!(usb.intstat.read().ep0out().bit_is_set());
                 usb.intstat.write(|w| w.ep0out().set_bit());
 
                 // UM insists: clear all these bits *before* clearing DEVCMDSTAT.SETUP
@@ -265,10 +277,10 @@ impl Endpoint {
                 epl.eps[0].ep_in[0].modify(|_, w| w.a().not_active().s().not_stalled());
 
                 usb.intstat.write(|w| w.ep0in().set_bit());
-                assert!(usb.intstat.read().ep0in().bit_is_clear());
+                debug_assert!(usb.intstat.read().ep0in().bit_is_clear());
 
                 usb.devcmdstat.modify(|_, w| w.setup().set_bit());
-                assert!(usb.devcmdstat.read().setup().bit_is_clear());
+                debug_assert!(usb.devcmdstat.read().setup().bit_is_clear());
 
                 // prepare to receive more
                 self.reset_out_buf(cs, epl);

@@ -4,7 +4,7 @@ set history save on
 set confirm off
 
 # find commit-hash using `rustc -Vv`
-set substitute-path /rustc/625451e376bb2e5283fc4741caa0a3e8a2ca4d54 /home/nicolas/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/src/rust
+set substitute-path /rustc/73528e339aae0f17a15ffa49a8ac608f50c6cf14 /home/nicolas/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/src/rust
 
 target extended-remote :2331
 load
@@ -17,5 +17,5 @@ monitor semihosting IOClient 3
 #continue
 #monitor swo enabletarget 0 0 1 0
 # mon SWO EnableTarget 0 48000000 1875000 0
-#continue
+# continue
 # stepi

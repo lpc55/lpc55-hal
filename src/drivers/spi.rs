@@ -98,7 +98,7 @@ where
         );
 
         let div: u32 = 12_000_000 / speed - 1;
-        assert!(div <= 0xFFFF);
+        debug_assert!(div <= 0xFFFF);
         spi.div.modify(|_, w| unsafe { w.divval().bits(div as u16) } );
 
         // spi.raw.fifowr.write(|w| w

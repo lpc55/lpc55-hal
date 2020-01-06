@@ -18,10 +18,7 @@ pub mod endpoint_registers;
 
 // move this into a submodule `bus` again?
 
-use core::{
-    marker::PhantomData,
-    mem,
-};
+use core::mem;
 
 use cortex_m::interrupt::{
     self,
@@ -70,19 +67,20 @@ impl<P> Usb0VbusPin for Pin<P, pin::state::Special<pin::function::USB0_VBUS>> wh
 /// After the bus is enabled, in practice most access won't mutate the object itself
 /// but only endpoint-specific registers and buffers, the access to which is mostly
 /// arbitrated by endpoint handles.
-pub struct UsbBus<P> {
+pub struct UsbBus {
     usb_regs: Mutex<USB0>,
     ep_regs: Mutex<endpoint_registers::Instance>,
     endpoints: [Endpoint; self::constants::NUM_ENDPOINTS],
     ep_allocator: EndpointMemoryAllocator,
     max_endpoint: usize,
-    pin: PhantomData<P>,
 }
 
 
-impl<PIN: Usb0VbusPin + Sync> UsbBus<PIN> {
+impl UsbBus {
     /// Constructs a new USB peripheral driver.
-    pub fn new(usbfsd: EnabledUsbfsDevice, _usb0_vbus_pin: PIN) -> UsbBusAllocator<Self> {
+    pub fn new<PIN>(usbfsd: EnabledUsbfsDevice, _usb0_vbus_pin: PIN) -> UsbBusAllocator<Self>
+        where PIN: Usb0VbusPin + Sync
+    {
         use self::constants::NUM_ENDPOINTS;
 
         let bus = UsbBus {
@@ -101,15 +99,16 @@ impl<PIN: Usb0VbusPin + Sync> UsbBus<PIN> {
 
                 unsafe { mem::transmute::<_, [Endpoint; NUM_ENDPOINTS]>(endpoints) }
             },
-            pin: PhantomData,
         };
 
         UsbBusAllocator::new(bus)
     }
+
 }
 
 
-impl<PINS: Send+Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
+// impl<PINS: Send+Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
+impl usb_device::bus::UsbBus for UsbBus {
 
     // override the default (contrary to USB spec),
     // as describe in the user manual
@@ -138,7 +137,7 @@ impl<PINS: Send+Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
                     let size = max_packet_size;
                     let buffer = self.ep_allocator.allocate_buffer(size as _)?;
                     ep.set_out_buf(buffer);
-                    assert!(ep.is_out_buf_set());
+                    debug_assert!(ep.is_out_buf_set());
 
                     if index == 0 {
                         let setup = self.ep_allocator.allocate_buffer(8)?;
@@ -181,9 +180,11 @@ impl<PINS: Send+Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
                     if ep.is_out_buf_set() {
                         ep.reset_out_buf(cs, eps);
                         if index == 0 { ep.reset_setup_buf(cs, eps); }
+                        // ep.enable_out_interrupt(usb);
                     }
                     if ep.is_in_buf_set() {
                         ep.reset_in_buf(cs, eps);
+                        // ep.enable_in_interrupt(usb);
                     }
                 }
             }
@@ -199,12 +200,16 @@ impl<PINS: Send+Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
             // EPLISTSTART
             unsafe {
                 let epliststart = eps.addr;
-                assert!(epliststart as u8 == 0); // needs to be 256 byte aligned
+                debug_assert!(epliststart as u8 == 0); // needs to be 256 byte aligned
                 usb.epliststart.modify(|_, w| w.ep_list().bits(epliststart >> 8));
             }
 
             // ENABLE + CONNECT
             usb.devcmdstat.modify(|_, w| w.dev_en().set_bit().dcon().set_bit());
+
+            // HERE TOO?
+            usb.inten.modify(|r, w| unsafe { w.bits(r.bits() | ((1 << 10) - 1)) } );
+            usb.inten.modify(|r, w| unsafe { w.bits(r.bits() | (1 << 31)) } );
         });
     }
 
@@ -223,6 +228,13 @@ impl<PINS: Send+Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
 
             // clear all interrupts
             usb.intstat.write(|w| unsafe { w.bits(!0) } );
+
+            // enable them
+            // TODO: do this by endpoint
+            // cortex_m_semihosting::hprintln!("inten bef = {:#X}", usb.inten.read().bits()).ok();
+            // usb.inten.modify(|r, w| unsafe { w.bits(r.bits() | ((1 << 10) - 1)) } );
+            // usb.inten.modify(|r, w| unsafe { w.bits(r.bits() | (1 << 31)) } );
+            // cortex_m_semihosting::hprintln!("inten aft = {:#X}", usb.inten.read().bits()).ok();
         });
     }
 
@@ -239,6 +251,9 @@ impl<PINS: Send+Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
         interrupt::free(|cs| {
             let usb = self.usb_regs.borrow(cs);
             let eps = self.ep_regs.borrow(cs);
+            // WOAH WHYY DOES IT WORK WITH THIS??
+            // cortex_m_semihosting::hprintln!("inten = {:#X}", usb.inten.read().bits()).ok();
+            // let _ = usb.inten.read().bits();
 
             let devcmdstat = &usb.devcmdstat;
             let intstat = &usb.intstat;
@@ -246,7 +261,7 @@ impl<PINS: Send+Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
             // Bus reset flag?
             if devcmdstat.read().dres_c().bit_is_set() {
                 devcmdstat.modify(|_, w| w.dres_c().set_bit());
-                // assert!(devcmdstat.read().dres_c().bit_is_clear());
+                // debug_assert!(devcmdstat.read().dres_c().bit_is_clear());
                 return PollResult::Reset
             }
 
@@ -285,7 +300,7 @@ impl<PINS: Send+Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
 
             if intstat_r.ep0in().bit_is_set() {
                 intstat.write(|w| w.ep0in().set_bit());
-                assert!(intstat.read().ep0in().bit_is_clear());
+                debug_assert!(intstat.read().ep0in().bit_is_clear());
                 ep_in_complete |= bit;
 
                 // EP0 needs manual toggling of Active bits
@@ -307,7 +322,7 @@ impl<PINS: Send+Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
                 let out_inactive = eps.eps[i].ep_out[0].read().a().is_not_active();
 
                 if out_int {
-                    assert!(out_inactive);
+                    debug_assert!(out_inactive);
                     ep_out |= bit;
 
                     // let err_code = usb.info.read().err_code().bits();
@@ -332,13 +347,13 @@ impl<PINS: Send+Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
                     //     devcmdstat.read().intonnak_ao().is_enabled(),
                     // ).ok();
 
-                    // assert!(in_inactive);
+                    // debug_assert!(in_inactive);
                 }
                 if in_int && in_inactive {
                     ep_in_complete |= bit;
                     // clear it
                     usb.intstat.write(|w| unsafe { w.bits(1u32 << in_offset) } );
-                    assert!(eps.eps[i].ep_in[0].read().a().is_not_active());
+                    debug_assert!(eps.eps[i].ep_in[0].read().a().is_not_active());
 
                     // let err_code = usb.info.read().err_code().bits();
                     // let addr_set = devcmdstat.read().dev_addr().bits() > 0;

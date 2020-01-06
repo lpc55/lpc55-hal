@@ -20,10 +20,11 @@ bare-metal = "0.2"
 cortex-m = "0.6"
 cortex-m-semihosting = "0.3"
 embedded-hal = { version = "0.2", features = ["unproven"] }
-# generic-array = "0.13.2"
+generic-array = "0.13.2"
 lpc55s6x-pac = "0.0.5"
 
 nb = "0.1"
+# no-panic = "0.1.12"
 # nom = { version = "^5", default-features = false }
 cortex-m-rtfm = { version = "0.5.1", optional = true }
 usb-device = "0.2.3"
@@ -46,6 +47,13 @@ panic-semihosting = { version = "0.5", features = ["jlink-quirks"] }
 # salty = { path = "../salty", features = ["tweetnacl"] }
 sha2 = { version = "0.8.0", default-features = false }
 ssd1306 = "0.3.0-alpha.2"
+# ssd1306 = { git = "https://github.com/jamwaffles/ssd1306.git", branch = "70x42-ish" }
+# ssd1306 = { path = "../ssd1306-tiny" }
+
+# generic-array = "0.13.2"
+# aead = { version = "0.2.0", default-features = false }
+# aead = { path = "../RustCrypto/traits/aead", default-features = false, features = ["heapless"] }
+# chacha20poly1305 = { version = "0.3.0", default-features = false, features = ["heapless", "xchacha20poly1305"] }
 
 [features]
 default = ["rt"]

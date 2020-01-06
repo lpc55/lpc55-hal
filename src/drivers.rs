@@ -18,7 +18,8 @@ pub use pins::{
     Pins,
 };
 
-// pub mod flash;
+pub mod flash;
+pub use flash::FlashGordon;
 
 pub mod gint;
 pub use gint::GroupInterrupt;
