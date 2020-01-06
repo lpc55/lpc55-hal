@@ -6,7 +6,7 @@ use cortex_m::asm;
 use cortex_m_rt::entry;
 use cortex_m_semihosting::{dbg, hprint, hprintln};
 
-use lpc55s6x_hal as hal;
+use lpc55_hal as hal;
 
 // use serde::Serialize;
 // use serde_cbor::Serializer;

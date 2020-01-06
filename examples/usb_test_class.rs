@@ -8,7 +8,7 @@ use cortex_m_rt::entry;
 #[allow(unused_imports)]
 use hal::prelude::*;
 #[allow(unused_imports)]
-use lpc55s6x_hal as hal;
+use lpc55_hal as hal;
 
 use usb_device::test_class::TestClass;
 use hal::drivers::{

@@ -18,7 +18,7 @@ use heapless::{
     i,
     spsc::{Consumer, Producer, Queue},
 };
-use lpc55s6x_hal as hal;
+use lpc55_hal as hal;
 use panic_semihosting as _;
 
 #[rtfm::app(device = hal::raw)]

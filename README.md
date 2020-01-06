@@ -1,5 +1,5 @@
 
-Hardware Abstraction Layer (HAL) for [NXP LPC55S6x][nxp-lpc55s6x] [Cortex-M33][cortex-m33] microcontrollers,
+Hardware Abstraction Layer (HAL) for [NXP LPC55][nxp-lpc55] series [Cortex-M33][cortex-m33] microcontrollers,
 written in Rust.
 
 [![Build Status][build-image]][build-link]
@@ -8,7 +8,7 @@ written in Rust.
 [![Documentation][docs-image]][docs-link]
 [![Documentation (master)][docs-master-image]][docs-master-link]
 
-LPC55S6x HAL provides a high-level interface to the features of these LPC55S6x MCUs, which is safe,
+LPC55 HAL provides a high-level interface to the features of these LPC55 family of MCUs, which is safe,
 convenient and efficient. It leverages Rust's type system to prevent common mistakes, such as attempting
 to use an uninitialized peripheral; these will be caught by compile-time errors.
 
@@ -38,12 +38,12 @@ This HAL is intended to work with `cortex-m-rtfm` v0.5.
 
 ## Documentation
 
-The API documentation is located at <https://docs.rs/lpc55s6x-hal>.
+The API documentation is located at <https://docs.rs/lpc55-hal>.
 
 In addition, `make fetch-docs` downloads various vendor-supplied documentation:
 
 - [LPC55S6x Data Sheet][datasheet]
-- [LPC55S6x User Manual][usermanual] (requires an NXP account)
+- [LPC55 User Manual UM11126][usermanual] (requires an NXP account)
 - [LPC55S6x Errata][errata]
 - [Cortex-M33 Generic User Guide][genericuserguide]
 - [LPCXpresso55S69 Development Board User Manual][evkusermanual] (requires an NXP account)
@@ -73,7 +73,7 @@ from the various [STM32 HALs][stm32-rs].
 
 [//]: # "links"
 
-[nxp-lpc55s6x]: https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/lpc5500-cortex-m33:LPC5500_SERIES
+[nxp-lpc55]: https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/lpc5500-cortex-m33:LPC5500_SERIES
 [cortex-m33]: https://developer.arm.com/ip-products/processors/cortex-m/cortex-m33
 [embedded-hal]: https://lib.rs/embedded-hal
 [usb-device]: https://lib.rs/usb-device
@@ -83,16 +83,16 @@ from the various [STM32 HALs][stm32-rs].
 [stm32-rs]: https://github.com/stm32-rs
 [littlefs]: https://github.com/ARMmbed/littlefs
 [salty]: https://github.com/nickray/salty
-[examples]: https://github.com/nickray/lpc55s6x-hal/tree/main/examples
+[examples]: https://github.com/nickray/lpc55-hal/tree/main/examples
 [lpcxpresso55s69]: https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/lpc5500-cortex-m33/lpcxpresso55s69-development-board:LPC55S69-EVK
 [jlink-fw]: https://www.segger.com/products/debug-probes/j-link/models/other-j-links/lpcxpresso-on-board/
 
-[crates-image]: https://img.shields.io/crates/v/lpc55s6x-hal.svg?style=flat-square
-[crates-link]: https://crates.io/crates/lpc55s6x-hal
-[build-image]: https://img.shields.io/circleci/build/github/nickray/lpc55s6x-hal/main.svg?style=flat-square
-[build-link]: https://circleci.com/gh/nickray/lpc55s6x-hal/tree/main
-[docs-image]: https://docs.rs/lpc55s6x-hal/badge.svg?style=flat-square
-[docs-link]: https://docs.rs/lpc55s6x-hal
+[crates-image]: https://img.shields.io/crates/v/lpc55-hal.svg?style=flat-square
+[crates-link]: https://crates.io/crates/lpc55-hal
+[build-image]: https://img.shields.io/circleci/build/github/nickray/lpc55-hal/main.svg?style=flat-square
+[build-link]: https://circleci.com/gh/nickray/lpc55-hal/tree/main
+[docs-image]: https://docs.rs/lpc55-hal/badge.svg?style=flat-square
+[docs-link]: https://docs.rs/lpc55-hal
 [docs-master-image]: https://img.shields.io/badge/docs-master-blue?style=flat-square
 [docs-master-link]: https://lpc55-hal.netlify.com
 

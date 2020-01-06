@@ -5,7 +5,7 @@ extern crate panic_semihosting;
 use cortex_m_rt::entry;
 use cortex_m_semihosting::{dbg, hprintln};
 
-use lpc55s6x_hal as hal;
+use lpc55_hal as hal;
 use hal::prelude::*;
 
 macro_rules! dbgx {

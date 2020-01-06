@@ -7,7 +7,7 @@ use cortex_m_rt::entry;
 use core::fmt::Write;
 
 use hal::prelude::*;
-use lpc55s6x_hal as hal;
+use lpc55_hal as hal;
 
 use hal::{
     drivers::{

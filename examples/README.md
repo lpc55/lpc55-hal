@@ -1,4 +1,4 @@
-# lpc55s6x-hal examples
+# lpc55-hal examples
 
 We use the LPCXpresso55S69 dev board for testing.
 These would be split out to a board support crate later.

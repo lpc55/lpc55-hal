@@ -7,7 +7,7 @@ extern crate panic_halt; // 672 bytes
 use cortex_m_rt::entry;
 
 use hal::{drivers::pins::Level, prelude::*};
-use lpc55s6x_hal as hal;
+use lpc55_hal as hal;
 
 #[entry]
 fn main() -> ! {

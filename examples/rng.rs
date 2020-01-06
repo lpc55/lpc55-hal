@@ -7,7 +7,7 @@ use cortex_m_rt::entry;
 use cortex_m_semihosting::dbg;
 
 use embedded_hal::blocking::rng::Read;
-use lpc55s6x_hal as hal;
+use lpc55_hal as hal;
 
 #[entry]
 fn main() -> ! {

@@ -5,6 +5,11 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [v0.0.3] - 2019-11-09
+Rename to `lpc55-hal`.
+
+Some work towards Flash.
+
 ## [v0.0.2] - 2019-11-09
 
 Several serial peripheral drivers:

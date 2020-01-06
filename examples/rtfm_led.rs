@@ -5,7 +5,7 @@ extern crate panic_semihosting;
 // extern crate panic_halt;
 use cortex_m_semihosting::dbg;
 
-use lpc55s6x_hal as hal;
+use lpc55_hal as hal;
 use hal::{
     prelude::*,
     drivers::pins::Level,

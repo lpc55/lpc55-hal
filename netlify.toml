@@ -4,4 +4,4 @@
 
 [[redirects]]
   from = "/"
-  to = "/lpc55s6x_hal"
+  to = "/lpc55_hal"
