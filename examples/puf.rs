@@ -18,7 +18,7 @@ use hal::prelude::*;
 #[derive(Debug)]
 pub enum State {
     NotEnrolled,
-    Enrolled = 0x7534ff04,
+    Enrolled = 0x7533ff04,
 }
 
 macro_rules! dump_hex {
@@ -67,10 +67,12 @@ fn main() -> ! {
         let mut write_buf = [0u8; 512];
         let mut tmp_buf = [0u8; 512];
 
-        puf.enroll(&mut ac).unwrap();
+        let puf_enrolled = puf.enroll(&mut ac).unwrap();
+
+        dbg!(&puf_enrolled);
         
-        for i in (0..1000).step_by(40) {  dump_hex!(ac[i..i+40], 40);  }
-        for i in (1000..1192).step_by(8) {  dump_hex!(ac[i..i+8], 8);  }
+        dump_hex!(ac[..16], 16);
+        dump_hex!(ac[1192-16..], 16);
 
         // Clear 3, 512-byte pages for segment: [ 16-byte header | 1192 byte AC ]
         for addr in (PUF_STATE_FLASH .. PUF_STATE_FLASH + 512*3).step_by(512) {
@@ -92,8 +94,10 @@ fn main() -> ! {
 
         dbg!("Reading back...");
         flash.read(PUF_STATE_FLASH + 16, &mut ac2);
-        for i in (0..1000).step_by(40) {  dump_hex!(ac2[i..i+40], 40);  }
-        for i in (1000..1192).step_by(8) {  dump_hex!(ac2[i..i+8], 8);  }
+        dump_hex!(ac2[..16], 16);
+        dump_hex!(ac2[1192-16..], 16);
+
+        dbg!("Now restart this program to derive a key.");
 
     } else {
         dbg!("The device is already enrolled."); 
@@ -101,10 +105,15 @@ fn main() -> ! {
         
         dump_hex!(ac[..16], 16);
         dump_hex!(ac[1192-16..], 16);
+
+        let puf_started = puf.start(&ac).unwrap();
+
+        dbg!("Started.");
+
+        dbg!(&puf_started);
     }
 
 
-    dbg!(&puf);
 
 
     loop {
