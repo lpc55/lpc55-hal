@@ -42,16 +42,17 @@ pub trait Read<ReadSize: ArrayLength<u8>> {
         // TODO: offer a version without restrictions?
         // can round down address, round up buffer length,
         // but where to get the buffer from?
-        assert!(buf.len() % ReadSize::to_usize() == 0);
         assert!(address % ReadSize::to_usize() == 0);
+
+        let mut tmp: GenericArray<u8, ReadSize> = Default::default();
 
         for i in (0..buf.len()).step_by(ReadSize::to_usize()) {
             self.read_native(
                 address + i,
-                GenericArray::from_mut_slice(
-                    &mut buf[i..i + ReadSize::to_usize()]
-                )
+                &mut tmp
             );
+            let slice_end = if (i + ReadSize::to_usize()) < buf.len() { i + ReadSize::to_usize() } else { buf.len() };
+            buf[i..slice_end].copy_from_slice(&tmp[..slice_end-i]);
         }
     }
 }
@@ -77,10 +78,10 @@ pub trait WriteErase<EraseSize: ArrayLength<u8>, WriteSize: ArrayLength<u8>> {
         assert!(address % WriteSize::to_usize() == 0);
 
         // interrupt::free(|cs| {
-            for i in (0..data.len()).step_by(8) {
+            for i in (0..data.len()).step_by(WriteSize::to_usize()) {
                 self.write_native(
                     address + i,
-                    GenericArray::from_slice(&data[i..i + 8]),
+                    GenericArray::from_slice(&data[i..i + WriteSize::to_usize()]),
                     // cs,
                     )?;
             }
