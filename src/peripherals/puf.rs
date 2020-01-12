@@ -55,9 +55,9 @@ impl<State> Puf<State> {
 
 impl Puf<init_state::Enabled> {
 
-    // Enroll a new key for the PUF.  Writes 298-word AC to buffer which should be stored in NV memory.
+    // Enroll a new key for the PUF.  Writes 1192-byte AC to buffer which should be stored in NV memory.
     // Enroll should occur once per device.
-    pub fn enroll(&self, ac_buffer: &mut [u32]) -> Result<()> {
+    pub fn enroll(&self, ac_buffer: &mut [u8; 1192]) -> Result<()> {
         if self.raw.allow.read().allowenroll().bit_is_clear() {
             return Err(Error::NotAllowed);
         }
@@ -76,8 +76,10 @@ impl Puf<init_state::Enabled> {
         let mut count = 0;
         while self.raw.stat.read().busy().bit_is_set() {
             if self.raw.stat.read().codeoutavail().bit_is_set() {
-                ac_buffer[count] = self.raw.codeoutput.read().bits();
-                count += 1;
+                let ac_word = self.raw.codeoutput.read().bits();
+
+                ac_buffer[count..count+4].copy_from_slice( &ac_word.to_ne_bytes() );
+                count += 4;
             }
         }
 
