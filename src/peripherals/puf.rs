@@ -137,7 +137,7 @@ impl<T> Puf<init_state::Enabled<T>> {
         Ok(())
     }
 
-    pub fn set_key(&self, key_size: u32, key_index: u8, user_key: &[u8], key_code: &mut [u8]) -> Result<()>{
+    pub fn set_key(&self, _key_size: u32, _key_index: u8, _user_key: &[u8], _key_code: &mut [u8]) -> Result<()>{
         unimplemented!();
     }
 
