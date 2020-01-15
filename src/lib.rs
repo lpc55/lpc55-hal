@@ -64,6 +64,7 @@ pub use peripherals::{
     syscon::Syscon,
     usbfs::Usbfs,
     utick::Utick,
+    adc::Adc,
 };
 
 pub mod drivers;
