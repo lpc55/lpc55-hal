@@ -126,8 +126,7 @@ impl<T> Puf<init_state::Enabled<T>> {
         self.raw.keysize.write(|w| unsafe {w.bits( ((key_size >> 6) & 0x3f) as u32 )});
         self.raw.keyindex.write(|w| unsafe {w.bits( ((key_index) & 0x0f) as u32 )});
 
-        // FIX PAC
-        self.raw.ctrl.write(|w| unsafe {w.bits( 1<<3 /*GENERATE_KEY*/)} );
+        self.raw.ctrl.write(|w| {w.generatekey().set_bit()} );
 
         self.wait_for_cmd()?;
 
@@ -164,8 +163,7 @@ impl Puf<init_state::Enabled>
 
         for i in 0..ac_buffer.len() { ac_buffer[i] = 0; }
 
-        //FIX PAC
-        self.raw.ctrl.write(|w| unsafe {w.bits( 1<<1 /*ENROLL*/)} );
+        self.raw.ctrl.write(|w| {w.enroll().set_bit()} );
 
         self.wait_for_cmd()?;
 
@@ -184,8 +182,7 @@ impl Puf<init_state::Enabled>
             return Err(Error::NotAllowed);
         }
         
-        //FIX PAC
-        self.raw.ctrl.write(|w| unsafe {w.bits( 1<<2 /*START*/)} );
+        self.raw.ctrl.write(|w| { w.start().set_bit() } );
 
         self.wait_for_cmd()?;
 
@@ -211,22 +208,14 @@ impl Puf<init_state::Enabled>
 }
 
 impl Puf<init_state::Enabled<Started>> {
-    pub fn get_key(&self, key_destination: KeyDestination, key_code: &[u8], key: &mut [u8]) -> Result< usize >{
+    pub fn get_key(&self, key_destination: raw::puf::keyenable::KEY_A, key_code: &[u8], key: &mut [u8]) -> Result< usize >{
         if self.raw.allow.read().allowgetkey().bit_is_clear() {
             return Err(Error::NotAllowed);
         }
 
-        //FIX PAC
-        match key_destination {
-            KeyDestination::AES => self.raw.keyenable.write(|w| unsafe{ w.bits(0x02) }),
-            KeyDestination::PRINCE1 => self.raw.keyenable.write(|w| unsafe{ w.bits(0x08) }),
-            KeyDestination::PRINCE2 => self.raw.keyenable.write(|w| unsafe{ w.bits(0x20) }),
-            KeyDestination::PRINCE3 => self.raw.keyenable.write(|w| unsafe{ w.bits(0x80) }),
-            _ => self.raw.keyenable.write(|w| unsafe{ w.bits(0) }),
-        }
+        self.raw.keyenable.write(|w| { w.key().variant(key_destination) });
 
-        //FIX PAC
-        self.raw.ctrl.write(|w| unsafe {w.bits( 1<<6 /*GETKEY*/)} );
+        self.raw.ctrl.write(|w| {w.getkey().set_bit() } );
 
         self.wait_for_cmd()?;
         let mut word_buf = [0u8; 4];

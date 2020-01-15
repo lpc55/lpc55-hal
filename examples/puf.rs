@@ -146,16 +146,16 @@ fn main() -> ! {
 
         dbg!("Loading AES and Prince Keys..");
         // Load into AES IP, and Prince IP for 3 address regions
-        puf_started.get_key(hal::peripherals::puf::KeyDestination::AES, &kc1, &mut[0u8;0]).unwrap();
-        puf_started.get_key(hal::peripherals::puf::KeyDestination::PRINCE1, &kc2, &mut[0u8;0]).unwrap();
-        puf_started.get_key(hal::peripherals::puf::KeyDestination::PRINCE2, &kc2, &mut[0u8;0]).unwrap();
-        puf_started.get_key(hal::peripherals::puf::KeyDestination::PRINCE3, &kc2, &mut[0u8;0]).unwrap();
+        puf_started.get_key(hal::raw::puf::keyenable::KEY_A::AES, &kc1, &mut[0u8;0]).unwrap();
+        puf_started.get_key(hal::raw::puf::keyenable::KEY_A::PRINCE0, &kc2, &mut[0u8;0]).unwrap();
+        puf_started.get_key(hal::raw::puf::keyenable::KEY_A::PRINCE1, &kc2, &mut[0u8;0]).unwrap();
+        puf_started.get_key(hal::raw::puf::keyenable::KEY_A::PRINCE2, &kc2, &mut[0u8;0]).unwrap();
 
         dbg!("Loading SW Keys..");
         let mut key1 = [0u8; 32];
         let mut key2 = [0u8; 32];
-        puf_started.get_key(hal::peripherals::puf::KeyDestination::OUTPUT, &kc3, &mut key1).unwrap();
-        puf_started.get_key(hal::peripherals::puf::KeyDestination::OUTPUT, &kc4, &mut key2).unwrap();
+        puf_started.get_key(hal::raw::puf::keyenable::KEY_A::NONE, &kc3, &mut key1).unwrap();
+        puf_started.get_key(hal::raw::puf::keyenable::KEY_A::NONE, &kc4, &mut key2).unwrap();
 
         dump_hex!(key1, 32);
         dump_hex!(key2, 32);
