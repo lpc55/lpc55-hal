@@ -7,29 +7,9 @@ extern crate panic_semihosting;  // 4004 bytes
 use cortex_m_rt::entry;
 use cortex_m_semihosting::dbg;
 use cortex_m_semihosting::heprintln;
-use cortex_m_semihosting::heprint;
 
 use lpc55_hal as hal;
 use hal::prelude::*;
-
-/// PUF error
-#[derive(Debug)]
-pub enum State {
-    NotEnrolled,
-    Enrolled = 0x7533ff04,
-}
-
-macro_rules! dump_hex {
-    ($array:expr, $length:expr ) => {
-
-        heprint!("{:?} = ", stringify!($array)).unwrap();
-        for i in 0..$length {
-            heprint!("{:02X}", $array[i]).unwrap();
-        }
-        heprintln!("").unwrap();
-
-    };
-}
 
 fn autocal (adc: & hal::raw::ADC0) {
     // Calibration + offset trimming
@@ -69,7 +49,7 @@ fn main() -> ! {
     // Get pointer to all device peripherals.
     let mut hal = hal::new();
 
-    let clocks = hal::ClockRequirements::default()
+    let _clocks = hal::ClockRequirements::default()
         .system_frequency(12.mhz())
         .configure(&mut hal.anactrl, &mut hal.pmc, &mut hal.syscon)
         .unwrap();
@@ -105,7 +85,7 @@ fn main() -> ! {
     // turn on!
     adc.ctrl.modify(|_, w| {w.adcen().set_bit()});
 
-    heprintln!("Auto calibrating..");
+    heprintln!("Auto calibrating..").unwrap();
     autocal(& adc);
 
     // channel 13 (1V ref), single ended A, high res
