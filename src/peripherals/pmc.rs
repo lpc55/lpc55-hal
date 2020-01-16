@@ -125,3 +125,4 @@ macro_rules! impl_power_control {
 // and on top of that USBFSD, USBFSHM, USBFSHS... to make this all logical.
 impl_power_control!(raw::USB0, pden_usbfsphy);
 impl_power_control!(raw::USBFSH, pden_usbfsphy);
+impl_power_control!(raw::ADC0, pden_auxbias);
