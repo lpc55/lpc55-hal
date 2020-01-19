@@ -4,6 +4,7 @@ use crate::traits::{
             InputPin,
             OutputPin,
             StatefulOutputPin,
+            toggleable,
         },
     }
 };
@@ -75,6 +76,8 @@ where
         Ok(!self.state.pin[T::PORT].read().port().bits() & T::MASK == T::MASK)
     }
 }
+
+impl<T: PinId> toggleable::Default for Pin<T, state::Gpio<direction::Output>> {}
 
 impl<T> InputPin for Pin<T, state::Gpio<direction::Input>>
 where
