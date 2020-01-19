@@ -190,7 +190,9 @@ impl Endpoint {
             if epl.eps[i].ep_in[0].read().a().is_active() {
                 // NB: With this test in place, `bench_bulk_read` from TestClass fails.
                 // cortex_m_semihosting::hprintln!("can't write yet, EP {} IN still active", i).ok();
-                // return Err(UsbError::WouldBlock);
+                //
+                // NB: This test is need, otherwise e.g. in solo-bee get out-of-order packets
+                return Err(UsbError::WouldBlock);
             }
             in_buf.write(buf);
             epl.eps[i].ep_in[0].modify(|_, w| w
