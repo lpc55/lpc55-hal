@@ -363,6 +363,10 @@ impl usb_device::bus::UsbBus for UsbBus {
                 };
             }
 
+            // clear interrupt, otherwise in an interrupt-driven setting
+            // like RTFM the idle loop will get starved.
+            usb.intstat.write(|w| w.dev_int().set_bit());
+
             if (ep_out | ep_in_complete | ep_setup) != 0 {
                 PollResult::Data { ep_out, ep_in_complete, ep_setup }
             } else {
