@@ -32,3 +32,4 @@ pub mod syscon;
 pub mod usbfs;
 pub mod utick;
 pub mod adc;
+pub mod ctimer;
