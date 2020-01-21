@@ -52,8 +52,10 @@ pub use typestates::{
 
 pub mod peripherals;
 pub use peripherals::{
+    adc::Adc,
     anactrl::Anactrl,
     casper::Casper,
+    ctimer::Ctimer,
     flash::Flash,
     flexcomm::Flexcomm,
     gpio::Gpio,
@@ -64,7 +66,6 @@ pub use peripherals::{
     syscon::Syscon,
     usbfs::Usbfs,
     utick::Utick,
-    adc::Adc,
 };
 
 pub mod drivers;
