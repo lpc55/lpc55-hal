@@ -175,6 +175,8 @@ macro_rules! pins {
                         },
                     }
                 }
+
+
             }
 
             impl $pin {
@@ -207,6 +209,56 @@ macro_rules! pins {
                 const MASK: u32 = 0x1 << $number;
                 const OFFSET: usize = (0x20 << $port) + (0x1 << $number);
                 const TYPE: PinType = $type;
+            }
+        )*
+    }
+}
+
+macro_rules! analog_pins {
+    ($(
+        $field:ident,
+        $pin:ident,
+        $port:expr,
+        $number:expr,
+        $type:expr,
+        $default_state_ty:ty,
+        $default_state_val:expr;
+    )*) => {
+        /// Transition pin to Analog input
+        $(
+            impl Pin<$pin, state::Unused>  {
+                pub fn into_analog_input(
+                    self,
+                    iocon: &mut Iocon<init_state::Enabled>,
+                    _: &mut Gpio<init_state::Enabled>,
+                ) -> Pin<$pin, state::Gpio<direction::Input>> {
+
+                    // TODO: need to set FUNC to 0 at minimum
+                    iocon.raw.$field.modify(|_, w| w
+                        .func().alt0() // FUNC $i, pin configured as $FUNCTION
+                        .mode().inactive() // MODE_INACT, no additional pin function
+                        .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+                        .invert().disabled() // INV_DI, input function is not inverted
+                        .digimode().analog() // DIGITAL_EN, enable digital fucntion
+                        .od().normal() // OPENDRAIN_DI, open drain is disabled
+                        .asw().set_bit() // ASW, analog input enabled
+                    );
+                    let pin = Pin {
+                        id: self.id,
+                        state: state::Gpio {
+                            // b: RegClusterProxy::new(),
+                            // w: RegClusterProxy::new(),
+                            dirset: RegClusterProxy::new(),
+                            dirclr: RegClusterProxy::new(),
+                            pin: RegClusterProxy::new(),
+                            set: RegClusterProxy::new(),
+                            clr: RegClusterProxy::new(),
+
+                            _direction: direction::Unknown,
+                        },
+                    };
+                    return pin.into_input();
+                }
             }
         )*
     }
@@ -282,6 +334,26 @@ pins!(
     pio1_31, Pio1_31, 1, 31, PinType::D, state::Unused, state::Unused;
 );
 
+analog_pins!(
+    pio0_0 , Pio0_0 , 0,  0, PinType::A, state::Unused, state::Unused;
+    pio0_9 , Pio0_9 , 0,  9, PinType::A, state::Unused, state::Unused;
+    pio0_10, Pio0_10, 0, 10, PinType::A, state::Unused, state::Unused;
+    pio0_11, Pio0_11, 0, 11, PinType::A, state::Special<function::SWCLK>,
+        state::Special{ _function: function::SWCLK {} };
+    pio0_12, Pio0_12, 0, 12, PinType::A, state::Special<function::SWDIO>,
+        state::Special{ _function: function::SWDIO {} };
+    pio0_15, Pio0_15, 0, 15, PinType::A, state::Unused, state::Unused;
+    pio0_16, Pio0_16, 0, 16, PinType::A, state::Unused, state::Unused;
+    pio0_18, Pio0_18, 0, 18, PinType::A, state::Unused, state::Unused;
+    pio0_23, Pio0_23, 0, 23, PinType::A, state::Unused, state::Unused;
+    pio0_31, Pio0_31, 0, 31, PinType::A, state::Unused, state::Unused;
+
+    pio1_0 , Pio1_0 , 1,  0, PinType::A, state::Unused, state::Unused;
+    pio1_8 , Pio1_8 , 1,  8, PinType::A, state::Unused, state::Unused;
+    pio1_9 , Pio1_9 , 1,  9, PinType::A, state::Unused, state::Unused;
+    pio1_14, Pio1_14, 1, 14, PinType::A, state::Unused, state::Unused;
+    pio1_19, Pio1_19, 1, 19, PinType::A, state::Unused, state::Unused;
+);
 
 macro_rules! special_pins {
     ($(
