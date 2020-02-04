@@ -60,8 +60,8 @@ macro_rules! ctimer {
     }
 }
 
-ctimer!(Ctimer0, CTIMER0, ctimerclksel0, enum_0x0);    // 0 is main clk
-ctimer!(Ctimer1, CTIMER1, ctimerclksel1, enum_0x0);
-ctimer!(Ctimer2, CTIMER2, ctimerclksel2, enum_0x0);
-ctimer!(Ctimer3, CTIMER3, ctimerclksel3, enum_0x0);
-ctimer!(Ctimer4, CTIMER4, ctimerclksel4, enum_0x0);
+ctimer!(Ctimer0, CTIMER0, ctimerclksel0, enum_0x4);    // 4 is 1MHz FRO
+ctimer!(Ctimer1, CTIMER1, ctimerclksel1, enum_0x4);
+ctimer!(Ctimer2, CTIMER2, ctimerclksel2, enum_0x4);
+ctimer!(Ctimer3, CTIMER3, ctimerclksel3, enum_0x4);
+ctimer!(Ctimer4, CTIMER4, ctimerclksel4, enum_0x4);

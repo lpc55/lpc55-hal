@@ -64,6 +64,39 @@ impl From<Megabaud> for Baud {
     }
 }
 
+#[derive(PartialEq, PartialOrd, Clone, Copy, Debug)]
+pub struct Seconds(pub u32);
+#[derive(PartialEq, PartialOrd, Clone, Copy, Debug)]
+pub struct MiliSeconds(pub u32);
+#[derive(PartialEq, PartialOrd, Clone, Copy, Debug)]
+pub struct MicroSeconds(pub u32);
+#[derive(PartialEq, PartialOrd, Clone, Copy, Debug)]
+pub struct NanoSeconds(pub u32);
+
+impl From<Seconds> for MiliSeconds{
+    fn from(s: Seconds) -> Self {
+        MiliSeconds(1_000 * s.0)
+    }
+}
+
+impl From<Seconds> for MicroSeconds{
+    fn from(s: Seconds) -> Self {
+        MicroSeconds(1_000_000 * s.0)
+    }
+}
+
+impl From<MiliSeconds> for MicroSeconds {
+    fn from(ms: MiliSeconds) -> Self {
+        MicroSeconds(1_000 * ms.0)
+    }
+}
+
+impl From<MicroSeconds> for NanoSeconds{
+    fn from(us: MicroSeconds) -> Self {
+        NanoSeconds(1_000 * us.0)
+    }
+}
+
 pub trait U32Ext {
     /// Wrap in `Hertz`
     fn hz(self) -> Hertz;
@@ -82,6 +115,18 @@ pub trait U32Ext {
 
     /// Wrap in `Megabaud`
     fn mbps(self) -> Megabaud;
+
+    /// Wrap in `Seconds`
+    fn s(self) -> Seconds;
+
+    /// Wrap in `MiliSeconds`
+    fn ms(self) -> MiliSeconds;
+
+    /// Wrap in `MicroSeconds`
+    fn us(self) -> MicroSeconds;
+
+    /// Wrap in `NanoSeconds`
+    fn ns(self) -> NanoSeconds;
 }
 
 impl U32Ext for u32 {
@@ -108,7 +153,24 @@ impl U32Ext for u32 {
     fn mbps(self) -> Megabaud {
         Megabaud(self)
     }
+
+    fn s(self) -> Seconds {
+        Seconds(self)
+    }
+
+    fn ms(self) -> MiliSeconds {
+        MiliSeconds(self)
+    }
+
+    fn us(self) -> MicroSeconds {
+        MicroSeconds(self)
+    }
+
+    fn ns(self) -> NanoSeconds {
+        NanoSeconds(self)
+    }
 }
+
 
 
 ////////////////////////////////////
