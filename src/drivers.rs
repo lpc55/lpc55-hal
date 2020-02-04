@@ -37,3 +37,6 @@ pub mod rng;
 
 pub mod usbd;
 pub use usbd::UsbBus;
+
+pub mod timer;
+pub use timer::Timer;

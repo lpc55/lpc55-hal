@@ -11,11 +11,14 @@ use cortex_m_semihosting::heprintln;
 use lpc55_hal as hal;
 use hal::prelude::*;
 
+use hal::drivers::{
+    Timer,
+};
 
 #[entry]
 fn main() -> ! {
 
-    heprintln!("Hello ADC").unwrap();
+    heprintln!("Hello ctimer").unwrap();
 
     // Get pointer to all device peripherals.
     let mut hal = hal::new();
@@ -25,15 +28,25 @@ fn main() -> ! {
         .configure(&mut hal.anactrl, &mut hal.pmc, &mut hal.syscon)
         .unwrap();
 
-    let ctimer = hal.CTIMER1;
+    let ctimer = hal.ctimer.1.enabled(&mut hal.syscon);
 
-    let tst = ctimer.ccr.read().bits();
+    let cdriver = Timer::new(ctimer);
 
-    // let adc = hal::Adc::from(hal.ADC0).enabled(&mut hal.pmc, &mut hal.syscon);
-    // let adc = hal::Adc::from(dp.ADC0).enabled(&mut syscon);
+    let ctimer = cdriver.release();
+    let ctimer = ctimer.release();
 
-    heprintln!("looping").unwrap();
+    ctimer.ctcr.write(|w| {
+        w.ctmode().timer()
+    });
+
+    // Timer increment ~1KHz
+    ctimer.pr.write(|w| unsafe {w.bits(12000-1)});
+    ctimer.tcr.write(|w| {w.cen().set_bit()});
+
+    let mut t = 0u32;
     loop {
-
+        t = ctimer.tc.read().bits();
+        dbg!(t);
+        hal::wait_at_least(1000);
     }
 }
