@@ -11,6 +11,9 @@ use cortex_m_semihosting::heprintln;
 use lpc55_hal as hal;
 use hal::prelude::*;
 
+#[macro_use(block)]
+extern crate nb;
+
 use hal::drivers::{
     Timer,
 };
@@ -23,30 +26,21 @@ fn main() -> ! {
     // Get pointer to all device peripherals.
     let mut hal = hal::new();
 
-    let clocks = hal::ClockRequirements::default()
+    let _clocks = hal::ClockRequirements::default()
         .system_frequency(12.mhz())
         .configure(&mut hal.anactrl, &mut hal.pmc, &mut hal.syscon)
         .unwrap();
 
     let ctimer = hal.ctimer.1.enabled(&mut hal.syscon);
+    let mut cdriver = Timer::new(ctimer);
 
-    let cdriver = Timer::new(ctimer);
-
-    let ctimer = cdriver.release();
-    let ctimer = ctimer.release();
-
-    ctimer.ctcr.write(|w| {
-        w.ctmode().timer()
-    });
-
-    // Timer increment ~1KHz
-    ctimer.pr.write(|w| unsafe {w.bits(12000-1)});
-    ctimer.tcr.write(|w| {w.cen().set_bit()});
-
-    let mut t = 0u32;
+    heprintln!("looping 1 Hz").unwrap();
+    let mut c = 0;
     loop {
-        t = ctimer.tc.read().bits();
-        dbg!(t);
-        hal::wait_at_least(1000);
+        cdriver.start(1.s());
+        dbg!(c * 1_000_000);
+        dbg!(cdriver.lap().0);
+        c += 1;
+        block!(cdriver.wait()).unwrap(); // blocks for 1 second
     }
 }
