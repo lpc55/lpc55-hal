@@ -1,3 +1,4 @@
+use core::convert::Infallible;
 use crate::traits::wg::timer;
 use nb;
 use void::Void;
@@ -55,8 +56,6 @@ where TIMER: Ctimer
             .mr0r().set_bit()
             .mr0s().set_bit()
         } );
-        // clear interrupt
-        self.timer.ir.modify(|_,w| { w.mr0int().set_bit() });
 
         // Set match to target time.  Ctimer fixed input 1MHz.
         self.timer.mr[0].write(|w| unsafe { w.bits(count.into().0) });
@@ -64,8 +63,14 @@ where TIMER: Ctimer
         // No divsion necessary.
         self.timer.pr.write(|w| unsafe {w.bits(0)});
 
+        // clear interrupt
+        self.timer.ir.modify(|_,w| { w.mr0int().set_bit() });
+
         // Start timer
-        self.timer.tcr.write(|w| {w.cen().set_bit()});
+        self.timer.tcr.write(|w| {
+            w.cen().set_bit()
+            .crst().clear_bit()
+        });
     }
 
     fn wait(&mut self) -> nb::Result<(), Void> {
@@ -74,5 +79,17 @@ where TIMER: Ctimer
         }
 
         Err(nb::Error::WouldBlock)
+    }
+}
+
+impl<TIMER> timer::Cancel for Timer<TIMER>
+where TIMER: Ctimer
+{
+    type Error = Infallible;
+    fn cancel(&mut self) -> Result<(), Self::Error>{
+        self.timer.tcr.write(|w| {
+            w.crst().clear_bit()
+        });
+        Ok(())
     }
 }
