@@ -55,7 +55,7 @@ pub use peripherals::{
     adc::Adc,
     anactrl::Anactrl,
     casper::Casper,
-    ctimer::Ctimer,
+    ctimer::Ctimers,
     flash::Flash,
     flexcomm::Flexcomm,
     gpio::Gpio,
@@ -151,8 +151,8 @@ pub struct Peripherals {
     /// CRC engine - not HAL-ified.
     pub CRC_ENGINE: raw::CRC_ENGINE,
 
-    /// Standard counter/timer (CTIMER) - not HAL-ified.
-    pub CTIMER0: raw::CTIMER0,
+    /// Standard counter/timer (CTIMER)
+    pub ctimer: Ctimers,
 
     pub FLASH_CMPA: raw::FLASH_CMPA,
     pub FLASH_CFPA0: raw::FLASH_CFPA0,
@@ -193,6 +193,13 @@ impl From<(raw::Peripherals, rtfm::Peripherals)> for Peripherals {
             // HAL peripherals
             anactrl: Anactrl::from(p.ANACTRL),
             casper: Casper::from(p.CASPER),
+            ctimer: (
+                peripherals::ctimer::Ctimer0::from(raw::CTIMER0),
+                peripherals::ctimer::Ctimer1::from(raw::CTIMER1),
+                peripherals::ctimer::Ctimer2::from(raw::CTIMER2),
+                peripherals::ctimer::Ctimer3::from(raw::CTIMER3),
+                peripherals::ctimer::Ctimer4::from(raw::CTIMER4),
+            ),
             flash: Flash::from(p.FLASH),
             flexcomm: (
                 peripherals::flexcomm::Flexcomm0::from((p.FLEXCOMM0, p.I2C0, p.I2S0, p.SPI0, p.USART0)),
@@ -217,7 +224,6 @@ impl From<(raw::Peripherals, rtfm::Peripherals)> for Peripherals {
             // Raw peripherals
             ADC0: p.ADC0,
             CRC_ENGINE: p.CRC_ENGINE,
-            CTIMER0: p.CTIMER0,
             FLASH_CMPA: p.FLASH_CMPA,
             FLASH_CFPA0: p.FLASH_CFPA0,
             SCT0: p.SCT0,
@@ -241,6 +247,14 @@ impl From<(raw::Peripherals, raw::CorePeripherals)> for Peripherals {
             // HAL peripherals
             anactrl: Anactrl::from(p.ANACTRL),
             casper: Casper::from(p.CASPER),
+
+            ctimer: (
+                peripherals::ctimer::Ctimer0::from(p.CTIMER0),
+                peripherals::ctimer::Ctimer1::from(p.CTIMER1),
+                peripherals::ctimer::Ctimer2::from(p.CTIMER2),
+                peripherals::ctimer::Ctimer3::from(p.CTIMER3),
+                peripherals::ctimer::Ctimer4::from(p.CTIMER4),
+            ),
             flash: Flash::from(p.FLASH),
             flexcomm: (
                 peripherals::flexcomm::Flexcomm0::from((p.FLEXCOMM0, p.I2C0, p.I2S0, p.SPI0, p.USART0)),
@@ -265,7 +279,6 @@ impl From<(raw::Peripherals, raw::CorePeripherals)> for Peripherals {
             // Raw peripherals
             ADC0: p.ADC0,
             CRC_ENGINE: p.CRC_ENGINE,
-            CTIMER0: p.CTIMER0,
             FLASH_CMPA: p.FLASH_CMPA,
             FLASH_CFPA0: p.FLASH_CFPA0,
             SCT0: p.SCT0,

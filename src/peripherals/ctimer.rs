@@ -1,3 +1,4 @@
+use core::ops::Deref;
 use crate::{
     raw,
     peripherals::{
@@ -5,27 +6,62 @@ use crate::{
     },
     typestates::{
         init_state,
-    }
+    },
 };
 
 
+pub type Ctimers = (
+    Ctimer0,
+    Ctimer1,
+    Ctimer2,
+    Ctimer3,
+    Ctimer4,
+);
 
-crate::wrap_stateful_peripheral!(Ctimer, CTIMER1);
+pub trait Ctimer: Deref<Target = raw::ctimer0::RegisterBlock> {}
 
-impl<State> Ctimer<State> {
-    pub fn enabled(mut self, syscon: &mut Syscon) -> Ctimer <init_state::Enabled> {
-        Ctimer{
-            raw: self.raw,
-            _state: init_state::Enabled(()),
+macro_rules! ctimer {
+    ($c_hal:ident, $c_pac:ident, $register:ident, $clock_input:ident) => {
+
+    crate::wrap_stateful_peripheral!($c_hal, $c_pac);
+
+    impl Deref for $c_hal<init_state::Enabled> {
+        type Target = raw::ctimer0::RegisterBlock;
+        fn deref(&self) -> &Self::Target {
+            &self.raw
+        }
+    }   
+    impl Ctimer for $c_hal<init_state::Enabled> {}
+    
+
+    impl<State> $c_hal<State> {
+        pub fn enabled(mut self, syscon: &mut Syscon, ) -> $c_hal <init_state::Enabled> {
+            syscon.enable_clock(&mut self.raw);
+            syscon.raw.$register().write(|w| { w.sel().$clock_input() } );
+            syscon.reset(&mut self.raw);
+            $c_hal {
+                raw: self.raw,
+                _state: init_state::Enabled(()),
+            }
+        }
+
+        pub fn disabled(mut self, syscon: &mut Syscon) -> $c_hal <init_state::Disabled> {
+            syscon.disable_clock(&mut self.raw);
+            syscon.raw.$register().write(|w| { w.sel().enum_0x7() } );  // no clock
+            $c_hal {
+                raw: self.raw,
+                _state: init_state::Disabled,
+            }
         }
     }
 
-    pub fn disabled(mut self, syscon: &mut Syscon) -> Ctimer <init_state::Disabled> {
-        Ctimer{
-            raw: self.raw,
-            _state: init_state::Disabled,
-        }
+
+
     }
 }
 
-
+ctimer!(Ctimer0, CTIMER0, ctimerclksel0, enum_0x0);    // 0 is main clk
+ctimer!(Ctimer1, CTIMER1, ctimerclksel1, enum_0x0);
+ctimer!(Ctimer2, CTIMER2, ctimerclksel2, enum_0x0);
+ctimer!(Ctimer3, CTIMER3, ctimerclksel3, enum_0x0);
+ctimer!(Ctimer4, CTIMER4, ctimerclksel4, enum_0x0);
