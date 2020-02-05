@@ -18,7 +18,7 @@ impl<State> Adc<State> {
         syscon.raw.adcclkdiv.write(|w| unsafe {w.div().bits(0)});
         syscon.raw.adcclkdiv.write(|w| unsafe {w.bits(0)});
 
-        syscon.raw.adcclksel.write(|w| {w.sel().mainclk()});
+        syscon.raw.adcclksel.write(|w| {w.sel().fro96()});
 
         pmc.power_on(&mut self.raw);
 
