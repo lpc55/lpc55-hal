@@ -4,6 +4,9 @@
 extern crate panic_semihosting;  // 4004 bytes
 // extern crate panic_halt; // 672 bytes
 
+#[macro_use(block)]
+extern crate nb;
+
 use cortex_m_rt::entry;
 use cortex_m_semihosting::dbg;
 use cortex_m_semihosting::heprintln;
@@ -13,6 +16,7 @@ use hal::prelude::*;
 use hal::{
     drivers::{
         Pins,
+        Timer,
     }
 };
 
@@ -22,8 +26,9 @@ fn delay(count: u32){
     }
 }
 
+// Reads normal sample (CMDL2 + trigger 2)
 fn read_sample(adc: & hal::raw::ADC0) -> u16{
-    adc.swtrig.write(|w| unsafe {w.bits(1)});
+    adc.swtrig.write(|w| unsafe {w.bits(1<<2)});
     while adc.fctrl[0].read().fcount().bits() == 0 {
     }
     let result = adc.resfifo[0].read().bits();
@@ -67,6 +72,8 @@ fn main() -> ! {
 
     heprintln!("Hello ADC").unwrap();
 
+    let CThreshold = 12_000;
+
     // Get pointer to all device peripherals.
     let mut hal = hal::new();
 
@@ -78,7 +85,9 @@ fn main() -> ! {
     let mut gpio = hal.gpio.enabled(&mut hal.syscon);
 
     let adc = hal::Adc::from(hal.ADC0).enabled(&mut hal.pmc, &mut hal.syscon);
-    // let adc = hal::Adc::from(dp.ADC0).enabled(&mut syscon);
+
+    let ctimer = hal.ctimer.1.enabled(&mut hal.syscon);
+    let mut cdriver = Timer::new(ctimer);
 
     let mut iocon = hal.iocon.enabled(&mut hal.syscon);
     let pins = Pins::take().unwrap();
@@ -100,8 +109,9 @@ fn main() -> ! {
         w.pwren().set_bit()
         .pudly().bits(0x80)
         .refsel().refsel_1()
-        .pwrsel().pwrsel_1()
+        .pwrsel().pwrsel_3()
         .tprictrl().bits(0)
+        .tres().clear_bit() // Do not resume interrupted captures
     });
 
 
@@ -119,59 +129,114 @@ fn main() -> ! {
     heprintln!("Auto calibrating..").unwrap();
     autocal(& adc);
 
-    // channel 12 (button 1), single ended A, high res
+    //// CMDL1 used for threshold measurement.
     adc.cmdl1.write(|w| unsafe {  w.adch().bits(3)
                                 .ctype().ctype_0()  
                                 .mode().mode_0()
                                 } );
-
-    adc.cmdh1.write(|w| unsafe { w.avgs().avgs_5()      // average 2^5 samples
-                                .cmpen().bits(0)        // disable compare
+    adc.cmdh1.write(|w| unsafe { w.avgs().avgs_3()      // average 2^3 samples
+                                .cmpen().bits(0b11)        // compare repeatedly until true
+                                // .cmpen().bits(0b00)        // No compare function
                                 .loop_().bits(0)         // no loop
                                 .next().bits(0)         // no next command
                             } );
+    ////
+    //// CMDL2 used for normal measurement
+    adc.cmdl2.write(|w| unsafe {  w.adch().bits(3)
+                                .ctype().ctype_0()  
+                                .mode().mode_0()
+                                } );
+    adc.cmdh2.write(|w| unsafe { w.avgs().avgs_3()
+                                .cmpen().bits(0b00)        // no compare
+                                .loop_().bits(0)
+                                .next().bits(0)
+                            } );
+    ////
 
+
+    // Configure compare operation to (result > CThreshold ? true : false)
+    adc.cv1.write(|w| unsafe {
+        w.cvl().bits(0)
+        .cvh().bits(CThreshold)
+    });
+
+    // Main trigger
     adc.tctrl[0].write(|w| unsafe {
         w.hten().set_bit()
         .fifo_sel_a().fifo_sel_a_0()
         .fifo_sel_b().fifo_sel_b_0()
         .tcmd().bits(1)
+        .tpri().bits(3)
     });
 
-    heprintln!("ADC CTRL. {:02X}", adc.ctrl.read().bits()).unwrap();
-    heprintln!("ADC  CFG. {:02X}", adc.cfg.read().bits()).unwrap();
-    heprintln!("ADC stat: {:02X}", adc.stat.read().bits()).unwrap();
+    // Cancel/resync trigger to main trigger
+    adc.tctrl[1].write(|w| unsafe {
+        w.hten().set_bit()
+        .fifo_sel_a().fifo_sel_a_0()
+        .fifo_sel_b().fifo_sel_b_0()
+        .tcmd().bits(0)
+        .rsync().set_bit()
+        .tpri().bits(0) //highest priority
+    });
 
-    // SW trigger the trigger event 0
-    adc.swtrig.write(|w| unsafe {w.bits(1)});
-
-    dbg!("triggered");
-
-    let count0 = adc.fctrl[0].read().fcount().bits();
-
-    heprintln!("FIFO0 conversions {}", count0).unwrap();
-
-    let result = adc.resfifo[0].read().bits();
-    let valid = result & 0x80000000;
-    let sample = (result & 0xffff) as u16;
-   
-    if valid != 0 {
-        heprintln!("sample = {:02x}", sample).unwrap();
-    } else {
-        heprintln!("No result from ADC!").unwrap();
-    }
+    // Normal measurement trigger
+    adc.tctrl[2].write(|w| unsafe {
+        w.hten().set_bit()
+        .fifo_sel_a().fifo_sel_a_0()
+        .fifo_sel_b().fifo_sel_b_0()
+        .tcmd().bits(2)
+        .tpri().bits(2)
+    });
 
 
     heprintln!("looping").unwrap();
     let mut samples = [0u16; 32];
+    let mut timeout = 0;
+    heprintln!("adc status: {:02X}", adc.stat.read().bits());
     loop {
+
+        // Discharge for 100ms
         charge_pin.set_low().unwrap();
-        delay(5);
+
+        cdriver.start(1.ms());
+        block!(cdriver.wait()).unwrap();
+
+
+
+        cdriver.start(1.ms());
+
+
+        //get sample + start charge
+        adc.swtrig.write(|w| unsafe {w.bits(1)});
         charge_pin.set_high().unwrap();
-        for i in 0..samples.len(){
-            samples[i] = read_sample(&adc);
+        while adc.fctrl[0].read().fcount().bits() == 0 {
+            if cdriver.lap().0 > 900 {
+                heprintln!("timeout status: {:02X}, {:02X}", adc.stat.read().bits(), adc.cmdh1.read().bits());
+                adc.swtrig.write(|w| unsafe {w.bits(2)});
+                adc.ctrl.modify(|_,w| { w.rstfifo0().set_bit().rstfifo1().set_bit() });
+                block!(cdriver.wait()).unwrap();
+                timeout = 1;
+                break
+            }
         }
-        dbg!(samples);
-        // heprintln!("samples = {}", sample).unwrap();
+        if timeout == 1 {
+            timeout = 0;
+            continue;
+        }
+        let result = adc.resfifo[0].read().bits();
+        assert!( (result & 0x80000000) != 0 );
+        let sample = (result & 0xffff) as u16;
+        //
+
+        let t = cdriver.lap();
+
+        block!(cdriver.wait()).unwrap();
+        let mut max = 1;
+        max = read_sample(&adc);
+
+        // dbg!(t.0);
+        // dbg!(sample);
+
+        heprintln!("{} - {}/{}  {:02X}", t.0, sample,max, adc.stat.read().bits()).unwrap();
     }
 }
