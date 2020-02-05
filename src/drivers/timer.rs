@@ -68,13 +68,17 @@ where TIMER: Ctimer
 
         // Start timer
         self.timer.tcr.write(|w| {
-            w.cen().set_bit()
-            .crst().clear_bit()
+            w.crst().clear_bit()
+            .cen().set_bit()
         });
     }
 
     fn wait(&mut self) -> nb::Result<(), Void> {
         if self.timer.ir.read().mr0int().bit_is_set() {
+            self.timer.tcr.write(|w| {
+                w.crst().set_bit()
+                .cen().clear_bit()
+            });
             return Ok(());
         }
 
@@ -88,7 +92,8 @@ where TIMER: Ctimer
     type Error = Infallible;
     fn cancel(&mut self) -> Result<(), Self::Error>{
         self.timer.tcr.write(|w| {
-            w.crst().clear_bit()
+            w.crst().set_bit()
+            .cen().clear_bit()
         });
         Ok(())
     }
