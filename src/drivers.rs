@@ -40,3 +40,6 @@ pub use usbd::UsbBus;
 
 pub mod timer;
 pub use timer::Timer;
+
+pub mod touch;
+pub use touch::TouchSensor;
