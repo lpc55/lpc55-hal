@@ -11,6 +11,8 @@ use cortex_m_semihosting::heprintln;
 use lpc55_hal as hal;
 use hal::prelude::*;
 
+use hal::drivers::timer::Lap;
+
 #[macro_use(block)]
 extern crate nb;
 

@@ -10,13 +10,16 @@ use crate::time::{
     MicroSeconds
 };
 
+pub trait Lap <Unit>{
+    fn lap(&self) -> Unit;
+}
+
 pub struct Timer<TIMER>
 where
     TIMER: Ctimer,
 {
     timer: TIMER,
 }
-
 
 impl <TIMER> Timer<TIMER>
 where TIMER: Ctimer {
@@ -34,9 +37,10 @@ where TIMER: Ctimer {
 }
 
 type TimeUnits = MicroSeconds;
-impl <TIMER> Timer<TIMER>
+
+impl <TIMER> Lap<TimeUnits> for Timer<TIMER>
 where TIMER: Ctimer {
-    pub fn lap(&self) -> TimeUnits{
+    fn lap(&self) -> TimeUnits{
         MicroSeconds(self.timer.tc.read().bits())
     }
 }
