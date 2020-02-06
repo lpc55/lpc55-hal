@@ -160,3 +160,33 @@ where
     }
 }
 
+
+impl<T, D> Pin<T, state::Analog<D>>
+where
+    T: PinId,
+    D: direction::NotInput,
+{
+    pub fn into_input(self, ) -> Pin<T, state::Analog<direction::Input>> {
+
+        // currently, `into_gpio_pin()` sets `.digimode().digital()` in IOCON,
+        // meaning input is enabled for all pins
+
+        self.state.dirclr[T::PORT].write(|w| unsafe { w.dirclrp().bits(T::MASK) });
+
+        Pin {
+            id: self.id,
+
+            state: state::Analog {
+                channel: self.state.channel,
+                dirclr: RegClusterProxy::new(),
+                _direction: direction::Input,
+            },
+        }
+    }
+}
+
+
+
+
+
+

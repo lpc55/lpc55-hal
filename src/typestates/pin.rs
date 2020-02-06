@@ -59,7 +59,14 @@ pub mod state {
         pub(crate) _direction: D,
     }
 
+    pub struct Analog<D: Direction> {
+        pub channel: u8,
+        pub(crate) dirclr: RegClusterProxy<raw::gpio::DIRCLR>,
+        pub(crate) _direction: D,
+    }
+
     impl<D> PinState for Gpio<D> where D: Direction {}
+    impl<D> PinState for Analog<D> where D: Direction {}
 
     pub struct Special<F: Function> {
         pub(crate) _function: F,
@@ -67,6 +74,7 @@ pub mod state {
 
     impl<F> PinState for Special<F> where F: Function {}
 }
+
 pub mod gpio {
     pub mod direction {
         /// Implemented by types that indicate GPIO pin direction
@@ -80,6 +88,12 @@ pub mod gpio {
 
         pub struct Output;
         impl Direction for Output {}
+
+        pub struct AnalogInput;
+        impl Direction for AnalogInput{}
+
+        pub struct AnalogOutput;
+        impl Direction for AnalogOutput {}
 
         pub trait NotInput: Direction {}
         impl NotInput for Unknown {}
