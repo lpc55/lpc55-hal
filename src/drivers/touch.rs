@@ -26,6 +26,7 @@ use crate::typestates::{
 use crate::{
     typestates::{
         init_state,
+        ClocksSupportTouchToken,
     }
 };
 use crate::time::MicroSeconds;
@@ -44,6 +45,8 @@ where
     timer: Timer<C>,
     adc: Adc,
     charge_pin: PIN,
+    high_threshold: u16,
+    low_threshold: u16,
 }
 
 impl<PIN, C> Deref for TouchSensor<PIN, C>
@@ -72,17 +75,17 @@ where
     PIN: OutputPin + StatefulOutputPin,
     C: Ctimer,
 {
-    pub fn new(mut adc: Adc, timer: Timer<C>, mut pin: PIN, threshold: u16) -> Result<Self, PIN> {
+    pub fn new(mut adc: Adc, timer: Timer<C>, mut pin: PIN, low_threshold: u16, high_threshold: u16, _token: ClocksSupportTouchToken) -> Result<Self, PIN> {
 
         pin.set_low()?;
 
-        // Configure compare operation to (result > CThreshold ? true : false)
-        adc.set_threshold(0, threshold);
-        
+       
         Ok(Self {
             adc: adc,
             timer: timer,
             charge_pin: pin,
+            high_threshold: high_threshold,
+            low_threshold: low_threshold,
         })
     }
 
@@ -91,12 +94,22 @@ where
         Ok(())
     }
 
+    pub fn charge(&mut self) -> Result<(), PIN>{
+        self.charge_pin.set_high()?;
+        Ok(())
+    }
+
+
+
     pub fn measure(&mut self, channel: &Pin<impl PinId, state::Analog<direction::Input>>) -> Result<MicroSeconds, PIN> {
-        assert!(self.charge_pin.is_set_low()?);
+        // assert!(self.charge_pin.is_set_low()?);
 
         self.arm_comparator_channel(channel.state.channel);
-        self.raw.cmdl1.read().bits();
-        self.timer.start(1.ms());
+
+        // Compare high threshold
+        self.adc.set_threshold(0, self.high_threshold);
+ 
+        self.timer.start(3.ms());
 
         //get sample + start charge
         self.adc.swtrig.write(|w| unsafe {w.bits(1)});
@@ -106,6 +119,20 @@ where
                 self.cancel_compare();
                 self.timer.cancel().ok();
                 return Ok(MicroSeconds(1000));
+            }
+        }
+        let result = self.resfifo[0].read().bits();
+        assert!( (result & 0x80000000) != 0 );
+
+        // 
+        self.adc.set_threshold(self.low_threshold, 0x7fff);
+        self.adc.swtrig.write(|w| unsafe {w.bits(1)});
+        self.charge_pin.set_low()?;
+        while self.fctrl[0].read().fcount().bits() == 0 {
+            if self.timer.lap().0 > 1900 {
+                self.cancel_compare();
+                self.timer.cancel().ok();
+                return Ok(MicroSeconds(2000));
             }
         }
         let result = self.resfifo[0].read().bits();

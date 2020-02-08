@@ -71,7 +71,7 @@ impl<State> Adc<State> {
                                     .ctype().ctype_0()  
                                     .mode().mode_0()
                                     } );
-        self.raw.cmdh2.write(|w| unsafe { w.avgs().avgs_3()
+        self.raw.cmdh2.write(|w| unsafe { w.avgs().avgs_7()
                                     .cmpen().bits(0b00)        // no compare
                                     .loop_().bits(0)
                                     .next().bits(0)
@@ -83,7 +83,7 @@ impl<State> Adc<State> {
                                     .ctype().ctype_0()  
                                     .mode().mode_0()
                                     } );
-        self.raw.cmdh1.write(|w| unsafe { w.avgs().avgs_3()      // average 2^3 samples
+        self.raw.cmdh1.write(|w| unsafe { w.avgs().avgs_7()      // average 2^3 samples
                                     .cmpen().bits(0b11)        // compare repeatedly until true
                                     .loop_().bits(0)         // no loop
                                     .next().bits(0)         // no next command
@@ -227,7 +227,7 @@ impl<State> Adc <State>
         while self.raw.fctrl[0].read().fcount().bits() == 0 {
         }
         let result = self.raw.resfifo[0].read().bits();
-        if  (result & 0x80000000) != 0 {
+        if  (result & 0x80000000) == 0 {
             return Err(Underflow);
         }
         let sample = (result & 0xffff) as u16;

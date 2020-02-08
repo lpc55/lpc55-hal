@@ -5,7 +5,7 @@
 ///!
 ///! It is currently used to prepare for using the USBFSD and
 ///! Flexcomm peripherals.
-
+use cortex_m_semihosting::heprintln;
 use core::cmp::min;
 
 use crate::typestates::{
@@ -14,6 +14,7 @@ use crate::typestates::{
     ClocksSupportFlexcommToken,
     ClocksSupportUsbfsToken,
     ClocksSupportUtickToken,
+    ClocksSupportTouchToken,
 };
 use crate::{
     peripherals::{
@@ -71,6 +72,15 @@ impl Clocks {
     pub fn support_utick_token(&self) -> Option<ClocksSupportUtickToken> {
         Some(ClocksSupportUtickToken{__: ()})
     }
+
+    pub fn support_touch_token(&self) -> Option<ClocksSupportTouchToken> {
+        if self.system_frequency.0 >= 96 {
+            Some(ClocksSupportTouchToken{__: ()})
+        } else {
+            None
+        }
+    }
+    
 }
 
 /// Output of Pll is: M/(2NP) times input
@@ -209,9 +219,14 @@ impl ClockRequirements {
                 (MainClock::Fro96Mhz, 96 / freq.0)
             },
             _ => {
-
-                let pll = Self::get_pll(freq.0);
-                // hprintln!("pll {:?}", pll).ok();
+                syscon.raw.pll0clksel.write(|w| {w.sel().enum_0x0()});  // FRO12 clkin sel
+                let mut pll = Self::get_pll(freq.0);
+                pll.seli = 53;
+                pll.selp = 31;
+                pll.n = 8;
+                pll.p = 1;
+                pll.m = 200;
+                heprintln!("pll {:?}, freq {}", pll, freq.0).ok();
 
                 pmc.raw.pdruncfg0.modify(|_, w| w
                     .pden_pll0().poweredoff()
