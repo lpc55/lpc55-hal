@@ -395,6 +395,14 @@ macro_rules! special_pins {
     }
 }
 
+special_pins! {
+    (Pio1_16, pio1_16): {
+        (3, CT1MAT3): [
+            (into_ctimer1_mat3, Ctimer1, Ctimer1Mat3),
+        ]
+    }
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // all that follows is generated with `scripts/extract-flexcomm-data.py`
 // NB: Pio0_13 and Pio0_14 have a repetition of methods, manually commented out
