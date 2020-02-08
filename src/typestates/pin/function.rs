@@ -10,6 +10,51 @@ impl Function for SWDIO {}
 pub struct USB0_VBUS;
 impl Function for USB0_VBUS {}
 
+pub struct CT0MAT3 {}
+impl Function for CT0MAT3 {}
+pub struct CT1MAT3 {}
+impl Function for CT1MAT3 {}
+pub struct CT2MAT3 {}
+impl Function for CT2MAT3 {}
+pub struct CT3MAT3 {}
+impl Function for CT3MAT3 {}
+pub struct CT4MAT3 {}
+impl Function for CT4MAT3 {}
+
+pub struct CT0MAT2 {}
+impl Function for CT0MAT2 {}
+pub struct CT1MAT2 {}
+impl Function for CT1MAT2 {}
+pub struct CT2MAT2 {}
+impl Function for CT2MAT2 {}
+pub struct CT3MAT2 {}
+impl Function for CT3MAT2 {}
+pub struct CT4MAT2 {}
+impl Function for CT4MAT2 {}
+
+pub struct CT0MAT1 {}
+impl Function for CT0MAT1 {}
+pub struct CT1MAT1 {}
+impl Function for CT1MAT1 {}
+pub struct CT2MAT1 {}
+impl Function for CT2MAT1 {}
+pub struct CT3MAT1 {}
+impl Function for CT3MAT1 {}
+pub struct CT4MAT1 {}
+impl Function for CT4MAT1 {}
+
+pub struct CT0MAT0 {}
+impl Function for CT0MAT0 {}
+pub struct CT1MAT0 {}
+impl Function for CT1MAT0 {}
+pub struct CT2MAT0 {}
+impl Function for CT2MAT0 {}
+pub struct CT3MAT0 {}
+impl Function for CT3MAT0 {}
+pub struct CT4MAT0 {}
+impl Function for CT4MAT0 {}
+
+
 // these are generated with `generate-flexcomm-pin-driver.py`
 pub struct FC0_CTS_SDA_SSEL0;
 impl Function for FC0_CTS_SDA_SSEL0 {}
