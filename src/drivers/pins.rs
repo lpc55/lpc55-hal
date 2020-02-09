@@ -397,8 +397,8 @@ macro_rules! special_pins {
 
 special_pins! {
     (Pio1_16, pio1_16): {
-        (3, CT1MAT3): [
-            (into_ctimer1_mat3, Ctimer1, Ctimer1Mat3),
+        (3, CTIMER_MAT): [
+            (into_ctimer1_mat3, Ctimer1, CtimerMatPin),
         ]
     }
 }

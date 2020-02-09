@@ -19,9 +19,12 @@ use crate::peripherals::{
     ctimer::Ctimer,
 };
 use crate::typestates::{
-    pin::PinId,
-    pin::state,
-    pin::gpio::direction,
+    pin::{
+        function,
+        PinId,
+        state,
+        gpio::direction,
+    },
 };
 use crate::{
     typestates::{
@@ -35,23 +38,20 @@ use crate::drivers::timer::Lap;
 
 type Adc = crate::peripherals::adc::Adc<init_state::Enabled>;
 
-type Result<T, PIN > = core::result::Result<T, <PIN as OutputPin>::Error>;
+type Result<T> = core::result::Result<T, ()>;
 
 // Pin<T, state::Gpio<direction::Output>>
-pub struct TouchSensor<PIN, C: Ctimer>
+pub struct TouchSensor<C: Ctimer>
 where
-    PIN: OutputPin + StatefulOutputPin,
 {
     timer: Timer<C>,
     adc: Adc,
-    charge_pin: PIN,
     high_threshold: u16,
     low_threshold: u16,
 }
 
-impl<PIN, C> Deref for TouchSensor<PIN, C>
+impl<C> Deref for TouchSensor<C>
 where
-    PIN: OutputPin + StatefulOutputPin,
     C: Ctimer,
 {
     type Target = Adc;
@@ -60,9 +60,8 @@ where
     }
 }   
 
-impl<PIN, C> DerefMut for TouchSensor<PIN, C>
+impl<C> DerefMut for TouchSensor<C>
 where
-    PIN: OutputPin + StatefulOutputPin,
     C: Ctimer,
 {
     fn deref_mut(&mut self) -> &mut Self::Target {
@@ -70,38 +69,37 @@ where
     }
 }   
 
-impl<PIN, C> TouchSensor<PIN, C>
+impl<C> TouchSensor<C>
 where
-    PIN: OutputPin + StatefulOutputPin,
     C: Ctimer,
 {
-    pub fn new(mut adc: Adc, timer: Timer<C>, mut pin: PIN, low_threshold: u16, high_threshold: u16, _token: ClocksSupportTouchToken) -> Result<Self, PIN> {
+    pub fn new(mut adc: Adc, timer: Timer<C>, pin: & Pin<impl PinId, state::Special<function::CTIMER_MAT>>, 
+        low_threshold: u16, high_threshold: u16, _token: ClocksSupportTouchToken) -> Result<Self> {
 
-        pin.set_low()?;
+        // pin.set_low()?;
 
        
         Ok(Self {
             adc: adc,
             timer: timer,
-            charge_pin: pin,
             high_threshold: high_threshold,
             low_threshold: low_threshold,
         })
     }
 
-    pub fn discharge(&mut self) -> Result<(), PIN>{
-        self.charge_pin.set_low()?;
+    pub fn discharge(&mut self) -> Result<()>{
+        // self.charge_pin.set_low()?;
         Ok(())
     }
 
-    pub fn charge(&mut self) -> Result<(), PIN>{
-        self.charge_pin.set_high()?;
+    pub fn charge(&mut self) -> Result<()>{
+        // self.charge_pin.set_high()?;
         Ok(())
     }
 
 
 
-    pub fn measure(&mut self, channel: &Pin<impl PinId, state::Analog<direction::Input>>) -> Result<MicroSeconds, PIN> {
+    pub fn measure(&mut self, channel: &Pin<impl PinId, state::Analog<direction::Input>>) -> Result<MicroSeconds> {
         // assert!(self.charge_pin.is_set_low()?);
 
         self.arm_comparator_channel(channel.state.channel);
@@ -113,7 +111,7 @@ where
 
         //get sample + start charge
         self.adc.swtrig.write(|w| unsafe {w.bits(1)});
-        self.charge_pin.set_high()?;
+        // self.charge_pin.set_high()?;
         while self.fctrl[0].read().fcount().bits() == 0 {
             if self.timer.lap().0 > 900 {
                 self.cancel_compare();
@@ -125,18 +123,18 @@ where
         assert!( (result & 0x80000000) != 0 );
 
         // 
-        self.adc.set_threshold(self.low_threshold, 0x7fff);
-        self.adc.swtrig.write(|w| unsafe {w.bits(1)});
-        self.charge_pin.set_low()?;
-        while self.fctrl[0].read().fcount().bits() == 0 {
-            if self.timer.lap().0 > 1900 {
-                self.cancel_compare();
-                self.timer.cancel().ok();
-                return Ok(MicroSeconds(2000));
-            }
-        }
-        let result = self.resfifo[0].read().bits();
-        assert!( (result & 0x80000000) != 0 );
+        // self.adc.set_threshold(self.low_threshold, 0x7fff);
+        // self.adc.swtrig.write(|w| unsafe {w.bits(1)});
+        // self.charge_pin.set_low()?;
+        // while self.fctrl[0].read().fcount().bits() == 0 {
+        //     if self.timer.lap().0 > 1900 {
+        //         self.cancel_compare();
+        //         self.timer.cancel().ok();
+        //         return Ok(MicroSeconds(2000));
+        //     }
+        // }
+        // let result = self.resfifo[0].read().bits();
+        // assert!( (result & 0x80000000) != 0 );
 
         let duration = self.timer.lap();
         self.timer.cancel().ok();
