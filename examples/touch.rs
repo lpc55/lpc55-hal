@@ -17,7 +17,6 @@ use hal::{
     drivers::{
         Pins,
         Timer,
-        timer::Lap,
         TouchSensor,
     }
 };
@@ -25,20 +24,65 @@ pub use hal::typestates::pin::state;
 pub use hal::typestates::pin::gpio::{
     direction,
 };
-struct Buttons(
-    hal::drivers::pins::Pin<hal::drivers::pins::Pio1_9, state::Analog<direction::Input>>, 
-    hal::drivers::pins::Pin<hal::drivers::pins::Pio0_31, state::Analog<direction::Input>>, 
-    hal::drivers::pins::Pin<hal::drivers::pins::Pio0_15, state::Analog<direction::Input>>, 
-);
 
-fn get_average(arr: &[u16]) -> u32{
-    let mut sum = 0u32;
-    for i in 0 .. arr.len() {
-        sum += arr[i] as u32;
-    }
-    
-    sum / (arr.len() as u32)
+#[derive(PartialEq)]
+enum ButtonState{
+    Pressed,
+    NotPressed
 }
+
+struct Buttons{
+    top: ButtonState,
+    bot: ButtonState,
+    mid: ButtonState,
+}
+
+fn get_button_state(results: &[u32]) -> Buttons{
+    let mut buts = Buttons{top: ButtonState::NotPressed, bot: ButtonState::NotPressed, mid: ButtonState::NotPressed};
+
+    let mut counts = [0u32; 3];
+    let mut sums = [0u32; 3];
+
+    // calculate running average for three buttons.
+    // readings for each are mixed in the array.
+    for i in 0 .. results.len() {
+        let res = results[i];
+        let sample = (res & 0xffff);
+        let src = ((res & (0xf << 24)) >> 24) as u8;
+
+        match src {
+            3 => {
+                counts[0] += 1;
+                sums[0] += sample;
+            }
+            4 => {
+                counts[1] += 1;
+                sums[1] += sample;
+            }
+            5 => {
+                counts[2] += 1;
+                sums[2] += sample;
+            }
+
+            _ => {
+                assert!(false);
+            }
+        }
+    }
+
+    if sums[0]/counts[0] < 10_000 {
+        buts.top = ButtonState::Pressed;
+    }
+    if sums[1]/counts[1] < 10_000 {
+        buts.bot= ButtonState::Pressed;
+    }
+    if sums[2]/counts[2] < 10_000 {
+        buts.mid = ButtonState::Pressed;
+    }
+
+    buts
+}
+
 
 #[entry]
 fn main() -> ! {
@@ -54,27 +98,28 @@ fn main() -> ! {
         .configure(&mut hal.anactrl, &mut hal.pmc, &mut hal.syscon)
         .unwrap();
 
-    let touch_token = clocks.support_touch_token().unwrap();
+    let _touch_token = clocks.support_touch_token().unwrap();
 
 
     let mut gpio = hal.gpio.enabled(&mut hal.syscon);
 
 
+
     let mut iocon = hal.iocon.enabled(&mut hal.syscon);
     let pins = Pins::take().unwrap();
 
-    let but1 = pins.pio1_9.into_analog_input(&mut iocon, &mut gpio);        // channel 12
-    let but2 = pins.pio0_31.into_analog_input(&mut iocon, &mut gpio);       // channel 3
-    let but3 = pins.pio0_15.into_analog_input(&mut iocon, &mut gpio);       // channel 2
-    let buttons = Buttons(but1,but2,but3);
+    let _but1 = pins.pio1_9.into_analog_input(&mut iocon, &mut gpio);        // channel 12
+    let _but2 = pins.pio0_31.into_analog_input(&mut iocon, &mut gpio);       // channel 3
+    let _but3 = pins.pio0_15.into_analog_input(&mut iocon, &mut gpio);       // channel 2
 
     let adc = hal::Adc::from(hal.ADC0).enabled(&mut hal.pmc, &mut hal.syscon);
+    let mut dma = hal::Dma::from(hal.DMA0).enabled(&mut hal.syscon);
 
     let mut cdriver = Timer::new(hal.ctimer.2.enabled(&mut hal.syscon));
 
-    let adc = adc.release();
+    let mut adc = adc.release();
 
-    let charge_pin = pins.pio1_16.into_ctimer1_mat3(&mut iocon);
+    let _charge_pin = pins.pio1_16.into_ctimer1_mat3(&mut iocon);
 
     let touch_timer = Timer::new(hal.ctimer.1.enabled(&mut hal.syscon));
     let touch_timer = touch_timer.release().release();
@@ -100,7 +145,7 @@ fn main() -> ! {
 
 
     // MR3 starts charge or discharge.  1000 us should be ample time to either charge or discharge;
-    touch_timer.mr[3].write(|w| unsafe { w.bits(1000) });
+    touch_timer.mr[3].write(|w| unsafe { w.bits(800) });
 
     // Clear mr3 interrupt
     touch_timer.ir.write(|w| { w.mr3int().set_bit() });     // setting bit clears it
@@ -149,166 +194,38 @@ fn main() -> ! {
                                 .wait_trig().set_bit()
                             } );
 
+    let mut samples = [0u32; 112];
+
+    dma.configure_adc(&mut adc, &mut samples);
+
     // Start timer
     touch_timer.tcr.write(|w| {
         w.crst().clear_bit()
         .cen().set_bit()
     });
 
+    cdriver.start(200.ms());
+    block!(cdriver.wait()).unwrap();
+
+    for i in 0 .. samples.len() {
+        assert!( samples[i] != 0 );
+    }
 
     heprintln!("looping").unwrap();
-    let mut hist1 = [0u16; 32];
-    let mut hist2 = [0u16; 32];
-    let mut hist3 = [0u16; 32];
-    let mut iter1 = 0;
-    let mut iter2 = 0;
-    let mut iter3 = 0;
-
-    let mut hist_source = [0u8; 32];
-
-    cdriver.start(300.ms());
-    let mut total = 0u32;
 
     loop {
 
-        let count = adc.fctrl[0].read().fcount().bits();
-        if count > 0 {
+        let buts = get_button_state(&samples);
 
-
-
-            let result = adc.resfifo[0].read().bits();
-            assert!((result & 0x80000000) != 0);
-            let sample = (result & 0xffff) as u16;
-
-            let src = ((result & (0xf << 24)) >> 24) as u8;
-
-            match src {
-                3 => {
-                    hist1[iter1] = sample;
-                    iter1 = (iter1 + 1) % 32;
-                },
-                4 => {
-                    hist2[iter2] = sample;
-                    iter2 = (iter2 + 1) % 32;
-                },
-                5 => {
-                    hist3[iter3] = sample;
-                    iter3 = (iter3 + 1) % 32;
-                },
-                _ => {
-                    assert!(false);
-                }
-            };
-
-            total += 1;
-
-            // heprintln!("{} ({})", sample, count).unwrap();
-
+        if buts.top == ButtonState::Pressed {
+            heprintln!("top").unwrap();
+        }
+        if buts.bot == ButtonState::Pressed {
+            heprintln!("bot").unwrap();
+        }
+        if buts.mid == ButtonState::Pressed {
+            heprintln!("mid").unwrap();
         }
 
-        if cdriver.wait().is_ok() {
-            cdriver.start(1000.ms());
-            heprintln!("av: {:05} {:05} {:05} ({}, {})", get_average(&hist1), get_average(&hist2), get_average(&hist3), count, total).unwrap();
-            // dbg!(hist_source);
-            total = 0;
-
-        }
-
-        // heprintln!("timer: {:02x}, {:02x}, {}", touch_timer.tcr.read().bits(), touch_timer.emr.read().bits(), touch_timer.tc.read().bits()).unwrap();
-
-        // Some delay before start of period.
-        // block!(cdriver.wait()).unwrap();
-
-        // // Measure button 1
-        // t0 = touch_sensor.measure(&buttons.0).unwrap().0;
-
-
-        // // Delay again and get a normal measurement to see max charge value (Only for debugging / tuning) 
-        // cdriver.start(1.ms());
-        // block!(cdriver.wait()).unwrap();
-        // max0 = touch_sensor.read(&buttons.0).unwrap();
-        // //
-
-        // // Discharge at end of period
-        // touch_sensor.discharge().unwrap();
-
-        /////////////
-
-        // Some delay before start of period.
-        // let averages = 1;
-
-        // let mut samples = [0u32; 128];
-        // let mut times = [0u32; 128];
-
-        // for i in 0..averages {
-
-        // // Measure button 2
-        // // let t1 = touch_sensor.measure(&buttons.2).unwrap();
-        //     touch_sensor.charge().unwrap();
-        //     samples[i] = touch_sensor.read(&buttons.2).unwrap() as u32;
-        //     // samples[i] += touch_sensor.read(&buttons.2).unwrap() as u32;
-
-        //     touch_sensor.discharge().unwrap();
-        //     cdriver.start(2.ms());
-        //     block!(cdriver.wait()).unwrap();
-
-        // }
-        //     touch_sensor.discharge().unwrap();
-        //     cdriver.start(2.ms());
-        //     block!(cdriver.wait()).unwrap();
-        //     let low = touch_sensor.read(&buttons.1).unwrap();
-
-        // max1 = touch_sensor.read(&buttons.1).unwrap();
-        // touch_sensor.discharge().unwrap();
-        // cdriver.start(2.ms());
-        // block!(cdriver.wait()).unwrap();
-
-        // Measure button 2
-        // t1 = touch_sensor.measure(&buttons.1).unwrap().0;
-
-        // // Delay again and get a normal measurement to see max charge value (Only for debugging / tuning) 
-        // cdriver.start(1.ms());
-        // block!(cdriver.wait()).unwrap();
-        // max1 = touch_sensor.read(&buttons.1).unwrap();
-        // //
-
-        // // Discharge at end of period
-        // touch_sensor.discharge().unwrap();
-
-        // /////////////
-
-        // // Some delay before start of period.
-        // cdriver.start(1.ms());
-        // block!(cdriver.wait()).unwrap();
-
-        // // Measure button 3
-        // t2 = touch_sensor.measure(&buttons.2).unwrap().0;
-
-        // // Delay again and get a normal measurement to see max charge value (Only for debugging / tuning) 
-        // cdriver.start(1.ms());
-        // block!(cdriver.wait()).unwrap();
-        // max2 = touch_sensor.read(&buttons.2).unwrap();
-        // //
-
-        // // Discharge at end of period
-        // touch_sensor.discharge().unwrap();
-
-
-
-        // heprintln!("0: {}-{}, 1: {}-{}, 2: {}-{}", t0, max0, t1, max1, t2, max2).unwrap();
-        // let mut sum = 0u32;
-        // for i in 0..averages {
-        //     sum += samples[i] as u32;
-        // }
-        // for i in 0..2 {
-        //     heprintln!("{:06}  {:06}", samples[i], times[i]);
-        // }
-
-        // heprintln!("ave: {:02}, {:02} {:02} {:02} {:02}", sum / (averages as u32), samples[0], samples[1], samples[2], samples[3], ).unwrap();
-        // heprintln!("ave: {:02}, low: {:02}", sum / (averages as u32), low, ).unwrap();
-
-
-        // dbg!(samples);
-        // heprintln!("{}-{}",  t1.0, max1, ).unwrap();
     }
 }
