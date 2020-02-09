@@ -2,6 +2,7 @@ use crate::{
     raw,
     peripherals::{
         syscon::Syscon,
+        adc::Adc,
     },
     typestates::{
         init_state,
@@ -76,37 +77,46 @@ impl<State> Dma<State> {
         }
     }
 
-    pub fn configure_adc(&mut self, adc: &mut raw::ADC0, recv_buf: &mut [u32]) {
+    /// Configures DMA to write any new results from ADC FIFO 0
+    /// to a user supplied array in circular fashion.  Runs continuously.
+    pub fn configure_adc(&mut self, adc: &mut Adc<init_state::Enabled>, recv_buf: &mut [u32]) {
         assert!(recv_buf.len() < 0x3FF);
 
         self.raw.channel21.cfg.write(|w| unsafe{
             w
-            .periphreqen().set_bit()        // Wait when ADC is ready
-            .hwtrigen().clear_bit()         // Will run infinitely
+            .periphreqen().set_bit()        // DMA blocks until ADC FIFO is ready
+            .hwtrigen().clear_bit()         // Will software trigger
             .trigpol().clear_bit()          // falling edge
             .trigtype().clear_bit()         // edge sensitive
-            .trigburst().clear_bit()
-            // .trigburst().set_bit()
-            // .burstpower().bits(3)           // Move 2^3 = 8 chunks at a time
+            .trigburst().clear_bit()        // No need to burst
             .chpriority().bits(1)           // 0 highest, 7 lowest
         });
 
         self.raw.channel21.xfercfg.write(|w| unsafe{
             w
-            .cfgvalid().set_bit()
-            .reload().set_bit()
-            .swtrig().clear_bit()
-            .width().bit_32()
+            .cfgvalid().set_bit()           // channel descriptor will be valid (set below)
+            .reload().set_bit()             // Reload next descriptor in .next pointer
+            .swtrig().clear_bit()           // Dont start triggered
+            .width().bit_32()               // u32 read from FIFO
+
+            // *dst++ = FIFO
             .srcinc().no_increment()
             .dstinc().width_x_1()
+
+            // total transferred will be (xfercount + 1)
             .xfercount().bits( (recv_buf.len() - 1) as u16)
         });
 
         unsafe {
-            // Plan to reload same config
+            // Use same config on reload
             DESCRIPTORS.21.transfer_config = self.raw.channel21.xfercfg.read().bits();
-            DESCRIPTORS.21.source_end_addr = (raw::ADC0::ptr() as u32) + 0x300;     // FIFOA offset
+
+            // Get data from ADC FIFO A
+            DESCRIPTORS.21.source_end_addr = (raw::ADC0::ptr() as u32) + 0x300;
+
+            // End address should point to the last valid location DMA should write to.
             DESCRIPTORS.21.dest_end_addr = (recv_buf.as_mut_ptr() as u32) + (recv_buf.len() * 4 - 4) as u32;
+
             // Point back to itself to loop & use circular buffer.
             DESCRIPTORS.21.next = ((&DESCRIPTORS.21) as *const Descriptor) as u32;      
         }

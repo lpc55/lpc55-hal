@@ -18,7 +18,7 @@ pub type Ctimers = (
     Ctimer4,
 );
 
-pub trait Ctimer: Deref<Target = raw::ctimer0::RegisterBlock> {}
+pub trait Ctimer<State>: Deref<Target = raw::ctimer0::RegisterBlock> {}
 
 macro_rules! ctimer {
     ($c_hal:ident, $c_pac:ident, $register:ident, $clock_input:ident) => {
@@ -31,7 +31,7 @@ macro_rules! ctimer {
             &self.raw
         }
     }   
-    impl Ctimer for $c_hal<init_state::Enabled> {}
+    impl Ctimer<init_state::Enabled> for $c_hal<init_state::Enabled> {}
     
 
     impl<State> $c_hal<State> {
