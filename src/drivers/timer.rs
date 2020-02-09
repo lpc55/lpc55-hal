@@ -9,6 +9,11 @@ use crate::peripherals::ctimer::{
 use crate::time::{
     MicroSeconds
 };
+use crate::{
+    typestates::{
+        init_state,
+    }
+};
 
 pub trait Lap <Unit>{
     fn lap(&self) -> Unit;
@@ -16,13 +21,13 @@ pub trait Lap <Unit>{
 
 pub struct Timer<TIMER>
 where
-    TIMER: Ctimer,
+    TIMER: Ctimer<init_state::Enabled>,
 {
     timer: TIMER,
 }
 
 impl <TIMER> Timer<TIMER>
-where TIMER: Ctimer {
+where TIMER: Ctimer<init_state::Enabled> {
 
     pub fn new(timer: TIMER) -> Self{
         Self {
@@ -39,7 +44,7 @@ where TIMER: Ctimer {
 type TimeUnits = MicroSeconds;
 
 impl <TIMER> Lap<TimeUnits> for Timer<TIMER>
-where TIMER: Ctimer {
+where TIMER: Ctimer<init_state::Enabled> {
     fn lap(&self) -> TimeUnits{
         MicroSeconds(self.timer.tc.read().bits())
     }
@@ -47,7 +52,7 @@ where TIMER: Ctimer {
 
 
 impl<TIMER> timer::CountDown for Timer<TIMER> 
-where TIMER: Ctimer
+where TIMER: Ctimer<init_state::Enabled>
 {
     type Time = TimeUnits;
 
@@ -91,7 +96,7 @@ where TIMER: Ctimer
 }
 
 impl<TIMER> timer::Cancel for Timer<TIMER>
-where TIMER: Ctimer
+where TIMER: Ctimer<init_state::Enabled>
 {
     type Error = Infallible;
     fn cancel(&mut self) -> Result<(), Self::Error>{
