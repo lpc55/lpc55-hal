@@ -145,7 +145,10 @@ impl<State> Adc<State> {
 
 
         // No pause for now, but could be interesting
-        self.raw.pause.write(|w| unsafe {w.bits(0)});
+        self.raw.pause.write(|w| unsafe {
+            w.pausedly().bits(0)
+            .pauseen().clear_bit()
+        });
 
         // Set 0 for watermark
         self.raw.fctrl[0].write(|w| unsafe{w.fwmark().bits(0)});
