@@ -56,6 +56,7 @@ pub use peripherals::{
     anactrl::Anactrl,
     casper::Casper,
     ctimer::Ctimers,
+    dma::Dma,
     flash::Flash,
     flexcomm::Flexcomm,
     gpio::Gpio,
@@ -154,6 +155,9 @@ pub struct Peripherals {
     /// Standard counter/timer (CTIMER)
     pub ctimer: Ctimers,
 
+    /// Direct memory access
+    pub DMA0: raw::DMA0,
+
     pub FLASH_CMPA: raw::FLASH_CMPA,
     pub FLASH_CFPA0: raw::FLASH_CFPA0,
 
@@ -224,6 +228,7 @@ impl From<(raw::Peripherals, rtfm::Peripherals)> for Peripherals {
             // Raw peripherals
             ADC0: p.ADC0,
             CRC_ENGINE: p.CRC_ENGINE,
+            DMA0: p.DMA0,
             FLASH_CMPA: p.FLASH_CMPA,
             FLASH_CFPA0: p.FLASH_CFPA0,
             SCT0: p.SCT0,
@@ -279,6 +284,7 @@ impl From<(raw::Peripherals, raw::CorePeripherals)> for Peripherals {
             // Raw peripherals
             ADC0: p.ADC0,
             CRC_ENGINE: p.CRC_ENGINE,
+            DMA0: p.DMA0,
             FLASH_CMPA: p.FLASH_CMPA,
             FLASH_CFPA0: p.FLASH_CFPA0,
             SCT0: p.SCT0,

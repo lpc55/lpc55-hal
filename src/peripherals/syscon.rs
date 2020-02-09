@@ -214,6 +214,7 @@ impl_clock_control!(raw::CTIMER1, timer1, ahbclkctrl1);
 impl_clock_control!(raw::CTIMER2, timer2, ahbclkctrl1);
 impl_clock_control!(raw::CTIMER3, timer3, ahbclkctrl2);
 impl_clock_control!(raw::CTIMER4, timer4, ahbclkctrl2);
+impl_clock_control!(raw::DMA0, dma0, ahbclkctrl0);
 impl_clock_control!(raw::FLASH, flash, ahbclkctrl0);
 impl_clock_control!(raw::FLEXCOMM0, fc0, ahbclkctrl1);
 impl_clock_control!(raw::FLEXCOMM1, fc1, ahbclkctrl1);

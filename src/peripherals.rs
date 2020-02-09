@@ -19,8 +19,11 @@
 //! let syscon = hal.syscon;
 //! ```
 
+pub mod adc;
 pub mod anactrl;
 pub mod casper;
+pub mod ctimer;
+pub mod dma;
 pub mod flash;
 pub mod flexcomm;
 pub mod gint;
@@ -31,5 +34,3 @@ pub mod rng;
 pub mod syscon;
 pub mod usbfs;
 pub mod utick;
-pub mod adc;
-pub mod ctimer;
