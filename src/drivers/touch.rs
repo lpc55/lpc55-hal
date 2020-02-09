@@ -38,10 +38,12 @@ pub struct TouchSensor<P1 : PinId, P2 :  PinId, P3 : PinId,
     threshold: u32,
     adc: Adc,
     ctimer: ctimer::Ctimer1<init_state::Enabled>,
-    buttons: ButtonPins<P1,P2,P3>,
-    results: [u32; 112],
+    _buttons: ButtonPins<P1,P2,P3>,
     // pub _state: State,
 }
+
+// DMA memory
+static mut RESULTS: [u32; 112] = [0u32; 112];
 
 impl<P1,P2,P3> Deref for TouchSensor<P1, P2, P3>
 where P1: PinId, P2: PinId, P3: PinId
@@ -140,16 +142,14 @@ where P1: PinId, P2: PinId, P3: PinId
         Self {
             adc: adc,
             ctimer: ctimer,
-            buttons: buttons,
+            _buttons: buttons,
             threshold: threshold,
-            results: [0u32; 112],
             // _state: init_state::Unknown,
         }
     }
 
 
 }
-
 
 impl<P1,P2,P3,> TouchSensor<P1, P2, P3, >
 where P1: PinId, P2: PinId, P3: PinId, 
@@ -161,7 +161,7 @@ where P1: PinId, P2: PinId, P3: PinId,
             ) -> Self //<init_state::Enabled>
             {
 
-        dma.configure_adc(&mut self.adc, &mut self.results);
+        dma.configure_adc(&mut self.adc, unsafe {&mut RESULTS} );
 
         // Start timer
         self.ctimer.tcr.write(|w| {
@@ -194,9 +194,9 @@ where P1: PinId, P2: PinId, P3: PinId,
     /// Dumb average / level-states
     pub fn get_button_state(&self, ) -> Buttons{
         let mut buts = Buttons{top: ButtonState::NotPressed, bot: ButtonState::NotPressed, mid: ButtonState::NotPressed};
-        let results = self.results;
+        let results = unsafe { RESULTS };
 
-        let mut counts = [0u32; 3];
+        let mut counts = [1u32; 3];
         let mut sums = [0u32; 3];
 
         // calculate running average for three buttons.
@@ -206,20 +206,20 @@ where P1: PinId, P2: PinId, P3: PinId,
             let sample = res & 0xffff;
             let src = ((res & (0xf << 24)) >> 24) as u8;
 
-            if src == self.buttons.0.state.channel {
+            if src == 3 {
                 counts[0] += 1;
                 sums[0] += sample;
             }
-            else if src == self.buttons.1.state.channel {
+            else if src == 4 {
                 counts[1] += 1;
                 sums[1] += sample;
             }
-            else if src == self.buttons.2.state.channel {
+            else if src == 5 {
                 counts[2] += 1;
                 sums[2] += sample;
             }
             else {
-                assert!(false);
+                // assert!(false);
             }
         }
 
