@@ -12,6 +12,7 @@ use crate::{
             gpio::direction,
         },
         init_state,
+        ClocksSupportTouchToken,
     },
     drivers::{
         Pin,
@@ -188,6 +189,7 @@ where P1: PinId, P2: PinId, P3: PinId,
     pub fn enabled(
                 mut self,
                 dma: &mut Dma<init_state::Enabled>,
+                _token: ClocksSupportTouchToken,
             ) -> Self //<init_state::Enabled>
             {
 
