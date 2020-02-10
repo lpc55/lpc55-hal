@@ -39,12 +39,12 @@ fn main() -> ! {
 
     let mut hal = hal::new();
 
-    let _clocks = hal::ClockRequirements::default()
+    let clocks = hal::ClockRequirements::default()
         .system_frequency(96.mhz())
         .configure(&mut hal.anactrl, &mut hal.pmc, &mut hal.syscon)
         .unwrap();
 
-
+    let touch_token = clocks.support_touch_token().unwrap();
 
     let mut gpio = hal.gpio.enabled(&mut hal.syscon);
 
@@ -70,7 +70,7 @@ fn main() -> ! {
     let mut delay_timer = Timer::new(hal.ctimer.0.enabled(&mut hal.syscon));
 
     let touch_sensor = TouchSensor::new(11_900, 5, adc, touch_timer, touch_sync_timer, charge_pin, button_pins);
-    let mut touch_sensor = touch_sensor.enabled(&mut dma);
+    let mut touch_sensor = touch_sensor.enabled(&mut dma, touch_token);
 
     // Used to get tunning information for capacitive touch
     if 1 == 0 {
