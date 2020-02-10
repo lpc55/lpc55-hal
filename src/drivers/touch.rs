@@ -19,7 +19,8 @@ use crate::typestates::{
 use crate::{
     typestates::{
         init_state,
-    }
+    },
+    time,
 };
 
 pub struct ButtonPins<P1 : PinId, P2 :  PinId, P3 : PinId>(
@@ -30,6 +31,7 @@ pub struct ButtonPins<P1 : PinId, P2 :  PinId, P3 : PinId>(
 
 type Adc = crate::peripherals::adc::Adc<init_state::Enabled>;
 
+const CHARGE_PERIOD_US: u32= 800;
 
 pub struct TouchSensor<P1 : PinId, P2 :  PinId, P3 : PinId, 
 // State : init_state::InitState
@@ -43,7 +45,10 @@ pub struct TouchSensor<P1 : PinId, P2 :  PinId, P3 : PinId,
 }
 
 // DMA memory
-static mut RESULTS: [u32; 112] = [0u32; 112];
+// Length should be 4-5 samples more than (3 * 2 * running average) to ensure
+// there's always at least (2 * running average) samples from a given ADC source.
+// Running average == 20 samples
+static mut RESULTS: [u32; 125] = [0u32; 125];
 
 impl<P1,P2,P3> Deref for TouchSensor<P1, P2, P3>
 where P1: PinId, P2: PinId, P3: PinId
@@ -74,6 +79,7 @@ where P1: PinId, P2: PinId, P3: PinId
             ) -> Self {
 
         // Last match (3) triggers MAT to TOGGLE (start charging or discharging), interrupt ADC trigger.
+        // Use match (2) for general timing info
         ctimer.mcr.write(|w| {
             w
             .mr3i().set_bit()           // enable interrupt
@@ -87,7 +93,7 @@ where P1: PinId, P2: PinId, P3: PinId
         });
 
         // MR3 starts charge or discharge.  should give ample time to either charge or discharge;
-        ctimer.mr[3].write(|w| unsafe { w.bits(800) });
+        ctimer.mr[3].write(|w| unsafe { w.bits(CHARGE_PERIOD_US) });
 
         // Clear mr3 interrupt.  Setting bit clears it.
         ctimer.ir.write(|w| { w.mr3int().set_bit() });
@@ -186,50 +192,118 @@ pub struct Buttons{
 }
 
 
+use cortex_m_semihosting::heprintln;
+use cortex_m_semihosting::dbg;
+
 // for Enabled TouchSensor
 impl<P1,P2,P3,> TouchSensor<P1, P2, P3, >
 where P1: PinId, P2: PinId, P3: PinId, 
 {
 
-    /// Dumb average / level-states
-    pub fn get_button_state(&self, ) -> Buttons{
-        let mut buts = Buttons{top: ButtonState::NotPressed, bot: ButtonState::NotPressed, mid: ButtonState::NotPressed};
-        let results = unsafe { RESULTS };
+    /// Count how many elements from a source are available
+    pub fn count(&self,bufsel: u8) -> u32{
+        let results = unsafe { &RESULTS };
+        let mut count = 0u32;
+        for i in 0 .. results.len() {
+            let src = ((results[i] & (0xf << 24)) >> 24) as u8;
 
-        let mut counts = [1u32; 3];
-        let mut sums = [0u32; 3];
+            if src == bufsel {
+                count += 1;
+            }
+        }
+        count
+    }
 
-        // calculate running average for three buttons.
-        // readings for each are mixed in the array.
+    pub fn get_results(&self) -> &[u32] {
+        return unsafe {&RESULTS};
+    }
+
+    fn measure_buffer(bufsel: u8, filtered: &mut [u32; 30]){
+        let results = unsafe { &RESULTS };
+        let mut buf = [0u32; 40];
+        let mut buf_i = 0;
+
+        // Organize the buffer
         for i in 0 .. results.len() {
             let res = results[i];
-            let sample = res & 0xffff;
             let src = ((res & (0xf << 24)) >> 24) as u8;
 
-            if src == 3 {
-                counts[0] += 1;
-                sums[0] += sample;
-            }
-            else if src == 4 {
-                counts[1] += 1;
-                sums[1] += sample;
-            }
-            else if src == 5 {
-                counts[2] += 1;
-                sums[2] += sample;
-            }
-            else {
-                // assert!(false);
+            if src == bufsel {
+                buf[buf_i] = res & 0xffff;
+                buf_i += 1;
+                if buf_i == buf.len() {
+                    break;
+                }
             }
         }
 
-        if sums[0]/counts[0] < self.threshold {
+        // Running average of 10 samples to produce 30-length filtered buffer
+        for i in 0 .. 30 {
+            let mut sum = 0;
+            for j in 0 .. 10 {
+                let samp = buf[i + j];
+                sum += samp;
+            }
+            filtered[i] = sum / 10;
+        }
+
+    }
+
+    pub fn is_touched(&self, bufsel: u8) -> bool{
+        let mut filtered = [0u32; 30];
+
+        Self::measure_buffer(bufsel, &mut filtered);
+
+        let mut max_streak = 0;
+        let mut streak = 0;
+
+        let mut starting_point = 0;
+
+
+        for i in 0 .. 30 {
+            if filtered[i] > self.threshold {
+                starting_point = i;
+                break;
+            }
+        }
+
+        for i in 0 .. 30 {
+            if filtered[(i + starting_point) % 30] < self.threshold {
+                streak += 1;
+                if streak > max_streak {
+                    max_streak = streak;
+                }
+            } else {
+                streak = 0;
+            }
+        }
+
+        return max_streak > 5;
+    }
+
+    // pub fn wait_for_touch(&self, bufsel: u8, timeout: time::MicroSeconds) -> Result<(), Timeout>{
+    //     let total = timeout.0;
+    //     let mut elapse = 0u32;
+
+    //     if !self.is_touched(bufsel) {
+            
+    //         if self.ctimer.ir.read().mr3int().bit_is_set() {
+
+    //         }
+    //     }
+
+    // }
+
+    pub fn get_button_state(&self, ) -> Buttons{
+        let mut buts = Buttons{top: ButtonState::NotPressed, bot: ButtonState::NotPressed, mid: ButtonState::NotPressed};
+
+        if self.is_touched(3) {
             buts.top = ButtonState::Pressed;
         }
-        if sums[1]/counts[1] < self.threshold {
-            buts.bot= ButtonState::Pressed;
+        if self.is_touched(4) {
+            buts.bot = ButtonState::Pressed;
         }
-        if sums[2]/counts[2] < self.threshold {
+        if self.is_touched(5) {
             buts.mid = ButtonState::Pressed;
         }
 

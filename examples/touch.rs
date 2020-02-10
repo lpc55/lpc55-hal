@@ -17,6 +17,7 @@ use hal::{
     drivers::{
         Pins,
         Timer,
+        timer::Lap,
         TouchSensor,
         touch::ButtonPins,
         touch::ButtonState,
@@ -58,19 +59,54 @@ fn main() -> ! {
 
     let mut dma = hal::Dma::from(hal.DMA0).enabled(&mut hal.syscon);
 
-    let touch_sensor = TouchSensor::new(10_000, adc, touch_timer, charge_pin, button_pins);
-    let touch_sensor = touch_sensor.enabled(&mut dma);
 
     let mut delay_timer = Timer::new(hal.ctimer.2.enabled(&mut hal.syscon));
+    delay_timer.start(300.ms());
 
-    delay_timer.start(200.ms());
-    block!(delay_timer.wait()).unwrap();
+    let touch_sensor = TouchSensor::new(10_000, adc, touch_timer, charge_pin, button_pins);
 
-    heprintln!("looping").unwrap();
+    let mut times = [0u32; 125];
+
+    let touch_sensor = touch_sensor.enabled(&mut dma);
+    let start = delay_timer.lap().0;
+    let results = touch_sensor.get_results();
+
+    // block!(delay_timer.wait()).unwrap();
+
+    while true {
+        let mut has_zero = false;
+        for i in 0 .. 125 {
+            if results[i] != 0 {
+                if times[i] == 0 {
+                    times[i] = delay_timer.lap().0 -start;
+                }
+            }
+            else {
+                has_zero = true;
+            }
+        }
+        if !has_zero {
+            break;
+        }
+    }
+
+    for i in 0 .. 125 {
+        heprintln!("{}: {}us", i, times[i]).unwrap();
+    }
 
     loop {
 
         let buts = touch_sensor.get_button_state();
+
+        // assert!( touch_sensor.count(3) >= 40 );
+        // assert!( touch_sensor.count(4) >= 40 );
+        // assert!( touch_sensor.count(5) >= 40 );
+
+        //     heprintln!("{:02} {:02} {:02}",
+        //     touch_sensor.count(3),
+        //     touch_sensor.count(4),
+        //     touch_sensor.count(5),
+        // ).unwrap();
 
         if buts.top == ButtonState::Pressed {
             heprintln!("top").unwrap();
