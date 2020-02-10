@@ -1,26 +1,32 @@
 use core::ops::{Deref, DerefMut};
-use crate::drivers::{
-    Pin,
-    pins,
-};
-
-use crate::peripherals::{
-    ctimer,
-    dma::Dma,
-};
-use crate::typestates::{
-    pin::{
-        function,
-        PinId,
-        state,
-        gpio::direction,
-    },
-};
+use nb;
+// use cortex_m_semihosting::dbg;
+// use cortex_m_semihosting::heprintln;
+use crate::traits::wg::timer::CountDown;
 use crate::{
     typestates::{
+        pin::{
+            function,
+            PinId,
+            state,
+            gpio::direction,
+        },
         init_state,
     },
-    time,
+    drivers::{
+        Pin,
+        pins,
+        timer,
+        timer::Lap,
+    },
+    peripherals::{
+        ctimer,
+        dma::Dma,
+    },
+    time::*,
+    traits::{
+        buttons,
+    },
 };
 
 pub struct ButtonPins<P1 : PinId, P2 :  PinId, P3 : PinId>(
@@ -31,15 +37,16 @@ pub struct ButtonPins<P1 : PinId, P2 :  PinId, P3 : PinId>(
 
 type Adc = crate::peripherals::adc::Adc<init_state::Enabled>;
 
-const CHARGE_PERIOD_US: u32= 800;
 
 pub struct TouchSensor<P1 : PinId, P2 :  PinId, P3 : PinId, 
 // State : init_state::InitState
 >
 {
     threshold: u32,
+    confidence: u32,
     adc: Adc,
-    ctimer: ctimer::Ctimer1<init_state::Enabled>,
+    adc_timer: ctimer::Ctimer1<init_state::Enabled>,
+    sample_timer: ctimer::Ctimer2<init_state::Enabled>,
     _buttons: ButtonPins<P1,P2,P3>,
     // pub _state: State,
 }
@@ -47,8 +54,13 @@ pub struct TouchSensor<P1 : PinId, P2 :  PinId, P3 : PinId,
 // DMA memory
 // Length should be 4-5 samples more than (3 * 2 * running average) to ensure
 // there's always at least (2 * running average) samples from a given ADC source.
-// Running average == 20 samples
-static mut RESULTS: [u32; 125] = [0u32; 125];
+// Running average == 8 samples
+const RESULTS_LEN: usize = 128;             // Total buffer size, should be power of 2 to make more efficient
+const RESULTS_LEAD_SIZE: usize = 3;         // Number of initial results to skip, improve latency
+static mut RESULTS: [u32; RESULTS_LEN] = [0u32; RESULTS_LEN];
+
+// ADC sample period in us
+const CHARGE_PERIOD_US: u32 = 800;
 
 impl<P1,P2,P3> Deref for TouchSensor<P1, P2, P3>
 where P1: PinId, P2: PinId, P3: PinId
@@ -70,33 +82,43 @@ where P1: PinId, P2: PinId, P3: PinId
 impl<P1,P2,P3, > TouchSensor<P1, P2, P3, >
 where P1: PinId, P2: PinId, P3: PinId
 {
+    /// Threshold is the ADC sample limit where an is considered.
+    /// Confidence is the number of times the threshold needs to be crossed
     pub fn new(
                 threshold: u32, 
+                confidence: u32,
                 adc: Adc, 
-                ctimer: ctimer::Ctimer1<init_state::Enabled>, 
+                adc_timer: ctimer::Ctimer1<init_state::Enabled>, 
+                sample_timer: ctimer::Ctimer2<init_state::Enabled>, 
                 _charge_pin: Pin<pins::Pio1_16, state::Special<function::CTIMER_MAT>>, 
                 buttons: ButtonPins<P1,P2,P3>,
             ) -> Self {
 
         // Last match (3) triggers MAT to TOGGLE (start charging or discharging), interrupt ADC trigger.
         // Use match (2) for general timing info
-        ctimer.mcr.write(|w| {
+        adc_timer.mcr.write(|w| {
             w
             .mr3i().set_bit()           // enable interrupt
             .mr3r().set_bit()           // reset timer
             .mr3s().clear_bit()         // do not stop.
         } );
 
-        ctimer.emr.write(|w| {
+        adc_timer.emr.write(|w| {
             w
             .emc3().toggle()               // match 3 charge
         });
 
         // MR3 starts charge or discharge.  should give ample time to either charge or discharge;
-        ctimer.mr[3].write(|w| unsafe { w.bits(CHARGE_PERIOD_US) });
+        adc_timer.mr[3].write(|w| unsafe { w.bits(CHARGE_PERIOD_US) });
 
         // Clear mr3 interrupt.  Setting bit clears it.
-        ctimer.ir.write(|w| { w.mr3int().set_bit() });
+        adc_timer.ir.write(|w| { w.mr3int().set_bit() });
+
+        // Sample timer is used to correlate which is the latest sample,
+        // and is syncrondized with ADC DMA transactions
+        sample_timer.mcr.write(|w| unsafe {w.bits(0)});
+        sample_timer.emr.write(|w| unsafe {w.bits(0)});
+        sample_timer.ir.modify(|r,w| unsafe {w.bits(r.bits())});
 
         // ADC trigger 6 activates from ctimer1 mat3
         adc.tctrl[6].write(|w| unsafe {
@@ -147,9 +169,11 @@ where P1: PinId, P2: PinId, P3: PinId
 
         Self {
             adc: adc,
-            ctimer: ctimer,
+            adc_timer: adc_timer,
+            sample_timer: sample_timer,
             _buttons: buttons,
             threshold: threshold,
+            confidence: confidence,
             // _state: init_state::Unknown,
         }
     }
@@ -160,40 +184,50 @@ where P1: PinId, P2: PinId, P3: PinId
 impl<P1,P2,P3,> TouchSensor<P1, P2, P3, >
 where P1: PinId, P2: PinId, P3: PinId, 
 {
-    // Starts timer and DMA to enable touch detection
+    /// Starts DMA and internal timers to enable touch detection
     pub fn enabled(
                 mut self,
                 dma: &mut Dma<init_state::Enabled>,
             ) -> Self //<init_state::Enabled>
             {
 
-        dma.configure_adc(&mut self.adc, unsafe {&mut RESULTS} );
+        dma.configure_adc(&mut self.adc, &mut self.sample_timer, unsafe {&mut RESULTS} );
 
-        // Start timer
-        self.ctimer.tcr.write(|w| {
+        // Start timers
+        self.adc_timer.tcr.write(|w| {
             w.crst().clear_bit()
             .cen().set_bit()
         });
+
+        self.sample_timer.tcr.write(|w| {
+            w.crst().clear_bit()
+            .cen().set_bit()
+        });
+
 
         self
     }
 }
 
-#[derive(PartialEq)]
-pub enum ButtonState{
-    Pressed,
-    NotPressed
+
+pub struct TouchResult {
+    pub is_active: bool,
+    pub at: usize,
 }
 
-pub struct Buttons{
-    pub top: ButtonState,
-    pub bot: ButtonState,
-    pub mid: ButtonState,
+#[derive(Copy, Clone, Debug, PartialEq)]
+enum Edge {
+    Rising,
+    Falling
+}
+
+#[derive(Copy, Clone, Debug, PartialEq)]
+enum Compare {
+    AboveThreshold,
+    BelowThreshold
 }
 
 
-use cortex_m_semihosting::heprintln;
-use cortex_m_semihosting::dbg;
 
 // for Enabled TouchSensor
 impl<P1,P2,P3,> TouchSensor<P1, P2, P3, >
@@ -201,11 +235,15 @@ where P1: PinId, P2: PinId, P3: PinId,
 {
 
     /// Count how many elements from a source are available
+    /// Used for debugging
     pub fn count(&self,bufsel: u8) -> u32{
         let results = unsafe { &RESULTS };
         let mut count = 0u32;
-        for i in 0 .. results.len() {
-            let src = ((results[i] & (0xf << 24)) >> 24) as u8;
+
+        let starting_point = self.get_starting_point();
+
+        for i in 0 .. (RESULTS_LEN - RESULTS_LEAD_SIZE) {
+            let src = ((results[(starting_point + i) % RESULTS_LEN] & (0xf << 24)) >> 24) as u8;
 
             if src == bufsel {
                 count += 1;
@@ -214,18 +252,66 @@ where P1: PinId, P2: PinId, P3: PinId,
         count
     }
 
-    pub fn get_results(&self) -> &[u32] {
-        return unsafe {&RESULTS};
+    /// For debugging
+    pub(crate) fn get_results(&self) -> &mut [u32] {
+        return unsafe {&mut RESULTS};
     }
 
-    fn measure_buffer(bufsel: u8, filtered: &mut [u32; 30]){
+    /// Used after an edge is detected to prevent the same
+    /// edge being detected twice
+    fn reset_results(&self, but: buttons::Button, val: u32) {
+        let results = unsafe {&mut RESULTS};
+        match but {
+            buttons::ButtonTop => {
+                for i in 0 .. RESULTS_LEN {
+                    if (results[i] & (0xf << 24)) == (3 << 24) {
+                        results[i] = (results[i] & (!0xffff)) | val;
+                    }
+                }
+            }
+            buttons::ButtonBot => {
+                for i in 0 .. RESULTS_LEN {
+                    if (results[i] & (0xf << 24)) == (4 << 24) {
+                        results[i] = (results[i] & (!0xffff)) | val;
+                    }
+                }
+            }
+            buttons::ButtonMid => {
+                for i in 0 .. RESULTS_LEN {
+                    if (results[i] & (0xf << 24)) == (5 << 24) {
+                        results[i] = (results[i] & (!0xffff)) | val;
+                    }
+                }
+            }
+            _ => {
+                assert!(false);
+            }
+        }
+
+    }
+
+    /// Calculates the oldest sample from ADC in the circular buffer.
+    fn get_starting_point(&self,) -> usize {
+        let sync_time = self.sample_timer.tc.read().bits();
+
+        // Skip +RESULTS_LEN samples after the last sample written. (iterate through)
+        if sync_time < 3513 {
+            RESULTS_LEAD_SIZE
+        } else {
+            ((((sync_time - 3513)/1598) as usize) + RESULTS_LEN + 1)
+        }
+    }
+
+    /// Calculate moving average of samples from a specified ADC source/channel
+    fn measure_buffer(&self, bufsel: u8, filtered: &mut [u32; 32]){
         let results = unsafe { &RESULTS };
         let mut buf = [0u32; 40];
         let mut buf_i = 0;
 
-        // Organize the buffer
-        for i in 0 .. results.len() {
-            let res = results[i];
+        let starting_point = self.get_starting_point();
+
+        for i in 0 .. (RESULTS_LEN - RESULTS_LEAD_SIZE) {
+            let res = results[(starting_point + i) % RESULTS_LEN];
             let src = ((res & (0xf << 24)) >> 24) as u8;
 
             if src == bufsel {
@@ -237,76 +323,227 @@ where P1: PinId, P2: PinId, P3: PinId,
             }
         }
 
-        // Running average of 10 samples to produce 30-length filtered buffer
-        for i in 0 .. 30 {
+        // Running average of 8 samples to produce 32-length filtered buffer
+        for i in 0 .. 32 {
             let mut sum = 0;
-            for j in 0 .. 10 {
+            for j in 0 .. 8 {
                 let samp = buf[i + j];
                 sum += samp;
             }
-            filtered[i] = sum / 10;
+            filtered[i] = sum / 8;
         }
 
     }
 
-    pub fn is_touched(&self, bufsel: u8) -> bool{
-        let mut filtered = [0u32; 30];
+    /// Use threshold and confidence value to see if indicated state has occured in current buffer
+    fn get_state(&self, bufsel: u8, ctype: Compare) -> TouchResult {
+        let mut filtered = [0u32; 32];
 
-        Self::measure_buffer(bufsel, &mut filtered);
+        self.measure_buffer(bufsel, &mut filtered);
 
-        let mut max_streak = 0;
-        let mut streak = 0;
+        // if bufsel == 5 {
+        //     dbg!(filtered);
+        // }
 
-        let mut starting_point = 0;
+        let mut streak = 0u32;
 
-
-        for i in 0 .. 30 {
-            if filtered[i] > self.threshold {
-                starting_point = i;
-                break;
-            }
-        }
-
-        for i in 0 .. 30 {
-            if filtered[(i + starting_point) % 30] < self.threshold {
-                streak += 1;
-                if streak > max_streak {
-                    max_streak = streak;
+        match ctype {
+            Compare::AboveThreshold => {
+                for i in 0 .. 32 {
+                    if filtered[i] > self.threshold {
+                        streak += 1;
+                        if streak > self.confidence {
+                            return TouchResult{is_active: true, at: i};
+                        }
+                    }
                 }
-            } else {
-                streak = 0;
+            }
+            Compare::BelowThreshold => {
+                for i in 0 .. 32 {
+                    if filtered[i] < self.threshold {
+                        streak += 1;
+                        if streak > self.confidence {
+                            return TouchResult{is_active: true, at: i};
+                        }
+                    }
+                }
             }
         }
-
-        return max_streak > 5;
+        TouchResult{is_active: false, at: 0}
     }
 
-    // pub fn wait_for_touch(&self, bufsel: u8, timeout: time::MicroSeconds) -> Result<(), Timeout>{
-    //     let total = timeout.0;
-    //     let mut elapse = 0u32;
-
-    //     if !self.is_touched(bufsel) {
-            
-    //         if self.ctimer.ir.read().mr3int().bit_is_set() {
-
-    //         }
-    //     }
-
-    // }
-
-    pub fn get_button_state(&self, ) -> Buttons{
-        let mut buts = Buttons{top: ButtonState::NotPressed, bot: ButtonState::NotPressed, mid: ButtonState::NotPressed};
-
-        if self.is_touched(3) {
-            buts.top = ButtonState::Pressed;
+    /// Map internal cmd number to Button type
+    fn button_get_state (&self, but: buttons::Button, ctype: Compare) -> buttons::Button {
+        match but {
+            buttons::ButtonTop => {
+                if self.get_state(3, ctype).is_active { return but };
+            }
+            buttons::ButtonBot => {
+                if self.get_state(4, ctype).is_active { return but };
+            }
+            buttons::ButtonSides => {
+                if self.get_state(4, ctype).is_active && self.get_state(3, ctype).is_active
+                    { return but };
+            }
+            buttons::ButtonMid=> {
+                if self.get_state(5, ctype).is_active  { return but };
+            }
+            buttons::ButtonAny => {
+                if self.get_state(5, ctype).is_active { return buttons::ButtonMid };
+                if self.get_state(4, ctype).is_active { return buttons::ButtonBot};
+                if self.get_state(3, ctype).is_active { return buttons::ButtonTop};
+            }
+            buttons::ButtonNone => {
+                return but;
+            }
         }
-        if self.is_touched(4) {
-            buts.bot = ButtonState::Pressed;
-        }
-        if self.is_touched(5) {
-            buts.mid = ButtonState::Pressed;
-        }
-
-        buts
+        return buttons::ButtonNone;
     }
+
+
+    /// Indicate if an edge has occured in current buffer.  Does not reset.
+    fn has_edge (&self, bufsel: u8, etype: Edge,) -> bool {
+        let low = self.get_state(bufsel, Compare::BelowThreshold);
+        let high= self.get_state(bufsel, Compare::AboveThreshold);
+
+        if high.is_active && low.is_active {
+            match etype {
+                Edge::Rising => {
+                        return low.at < high.at;
+                }
+                Edge::Falling=> {
+                        return high.at < low.at;
+                }
+            }
+        }
+        false
+    }
+
+    /// Map internal cmd number to Button type
+    fn button_has_edge (&self, but: buttons::Button, etype: Edge,) -> buttons::Button {
+        match but {
+            buttons::ButtonTop => {
+                if self.has_edge(3, etype) { return but }
+            }
+            buttons::ButtonBot => {
+                if self.has_edge(4, etype) { return but }
+            }
+            buttons::ButtonSides => {
+                if 
+                    self.has_edge(3, etype) &&
+                    self.has_edge(4, etype)
+                        { return but }
+            }
+            buttons::ButtonMid=> {
+                if 
+                    self.has_edge(5, etype)
+                        {  return but }
+            }
+            buttons::ButtonAny => {
+                if self.has_edge(3, etype) {return buttons::ButtonTop}
+                if self.has_edge(4, etype) {return buttons::ButtonBot}
+                if self.has_edge(5, etype) {return buttons::ButtonMid}
+            }
+            buttons::ButtonNone => {}
+        }
+
+        buttons::ButtonNone
+    }
+    
+
+}
+
+impl<P1,P2,P3,> buttons::ButtonPress for TouchSensor<P1, P2, P3, >
+where P1: PinId, P2: PinId, P3: PinId, 
+{
+    fn is_pressed(&self, but: buttons::Button) -> bool {
+        self.button_get_state(but, Compare::BelowThreshold) != buttons::ButtonNone
+    }
+
+    fn is_released(&self, but: buttons::Button) -> bool {
+        self.button_get_state(but, Compare::AboveThreshold) != buttons::ButtonNone
+    }
+
+
+    fn get_status(&self) -> buttons::Buttons {
+        buttons::Buttons {
+            top: self.is_pressed(buttons::ButtonTop),
+            bot: self.is_pressed(buttons::ButtonBot),
+            mid: self.is_pressed(buttons::ButtonMid),
+        }
+    }
+
+}
+
+impl<P1,P2,P3,> buttons::ButtonEdge for TouchSensor<P1, P2, P3, >
+where P1: PinId, P2: PinId, P3: PinId, 
+{
+    fn wait_for_press(&self, but: buttons::Button) -> buttons::Result {
+        let but = self.button_has_edge(but, Edge::Falling);
+
+        // Erase edge with pressed status.
+        if but != buttons::ButtonNone {
+            self.reset_results(but, self.threshold - 1)
+        } else {
+            return Err(nb::Error::WouldBlock);
+        }
+
+        Ok(but)
+    }
+
+    fn wait_for_release(&self, but: buttons::Button) -> buttons::Result {
+        let but = self.button_has_edge(but, Edge::Rising);
+
+        // Erase edge with released status.
+        if but != buttons::ButtonNone {
+            self.reset_results(but, self.threshold + 1)
+        } else {
+            return Err(nb::Error::WouldBlock);
+        }
+
+        Ok(but)
+    }
+
+    /// See wait_for_press
+    fn wait_for_any_press(&self, ) -> buttons::Result{
+        self.wait_for_press(buttons::ButtonAny)
+    }
+
+    /// See wait_for_release
+    fn wait_for_any_release(&self, ) -> buttons::Result{
+        self.wait_for_release(buttons::ButtonAny)
+    }
+}
+
+/// Used when debugging to correlate the sync timer to which sample in the circular buffer is newest
+pub fn profile_touch_sensing(touch_sensor: &mut TouchSensor<impl PinId, impl PinId, impl PinId>, 
+                             delay_timer: &mut timer::Timer<impl ctimer::Ctimer<init_state::Enabled>>,
+                            copy: &mut [u32],
+                            times: &mut [u32],
+                            ){
+
+    let start = delay_timer.lap().0;
+    let results = touch_sensor.get_results();
+
+    delay_timer.start(300.ms());
+
+    loop {
+        let mut has_zero = false;
+        for i in 0 .. 125 {
+            if results[i] != 0 {
+                if times[i] == 0 {
+                    times[i] = delay_timer.lap().0 - start;
+                    copy[i] = results[i];
+                }
+            }
+            else {
+                has_zero = true;
+            }
+        }
+        if !has_zero {
+            break;
+        }
+    }
+
+
 }
