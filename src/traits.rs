@@ -57,5 +57,6 @@ pub mod reg_proxy {
 // maybe put in submodule?
 pub trait Gint: Deref<Target = crate::raw::gint0::RegisterBlock> {}
 
+pub mod buttons;
 pub mod flash;
 
