@@ -141,7 +141,9 @@ for PIN, alt, FUNCTION in data:
             else:
                 assert KINDS[0] == "SCK", KINDS
                 PERIPHERALS = ["USART"]
-                KINDS = ["CLK"]
+
+                PERIPHERALS = ["USART", "SPI"]
+                KINDS = ["SCLK", "SCK"]
         else:
             PERIPHERALS = ["USART", "I2C", "SPI"]
             if l == 4:
@@ -157,7 +159,7 @@ for PIN, alt, FUNCTION in data:
             KIND = "SCLK"
         if KIND.startswith("SSEL"):
             chip = KIND[-1]
-            KIND = KIND[:-1]
+            KIND = "CS"
         else:
             chip = None
 
@@ -183,11 +185,11 @@ for PIN, alt, FUNCTION in data:
 for PeripheralKindPin, Peripherali, FUNCTION, chip in sorted(set(implementations)):
     if chip is None:
         print(
-            f"impl<PIO: PinId> {PeripheralKindPin}<PIO, {Peripherali}> for Pin<PIO, Special<{FUNCTION}>> {{}}"
+            f"impl<PIO: PinId> fc::{PeripheralKindPin}<PIO, flexcomm::{Peripherali}> for Pin<PIO, Special<function::{FUNCTION}>> {{}}"
         )
     else:
         print(
-            f"impl<PIO: PinId> {PeripheralKindPin}<PIO, {Peripherali}> for Pin<PIO, Special<{FUNCTION}>> {{"
+            f"impl<PIO: PinId> fc::{PeripheralKindPin}<PIO, flexcomm::{Peripherali}> for Pin<PIO, Special<function::{FUNCTION}>> {{"
         )
         print(f"    const CS: ChipSelect = ChipSelect::Chip{chip};")
         print(f"}}")
