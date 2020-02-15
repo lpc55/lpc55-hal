@@ -410,11 +410,11 @@ special_pins! {
 ///////////////////////////////////////////////////////////////////////////////
 
 // TODO: remove the $Marker argument
-
-special_pins! {
+special_pins!{
     (Pio0_0, pio0_0): {
         (2, FC3_SCK): [
             (into_usart3_sclk_pin, Usart3, UsartSclkPin),
+            (into_spi3_sck_pin, Spi3, SpiSckPin),
         ]
     }
     (Pio0_1, pio0_1): {
@@ -443,6 +443,7 @@ special_pins! {
     (Pio0_4, pio0_4): {
         (2, FC4_SCK): [
             (into_usart4_sclk_pin, Usart4, UsartSclkPin),
+            (into_spi4_sck_pin, Spi4, SpiSckPin),
         ]
     }
     (Pio0_5, pio0_5): {
@@ -463,6 +464,7 @@ special_pins! {
     (Pio0_6, pio0_6): {
         (1, FC3_SCK): [
             (into_usart3_sclk_pin, Usart3, UsartSclkPin),
+            (into_spi3_sck_pin, Spi3, SpiSckPin),
         ]
     }
     (Pio0_7, pio0_7): {
@@ -475,11 +477,13 @@ special_pins! {
     (Pio0_7, pio0_7): {
         (3, FC5_SCK): [
             (into_usart5_sclk_pin, Usart5, UsartSclkPin),
+            (into_spi5_sck_pin, Spi5, SpiSckPin),
         ]
     }
     (Pio0_7, pio0_7): {
         (4, FC1_SCK): [
             (into_usart1_sclk_pin, Usart1, UsartSclkPin),
+            (into_spi1_sck_pin, Spi1, SpiSckPin),
         ]
     }
     (Pio0_8, pio0_8): {
@@ -511,6 +515,7 @@ special_pins! {
     (Pio0_10, pio0_10): {
         (1, FC6_SCK): [
             (into_usart6_sclk_pin, Usart6, UsartSclkPin),
+            (into_spi6_sck_pin, Spi6, SpiSckPin),
         ]
     }
     (Pio0_10, pio0_10): {
@@ -647,6 +652,7 @@ special_pins! {
     (Pio0_21, pio0_21): {
         (7, FC7_SCK): [
             (into_usart7_sclk_pin, Usart7, UsartSclkPin),
+            (into_spi7_sck_pin, Spi7, SpiSckPin),
         ]
     }
     (Pio0_22, pio0_22): {
@@ -691,6 +697,7 @@ special_pins! {
     (Pio0_26, pio0_26): {
         (8, FC0_SCK): [
             (into_usart0_sclk_pin, Usart0, UsartSclkPin),
+            (into_spi0_sck_pin, Spi0, SpiSckPin),
         ]
     }
     (Pio0_26, pio0_26): {
@@ -717,6 +724,7 @@ special_pins! {
     (Pio0_28, pio0_28): {
         (1, FC0_SCK): [
             (into_usart0_sclk_pin, Usart0, UsartSclkPin),
+            (into_spi0_sck_pin, Spi0, SpiSckPin),
         ]
     }
     (Pio0_29, pio0_29): {
@@ -775,6 +783,7 @@ special_pins! {
     (Pio1_4, pio1_4): {
         (1, FC0_SCK): [
             (into_usart0_sclk_pin, Usart0, UsartSclkPin),
+            (into_spi0_sck_pin, Spi0, SpiSckPin),
         ]
     }
     (Pio1_5, pio1_5): {
@@ -815,6 +824,7 @@ special_pins! {
     (Pio1_9, pio1_9): {
         (2, FC1_SCK): [
             (into_usart1_sclk_pin, Usart1, UsartSclkPin),
+            (into_spi1_sck_pin, Spi1, SpiSckPin),
         ]
     }
     (Pio1_9, pio1_9): {
@@ -843,6 +853,7 @@ special_pins! {
     (Pio1_12, pio1_12): {
         (2, FC6_SCK): [
             (into_usart6_sclk_pin, Usart6, UsartSclkPin),
+            (into_spi6_sck_pin, Spi6, SpiSckPin),
         ]
     }
     (Pio1_12, pio1_12): {
@@ -897,6 +908,7 @@ special_pins! {
     (Pio1_19, pio1_19): {
         (5, FC4_SCK): [
             (into_usart4_sclk_pin, Usart4, UsartSclkPin),
+            (into_spi4_sck_pin, Spi4, SpiSckPin),
         ]
     }
     (Pio1_20, pio1_20): {
@@ -937,6 +949,7 @@ special_pins! {
     (Pio1_23, pio1_23): {
         (1, FC2_SCK): [
             (into_usart2_sclk_pin, Usart2, UsartSclkPin),
+            (into_spi2_sck_pin, Spi2, SpiSckPin),
         ]
     }
     (Pio1_23, pio1_23): {
@@ -987,6 +1000,7 @@ special_pins! {
     (Pio1_28, pio1_28): {
         (1, FC7_SCK): [
             (into_usart7_sclk_pin, Usart7, UsartSclkPin),
+            (into_spi7_sck_pin, Spi7, SpiSckPin),
         ]
     }
     (Pio1_29, pio1_29): {
@@ -1055,25 +1069,6 @@ impl<PIO: PinId> fc::I2sWsPin<PIO, flexcomm::I2s4> for Pin<PIO, Special<function
 impl<PIO: PinId> fc::I2sWsPin<PIO, flexcomm::I2s5> for Pin<PIO, Special<function::FC5_TXD_SCL_MISO_WS>> {}
 impl<PIO: PinId> fc::I2sWsPin<PIO, flexcomm::I2s6> for Pin<PIO, Special<function::FC6_TXD_SCL_MISO_WS>> {}
 impl<PIO: PinId> fc::I2sWsPin<PIO, flexcomm::I2s7> for Pin<PIO, Special<function::FC7_TXD_SCL_MISO_WS>> {}
-impl<PIO: PinId> fc::SpiMisoPin<PIO, flexcomm::Spi0> for Pin<PIO, Special<function::FC0_TXD_SCL_MISO_WS>> {}
-impl<PIO: PinId> fc::SpiMisoPin<PIO, flexcomm::Spi1> for Pin<PIO, Special<function::FC1_TXD_SCL_MISO_WS>> {}
-impl<PIO: PinId> fc::SpiMisoPin<PIO, flexcomm::Spi2> for Pin<PIO, Special<function::FC2_TXD_SCL_MISO_WS>> {}
-impl<PIO: PinId> fc::SpiMisoPin<PIO, flexcomm::Spi3> for Pin<PIO, Special<function::FC3_TXD_SCL_MISO_WS>> {}
-impl<PIO: PinId> fc::SpiMisoPin<PIO, flexcomm::Spi4> for Pin<PIO, Special<function::FC4_TXD_SCL_MISO_WS>> {}
-impl<PIO: PinId> fc::SpiMisoPin<PIO, flexcomm::Spi5> for Pin<PIO, Special<function::FC5_TXD_SCL_MISO_WS>> {}
-impl<PIO: PinId> fc::SpiMisoPin<PIO, flexcomm::Spi6> for Pin<PIO, Special<function::FC6_TXD_SCL_MISO_WS>> {}
-impl<PIO: PinId> fc::SpiMisoPin<PIO, flexcomm::Spi7> for Pin<PIO, Special<function::FC7_TXD_SCL_MISO_WS>> {}
-impl<PIO: PinId> fc::SpiMisoPin<PIO, flexcomm::Spi8> for Pin<PIO, Special<function::HS_SPI_MISO>> {}
-impl<PIO: PinId> fc::SpiMosiPin<PIO, flexcomm::Spi0> for Pin<PIO, Special<function::FC0_RXD_SDA_MOSI_DATA>> {}
-impl<PIO: PinId> fc::SpiMosiPin<PIO, flexcomm::Spi1> for Pin<PIO, Special<function::FC1_RXD_SDA_MOSI_DATA>> {}
-impl<PIO: PinId> fc::SpiMosiPin<PIO, flexcomm::Spi2> for Pin<PIO, Special<function::FC2_RXD_SDA_MOSI_DATA>> {}
-impl<PIO: PinId> fc::SpiMosiPin<PIO, flexcomm::Spi3> for Pin<PIO, Special<function::FC3_RXD_SDA_MOSI_DATA>> {}
-impl<PIO: PinId> fc::SpiMosiPin<PIO, flexcomm::Spi4> for Pin<PIO, Special<function::FC4_RXD_SDA_MOSI_DATA>> {}
-impl<PIO: PinId> fc::SpiMosiPin<PIO, flexcomm::Spi5> for Pin<PIO, Special<function::FC5_RXD_SDA_MOSI_DATA>> {}
-impl<PIO: PinId> fc::SpiMosiPin<PIO, flexcomm::Spi6> for Pin<PIO, Special<function::FC6_RXD_SDA_MOSI_DATA>> {}
-impl<PIO: PinId> fc::SpiMosiPin<PIO, flexcomm::Spi7> for Pin<PIO, Special<function::FC7_RXD_SDA_MOSI_DATA>> {}
-impl<PIO: PinId> fc::SpiMosiPin<PIO, flexcomm::Spi8> for Pin<PIO, Special<function::HS_SPI_MOSI>> {}
-impl<PIO: PinId> fc::SpiSckPin<PIO, flexcomm::Spi8> for Pin<PIO, Special<function::HS_SPI_SCK>> {}
 impl<PIO: PinId> fc::SpiCsPin<PIO, flexcomm::Spi0> for Pin<PIO, Special<function::FC0_CTS_SDA_SSEL0>> {
     const CS: ChipSelect = ChipSelect::Chip0;
 }
@@ -1146,6 +1141,33 @@ impl<PIO: PinId> fc::SpiCsPin<PIO, flexcomm::Spi8> for Pin<PIO, Special<function
 impl<PIO: PinId> fc::SpiCsPin<PIO, flexcomm::Spi8> for Pin<PIO, Special<function::HS_SPI_SSEL3>> {
     const CS: ChipSelect = ChipSelect::Chip3;
 }
+impl<PIO: PinId> fc::SpiMisoPin<PIO, flexcomm::Spi0> for Pin<PIO, Special<function::FC0_TXD_SCL_MISO_WS>> {}
+impl<PIO: PinId> fc::SpiMisoPin<PIO, flexcomm::Spi1> for Pin<PIO, Special<function::FC1_TXD_SCL_MISO_WS>> {}
+impl<PIO: PinId> fc::SpiMisoPin<PIO, flexcomm::Spi2> for Pin<PIO, Special<function::FC2_TXD_SCL_MISO_WS>> {}
+impl<PIO: PinId> fc::SpiMisoPin<PIO, flexcomm::Spi3> for Pin<PIO, Special<function::FC3_TXD_SCL_MISO_WS>> {}
+impl<PIO: PinId> fc::SpiMisoPin<PIO, flexcomm::Spi4> for Pin<PIO, Special<function::FC4_TXD_SCL_MISO_WS>> {}
+impl<PIO: PinId> fc::SpiMisoPin<PIO, flexcomm::Spi5> for Pin<PIO, Special<function::FC5_TXD_SCL_MISO_WS>> {}
+impl<PIO: PinId> fc::SpiMisoPin<PIO, flexcomm::Spi6> for Pin<PIO, Special<function::FC6_TXD_SCL_MISO_WS>> {}
+impl<PIO: PinId> fc::SpiMisoPin<PIO, flexcomm::Spi7> for Pin<PIO, Special<function::FC7_TXD_SCL_MISO_WS>> {}
+impl<PIO: PinId> fc::SpiMisoPin<PIO, flexcomm::Spi8> for Pin<PIO, Special<function::HS_SPI_MISO>> {}
+impl<PIO: PinId> fc::SpiMosiPin<PIO, flexcomm::Spi0> for Pin<PIO, Special<function::FC0_RXD_SDA_MOSI_DATA>> {}
+impl<PIO: PinId> fc::SpiMosiPin<PIO, flexcomm::Spi1> for Pin<PIO, Special<function::FC1_RXD_SDA_MOSI_DATA>> {}
+impl<PIO: PinId> fc::SpiMosiPin<PIO, flexcomm::Spi2> for Pin<PIO, Special<function::FC2_RXD_SDA_MOSI_DATA>> {}
+impl<PIO: PinId> fc::SpiMosiPin<PIO, flexcomm::Spi3> for Pin<PIO, Special<function::FC3_RXD_SDA_MOSI_DATA>> {}
+impl<PIO: PinId> fc::SpiMosiPin<PIO, flexcomm::Spi4> for Pin<PIO, Special<function::FC4_RXD_SDA_MOSI_DATA>> {}
+impl<PIO: PinId> fc::SpiMosiPin<PIO, flexcomm::Spi5> for Pin<PIO, Special<function::FC5_RXD_SDA_MOSI_DATA>> {}
+impl<PIO: PinId> fc::SpiMosiPin<PIO, flexcomm::Spi6> for Pin<PIO, Special<function::FC6_RXD_SDA_MOSI_DATA>> {}
+impl<PIO: PinId> fc::SpiMosiPin<PIO, flexcomm::Spi7> for Pin<PIO, Special<function::FC7_RXD_SDA_MOSI_DATA>> {}
+impl<PIO: PinId> fc::SpiMosiPin<PIO, flexcomm::Spi8> for Pin<PIO, Special<function::HS_SPI_MOSI>> {}
+impl<PIO: PinId> fc::SpiSckPin<PIO, flexcomm::Spi0> for Pin<PIO, Special<function::FC0_SCK>> {}
+impl<PIO: PinId> fc::SpiSckPin<PIO, flexcomm::Spi1> for Pin<PIO, Special<function::FC1_SCK>> {}
+impl<PIO: PinId> fc::SpiSckPin<PIO, flexcomm::Spi2> for Pin<PIO, Special<function::FC2_SCK>> {}
+impl<PIO: PinId> fc::SpiSckPin<PIO, flexcomm::Spi3> for Pin<PIO, Special<function::FC3_SCK>> {}
+impl<PIO: PinId> fc::SpiSckPin<PIO, flexcomm::Spi4> for Pin<PIO, Special<function::FC4_SCK>> {}
+impl<PIO: PinId> fc::SpiSckPin<PIO, flexcomm::Spi5> for Pin<PIO, Special<function::FC5_SCK>> {}
+impl<PIO: PinId> fc::SpiSckPin<PIO, flexcomm::Spi6> for Pin<PIO, Special<function::FC6_SCK>> {}
+impl<PIO: PinId> fc::SpiSckPin<PIO, flexcomm::Spi7> for Pin<PIO, Special<function::FC7_SCK>> {}
+impl<PIO: PinId> fc::SpiSckPin<PIO, flexcomm::Spi8> for Pin<PIO, Special<function::HS_SPI_SCK>> {}
 impl<PIO: PinId> fc::UsartCtsPin<PIO, flexcomm::Usart0> for Pin<PIO, Special<function::FC0_CTS_SDA_SSEL0>> {}
 impl<PIO: PinId> fc::UsartCtsPin<PIO, flexcomm::Usart1> for Pin<PIO, Special<function::FC1_CTS_SDA_SSEL0>> {}
 impl<PIO: PinId> fc::UsartCtsPin<PIO, flexcomm::Usart2> for Pin<PIO, Special<function::FC2_CTS_SDA_SSEL0>> {}
