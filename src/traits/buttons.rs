@@ -1,4 +1,4 @@
-use void::Void;
+use core::convert::Infallible;
 use nb;
 
 /// Which button is pressed
@@ -21,7 +21,7 @@ pub struct Buttons {
 pub use Button::*;
 
 /// A type alias for the result of waiting for a Button operation.
-pub type Result = nb::Result<Button, Void>;
+pub type Result = nb::Result<Button, Infallible>;
 
 pub trait ButtonPress {
 
