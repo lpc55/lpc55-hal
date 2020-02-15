@@ -86,14 +86,14 @@ where P1: PinId, P2: PinId, P3: PinId
     /// Threshold is the ADC sample limit where an is considered.
     /// Confidence is the number of times the threshold needs to be crossed
     pub fn new(
-                threshold: u32, 
-                confidence: u32,
-                adc: Adc, 
-                adc_timer: ctimer::Ctimer1<init_state::Enabled>, 
-                sample_timer: ctimer::Ctimer2<init_state::Enabled>, 
-                _charge_pin: Pin<pins::Pio1_16, state::Special<function::CTIMER_MAT>>, 
-                buttons: ButtonPins<P1,P2,P3>,
-            ) -> Self {
+        threshold: u32, 
+        confidence: u32,
+        adc: Adc, 
+        adc_timer: ctimer::Ctimer1<init_state::Enabled>, 
+        sample_timer: ctimer::Ctimer2<init_state::Enabled>, 
+        _charge_pin: Pin<pins::Pio1_16, state::Special<function::CTIMER_MAT>>, 
+        buttons: ButtonPins<P1,P2,P3>,
+    ) -> Self {
 
         // Last match (3) triggers MAT to TOGGLE (start charging or discharging), interrupt ADC trigger.
         // Use match (2) for general timing info
@@ -131,39 +131,46 @@ where P1: PinId, P2: PinId, P3: PinId
         });
 
 
-        adc.cmdl3.write(|w| unsafe {  w.adch().bits(buttons.0.state.channel)
-                                    .ctype().ctype_0()          // A-side single ended 
-                                    .mode().mode_0()            // standard 12-bit resolution
-                                    } );
-        adc.cmdh3.write(|w| unsafe { w.avgs().avgs_7()          // 2^7 averages
-                                    .cmpen().bits(0b00)         // no compare
-                                    .loop_().bits(0)            // execute once
-                                    .next().bits(4)             // 3 -> 4
-                                    .wait_trig().set_bit()      // wait for trigger again
-                                } );
+        adc.cmdl3.write(|w| unsafe {  
+            w.adch().bits(buttons.0.state.channel)
+            .ctype().ctype_0()          // A-side single ended 
+            .mode().mode_0()            // standard 12-bit resolution
+        } );
+
+        adc.cmdh3.write(|w| unsafe { 
+            w.avgs().avgs_7()          // 2^7 averages
+            .cmpen().bits(0b00)         // no compare
+            .loop_().bits(0)            // execute once
+            .next().bits(4)             // 3 -> 4
+            .wait_trig().set_bit()      // wait for trigger again
+        } );
 
 
-        adc.cmdl4.write(|w| unsafe {  w.adch().bits(buttons.1.state.channel)
-                                    .ctype().ctype_0()  
-                                    .mode().mode_0()
-                                    } );
-        adc.cmdh4.write(|w| unsafe { w.avgs().avgs_7()
-                                    .cmpen().bits(0b00)
-                                    .loop_().bits(0)
-                                    .next().bits(5)             // 4 -> 5
-                                    .wait_trig().set_bit()
-                                } );
+        adc.cmdl4.write(|w| unsafe {  
+            w.adch().bits(buttons.1.state.channel)
+            .ctype().ctype_0()  
+            .mode().mode_0()
+        } );
+        adc.cmdh4.write(|w| unsafe { 
+            w.avgs().avgs_7()
+            .cmpen().bits(0b00)
+            .loop_().bits(0)
+            .next().bits(5)             // 4 -> 5
+            .wait_trig().set_bit()
+        } );
 
 
-        adc.cmdl5.write(|w| unsafe {  w.adch().bits(buttons.2.state.channel)
-                                    .ctype().ctype_0()  
-                                    .mode().mode_0()
-                                    } );
-        adc.cmdh5.write(|w| unsafe { w.avgs().avgs_7()
-                                    .loop_().bits(0)
-                                    .next().bits(3)             // 5 -> 3
-                                    .wait_trig().set_bit()
-                                } );
+        adc.cmdl5.write(|w| unsafe {  
+            w.adch().bits(buttons.2.state.channel)
+            .ctype().ctype_0()  
+            .mode().mode_0()
+        } );
+        adc.cmdh5.write(|w| unsafe { 
+            w.avgs().avgs_7()
+            .loop_().bits(0)
+            .next().bits(3)             // 5 -> 3
+            .wait_trig().set_bit()
+        } );
 
 
 
@@ -261,9 +268,9 @@ where P1: PinId, P2: PinId, P3: PinId,
 
     /// Used after an edge is detected to prevent the same
     /// edge being detected twice
-    fn reset_results(&self, but: buttons::Button, val: u32) {
+    fn reset_results(&self, button: buttons::Button, val: u32) {
         let results = unsafe {&mut RESULTS};
-        match but {
+        match button {
             buttons::ButtonTop => {
                 for i in 0 .. RESULTS_LEN {
                     if (results[i] & (0xf << 24)) == (3 << 24) {
@@ -286,14 +293,14 @@ where P1: PinId, P2: PinId, P3: PinId,
                 }
             }
             _ => {
-                assert!(false);
+                panic!("Invalid button for buffer selection");
             }
         }
 
     }
 
     /// Calculates the oldest sample from ADC in the circular buffer.
-    fn get_starting_point(&self,) -> usize {
+    fn get_starting_point(&self) -> usize {
         let sync_time = self.sample_timer.tc.read().bits();
 
         // Skip +RESULTS_LEN samples after the last sample written. (iterate through)
@@ -375,20 +382,20 @@ where P1: PinId, P2: PinId, P3: PinId,
     }
 
     /// Map internal cmd number to Button type
-    fn button_get_state (&self, but: buttons::Button, ctype: Compare) -> buttons::Button {
-        match but {
+    fn button_get_state (&self, button: buttons::Button, ctype: Compare) -> buttons::Button {
+        match button {
             buttons::ButtonTop => {
-                if self.get_state(3, ctype).is_active { return but };
+                if self.get_state(3, ctype).is_active { return button };
             }
             buttons::ButtonBot => {
-                if self.get_state(4, ctype).is_active { return but };
+                if self.get_state(4, ctype).is_active { return button };
             }
             buttons::ButtonSides => {
                 if self.get_state(4, ctype).is_active && self.get_state(3, ctype).is_active
-                    { return but };
+                    { return button };
             }
             buttons::ButtonMid=> {
-                if self.get_state(5, ctype).is_active  { return but };
+                if self.get_state(5, ctype).is_active  { return button };
             }
             buttons::ButtonAny => {
                 if self.get_state(5, ctype).is_active { return buttons::ButtonMid };
@@ -396,7 +403,7 @@ where P1: PinId, P2: PinId, P3: PinId,
                 if self.get_state(3, ctype).is_active { return buttons::ButtonTop};
             }
             buttons::ButtonNone => {
-                return but;
+                return button;
             }
         }
         return buttons::ButtonNone;
@@ -404,12 +411,12 @@ where P1: PinId, P2: PinId, P3: PinId,
 
 
     /// Indicate if an edge has occured in current buffer.  Does not reset.
-    fn has_edge (&self, bufsel: u8, etype: Edge,) -> bool {
+    fn has_edge (&self, bufsel: u8, edge_type: Edge,) -> bool {
         let low = self.get_state(bufsel, Compare::BelowThreshold);
         let high= self.get_state(bufsel, Compare::AboveThreshold);
 
         if high.is_active && low.is_active {
-            match etype {
+            match edge_type {
                 Edge::Rising => {
                         return low.at < high.at;
                 }
@@ -422,29 +429,29 @@ where P1: PinId, P2: PinId, P3: PinId,
     }
 
     /// Map internal cmd number to Button type
-    fn button_has_edge (&self, but: buttons::Button, etype: Edge,) -> buttons::Button {
-        match but {
+    fn button_has_edge (&self, button: buttons::Button, edge_type: Edge,) -> buttons::Button {
+        match button {
             buttons::ButtonTop => {
-                if self.has_edge(3, etype) { return but }
+                if self.has_edge(3, edge_type) { return button }
             }
             buttons::ButtonBot => {
-                if self.has_edge(4, etype) { return but }
+                if self.has_edge(4, edge_type) { return button }
             }
             buttons::ButtonSides => {
                 if 
-                    self.has_edge(3, etype) &&
-                    self.has_edge(4, etype)
-                        { return but }
+                    self.has_edge(3, edge_type) &&
+                    self.has_edge(4, edge_type)
+                        { return button }
             }
             buttons::ButtonMid=> {
                 if 
-                    self.has_edge(5, etype)
-                        {  return but }
+                    self.has_edge(5, edge_type)
+                        {  return button }
             }
             buttons::ButtonAny => {
-                if self.has_edge(3, etype) {return buttons::ButtonTop}
-                if self.has_edge(4, etype) {return buttons::ButtonBot}
-                if self.has_edge(5, etype) {return buttons::ButtonMid}
+                if self.has_edge(3, edge_type) {return buttons::ButtonTop}
+                if self.has_edge(4, edge_type) {return buttons::ButtonBot}
+                if self.has_edge(5, edge_type) {return buttons::ButtonMid}
             }
             buttons::ButtonNone => {}
         }
@@ -458,12 +465,12 @@ where P1: PinId, P2: PinId, P3: PinId,
 impl<P1,P2,P3,> buttons::ButtonPress for TouchSensor<P1, P2, P3, >
 where P1: PinId, P2: PinId, P3: PinId, 
 {
-    fn is_pressed(&self, but: buttons::Button) -> bool {
-        self.button_get_state(but, Compare::BelowThreshold) != buttons::ButtonNone
+    fn is_pressed(&self, button: buttons::Button) -> bool {
+        self.button_get_state(button, Compare::BelowThreshold) != buttons::ButtonNone
     }
 
-    fn is_released(&self, but: buttons::Button) -> bool {
-        self.button_get_state(but, Compare::AboveThreshold) != buttons::ButtonNone
+    fn is_released(&self, button: buttons::Button) -> bool {
+        self.button_get_state(button, Compare::AboveThreshold) != buttons::ButtonNone
     }
 
 
@@ -480,30 +487,30 @@ where P1: PinId, P2: PinId, P3: PinId,
 impl<P1,P2,P3,> buttons::ButtonEdge for TouchSensor<P1, P2, P3, >
 where P1: PinId, P2: PinId, P3: PinId, 
 {
-    fn wait_for_press(&self, but: buttons::Button) -> buttons::Result {
-        let but = self.button_has_edge(but, Edge::Falling);
+    fn wait_for_press(&self, button: buttons::Button) -> buttons::Result {
+        let button = self.button_has_edge(button, Edge::Falling);
 
         // Erase edge with pressed status.
-        if but != buttons::ButtonNone {
-            self.reset_results(but, self.threshold - 1)
+        if button != buttons::ButtonNone {
+            self.reset_results(button, self.threshold - 1)
         } else {
             return Err(nb::Error::WouldBlock);
         }
 
-        Ok(but)
+        Ok(button)
     }
 
-    fn wait_for_release(&self, but: buttons::Button) -> buttons::Result {
-        let but = self.button_has_edge(but, Edge::Rising);
+    fn wait_for_release(&self, button: buttons::Button) -> buttons::Result {
+        let button = self.button_has_edge(button, Edge::Rising);
 
         // Erase edge with released status.
-        if but != buttons::ButtonNone {
-            self.reset_results(but, self.threshold + 1)
+        if button != buttons::ButtonNone {
+            self.reset_results(button, self.threshold + 1)
         } else {
             return Err(nb::Error::WouldBlock);
         }
 
-        Ok(but)
+        Ok(button)
     }
 
     /// See wait_for_press

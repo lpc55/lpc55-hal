@@ -169,7 +169,7 @@ where
     T: PinId,
     D: direction::NotInput,
 {
-    pub fn into_input(self, ) -> Pin<T, state::Analog<direction::Input>> {
+    pub fn into_input(self) -> Pin<T, state::Analog<direction::Input>> {
 
         // currently, `into_gpio_pin()` sets `.digimode().digital()` in IOCON,
         // meaning input is enabled for all pins
