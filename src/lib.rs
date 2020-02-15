@@ -198,11 +198,11 @@ impl From<(raw::Peripherals, rtfm::Peripherals)> for Peripherals {
             anactrl: Anactrl::from(p.ANACTRL),
             casper: Casper::from(p.CASPER),
             ctimer: (
-                peripherals::ctimer::Ctimer0::from(raw::CTIMER0),
-                peripherals::ctimer::Ctimer1::from(raw::CTIMER1),
-                peripherals::ctimer::Ctimer2::from(raw::CTIMER2),
-                peripherals::ctimer::Ctimer3::from(raw::CTIMER3),
-                peripherals::ctimer::Ctimer4::from(raw::CTIMER4),
+                peripherals::ctimer::Ctimer0::from(p.CTIMER0),
+                peripherals::ctimer::Ctimer1::from(p.CTIMER1),
+                peripherals::ctimer::Ctimer2::from(p.CTIMER2),
+                peripherals::ctimer::Ctimer3::from(p.CTIMER3),
+                peripherals::ctimer::Ctimer4::from(p.CTIMER4),
             ),
             flash: Flash::from(p.FLASH),
             flexcomm: (
