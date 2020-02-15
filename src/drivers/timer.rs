@@ -15,6 +15,8 @@ use crate::{
     }
 };
 
+/// Return the current time elapsed for the timer.
+/// If the timer has not started or stopped, this unit may not be accurate.
 pub trait Lap <Unit>{
     fn lap(&self) -> Unit;
 }
