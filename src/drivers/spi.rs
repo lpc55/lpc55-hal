@@ -157,7 +157,7 @@ where
 
     fn read(&mut self) -> Result<u8> {
         // self.return_on_error()?;
-        if self.spi.fifostat.read().rxnotempty().bit_is_clear() {
+        if self.spi.fifostat.read().rxnotempty().bit_is_set() {
             // TODO: not sure how to turn this from u32 (or u16??) into u8
             // Or whatever...
             let byte = self.spi.fiford.read().rxdata().bits();
@@ -173,7 +173,7 @@ where
         // - writing 0 to upper-half word means: keep previous control settings
 
         self.return_on_error()?;
-        if self.spi.fifostat.read().txempty().bit_is_set() {
+        if self.spi.fifostat.read().txnotfull().bit_is_set() {
             // NB: we set 8 bits in constructor
             // We could probably repeat this here
             use ChipSelect::*;
