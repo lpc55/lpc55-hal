@@ -19,6 +19,8 @@ pub mod endpoint_registers;
 // move this into a submodule `bus` again?
 
 use core::mem;
+#[cfg(feature = "logging")]
+use funnel::info;
 
 use cortex_m::interrupt::{
     self,
@@ -103,6 +105,17 @@ impl UsbBus {
 
         UsbBusAllocator::new(bus)
     }
+
+    pub fn clear_interrupt(&mut self) {
+        // clear interrupt, otherwise in an interrupt-driven setting
+        // like RTFM the idle loop will get starved.
+        interrupt::free(|cs| {
+            // set device address to 0
+            let usb = self.usb_regs.borrow(cs);
+            usb.intstat.write(|w| w.dev_int().set_bit());
+        });
+    }
+
 
 }
 
@@ -236,6 +249,8 @@ impl usb_device::bus::UsbBus for UsbBus {
             // usb.inten.modify(|r, w| unsafe { w.bits(r.bits() | (1 << 31)) } );
             // cortex_m_semihosting::hprintln!("inten aft = {:#X}", usb.inten.read().bits()).ok();
         });
+        // #[cfg(feature = "logging")]
+        // info!("reset USB device").ok();
     }
 
     fn set_device_address(&self, addr: u8) {
@@ -257,6 +272,16 @@ impl usb_device::bus::UsbBus for UsbBus {
 
             let devcmdstat = &usb.devcmdstat;
             let intstat = &usb.intstat;
+
+            // let ints = intstat.read().bits();
+            // if ints != 0 {
+            //     cortex_m_semihosting::hprintln!("intstat = {:?}", intstat.read().bits()).ok();
+            //     cortex_m_semihosting::hprintln!("inten = {:?}", usb.inten.read().bits()).ok();
+            // }
+
+            // if intstat.read().dev_int().bit_is_set() {
+            //     usb.intstat.write(|w| w.dev_int().set_bit());
+            // }
 
             // Bus reset flag?
             if devcmdstat.read().dres_c().bit_is_set() {
@@ -324,6 +349,8 @@ impl usb_device::bus::UsbBus for UsbBus {
                 if out_int {
                     debug_assert!(out_inactive);
                     ep_out |= bit;
+                    // EXPERIMENTAL: clear interrupt
+                    // usb.intstat.write(|w| unsafe { w.bits(1u32 << out_offset) } );
 
                     // let err_code = usb.info.read().err_code().bits();
                     // let addr_set = devcmdstat.read().dev_addr().bits() > 0;
@@ -363,10 +390,7 @@ impl usb_device::bus::UsbBus for UsbBus {
                 };
             }
 
-            // clear interrupt, otherwise in an interrupt-driven setting
-            // like RTFM the idle loop will get starved.
             usb.intstat.write(|w| w.dev_int().set_bit());
-
             if (ep_out | ep_in_complete | ep_setup) != 0 {
                 PollResult::Data { ep_out, ep_in_complete, ep_setup }
             } else {

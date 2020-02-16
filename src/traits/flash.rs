@@ -73,14 +73,15 @@ pub trait WriteErase<EraseSize: ArrayLength<u8>, WriteSize: ArrayLength<u8>> {
                     ) -> Result;
 
     fn write(&mut self, address: usize, data: &[u8]) -> Result {
-        assert!(data.len() % WriteSize::to_usize() == 0);
-        assert!(address % WriteSize::to_usize() == 0);
+        let write_size = WriteSize::to_usize();
+        assert!(data.len() % write_size == 0);
+        assert!(address % write_size == 0);
 
         // interrupt::free(|cs| {
-            for i in (0..data.len()).step_by(8) {
+            for i in (0..data.len()).step_by(write_size) {
                 self.write_native(
                     address + i,
-                    GenericArray::from_slice(&data[i..i + 8]),
+                    GenericArray::from_slice(&data[i..i + write_size]),
                     // cs,
                     )?;
             }

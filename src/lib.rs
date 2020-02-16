@@ -131,6 +131,9 @@ pub struct Peripherals {
     /// Power configuration
     pub pmc: Pmc,
 
+    /// Random number generator
+    pub rng: Rng,
+
     /// System configuration
     pub syscon: Syscon,
 
@@ -204,6 +207,7 @@ impl From<(raw::Peripherals, rtfm::Peripherals)> for Peripherals {
             gpio: Gpio::from(p.GPIO),
             iocon: Iocon::from(p.IOCON),
             pmc: Pmc::from(p.PMC),
+            rng: Rng::from(p.RNG),
             syscon: Syscon::from(p.SYSCON),
             usbfs: Usbfs::from((p.USB0, p.USBFSH)),
             utick: Utick::from(p.UTICK0),
@@ -251,6 +255,7 @@ impl From<(raw::Peripherals, raw::CorePeripherals)> for Peripherals {
             gpio: Gpio::from(p.GPIO),
             iocon: Iocon::from(p.IOCON),
             pmc: Pmc::from(p.PMC),
+            rng: Rng::from(p.RNG),
             syscon: Syscon::from(p.SYSCON),
             usbfs: Usbfs::from((p.USB0, p.USBFSH)),
             utick: Utick::from(p.UTICK0),
