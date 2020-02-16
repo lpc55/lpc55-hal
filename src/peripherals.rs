@@ -30,6 +30,7 @@ pub mod gint;
 pub mod gpio;
 pub mod iocon;
 pub mod pmc;
+pub mod puf;
 pub mod rng;
 pub mod syscon;
 pub mod usbfs;

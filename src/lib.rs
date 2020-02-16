@@ -63,6 +63,7 @@ pub use peripherals::{
     gint::Gint,
     iocon::Iocon,
     pmc::Pmc,
+    puf::Puf,
     rng::Rng,
     syscon::Syscon,
     usbfs::Usbfs,
