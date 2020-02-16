@@ -9,7 +9,7 @@ readme = "README.md"
 documentation = "https://docs.rs/lpc55-hal"
 keywords = ["no-std", "cortex-m", "nxp", "lpc", "embedded-hal-impl"]
 categories = ["embedded", "no-std"]
-authors = ["Nicolas Stalder <n@stalder.io>", "Hanno Braun <hanno@braun-robotics.com>"]
+authors = ["Nicolas Stalder <n@stalder.io>", "Conor Patrick <conorpp94@gmail.com>", "Hanno Braun <hanno@braun-robotics.com>"]
 build = "build.rs"
 
 [badges]
