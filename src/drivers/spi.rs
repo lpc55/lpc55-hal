@@ -214,14 +214,10 @@ where
                         .txdata().bits(byte as u16)
                     });
                 },
-                AllChips =>  {
+                NoChips =>  {
                     self.spi.fifowr.write(|w| unsafe { w
                         // control
                         .len().bits(7) // 8 bits
-                        .txssel0_n().asserted()
-                        .txssel1_n().asserted()
-                        .txssel2_n().asserted()
-                        .txssel3_n().asserted()
                         // data
                         .txdata().bits(byte as u16)
                     });
