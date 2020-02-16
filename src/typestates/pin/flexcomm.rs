@@ -38,7 +38,7 @@ pub enum ChipSelect {
     Chip1,
     Chip2,
     Chip3,
-    AllChips,
+    NoChips,
 }
 
 /// SPI serial clock
@@ -58,7 +58,7 @@ pub struct NoMiso;
 impl<SPI: Spi> SpiMisoPin<NoPio, SPI> for NoMiso {}
 /// Filler type for when no Cs is necessary
 pub struct NoCs;
-impl<SPI: Spi> SpiCsPin<NoPio, SPI> for NoCs { const CS: ChipSelect = ChipSelect::AllChips; }
+impl<SPI: Spi> SpiCsPin<NoPio, SPI> for NoCs { const CS: ChipSelect = ChipSelect::NoChips; }
 
 // /// SPI chip select 0
 // pub trait SpiCs0Pin<PIO, SPI> where PIO: PinId, SPI: Spi { const CS: u8 = 0; }
