@@ -5,6 +5,9 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+- Add INPUTMUX and PINT peripherals
+- Add example using PINT + INPUTMUX to make an external interrupt on a pin
+
 ## [v0.0.3] - 2019-11-09
 Rename to `lpc55-hal`.
 
