@@ -225,6 +225,7 @@ impl_clock_control!(raw::FLEXCOMM5, fc5, ahbclkctrl1);
 impl_clock_control!(raw::FLEXCOMM6, fc6, ahbclkctrl1);
 impl_clock_control!(raw::FLEXCOMM7, fc7, ahbclkctrl1);
 impl_clock_control!(raw::FLEXCOMM8, hs_lspi, ahbclkctrl2);
+impl_clock_control!(raw::INPUTMUX, mux, ahbclkctrl0);
 impl_clock_control!(raw::IOCON, iocon, ahbclkctrl0);
 impl_clock_control!((&mut raw::GINT0, &mut raw::GINT1), gint, ahbclkctrl0);
 impl_clock_control!(raw::PINT, pint, ahbclkctrl0);
