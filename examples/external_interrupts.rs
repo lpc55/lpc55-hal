@@ -44,6 +44,10 @@ fn main() -> ! {
     // // NFC IRQ pin for Solo-bee
     let input = pins.pio0_0.into_gpio_pin(&mut iocon, &mut gpio).into_input();
 
+    // Add pullup for Pio0_0
+    let iocon = iocon.release();
+    iocon.pio0_0.modify(|_,w| { w.mode().pull_up() } );
+
     let mut mux = hal.inputmux.enabled(&mut hal.syscon);
     let mut pint = hal.pint.enabled(&mut hal.syscon);
 
