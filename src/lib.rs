@@ -61,7 +61,9 @@ pub use peripherals::{
     flexcomm::Flexcomm,
     gpio::Gpio,
     gint::Gint,
+    inputmux::InputMux,
     iocon::Iocon,
+    pint::Pint,
     pmc::Pmc,
     puf::Puf,
     rng::Rng,
@@ -147,17 +149,23 @@ pub struct Peripherals {
     /// Micro-Tick Timer
     pub utick: Utick,
 
-    /// Analog-to-Digital Converter (ADC) - not HAL-ified.
-    pub ADC0: raw::ADC0,
+    /// Input multiplexer
+    pub inputmux: InputMux,
+
+    /// Pin Interrupt and Pattern Match
+    pub pint: Pint,
+
+    /// Analog-to-Digital Converter (ADC)
+    pub adc: Adc,
+
+    /// Direct memory access
+    pub dma: Dma,
 
     /// CRC engine - not HAL-ified.
     pub CRC_ENGINE: raw::CRC_ENGINE,
 
     /// Standard counter/timer (CTIMER)
     pub ctimer: Ctimers,
-
-    /// Direct memory access
-    pub DMA0: raw::DMA0,
 
     pub FLASH_CMPA: raw::FLASH_CMPA,
     pub FLASH_CFPA0: raw::FLASH_CFPA0,
@@ -225,11 +233,13 @@ impl From<(raw::Peripherals, rtfm::Peripherals)> for Peripherals {
             syscon: Syscon::from(p.SYSCON),
             usbfs: Usbfs::from((p.USB0, p.USBFSH)),
             utick: Utick::from(p.UTICK0),
+            inputmux: InputMux::from(p.INPUTMUX),
+            pint: Pint::from(p.PINT),
+            adc: Adc::from(p.ADC0),
+            dma: Dma::from(p.DMA0),
 
             // Raw peripherals
-            ADC0: p.ADC0,
             CRC_ENGINE: p.CRC_ENGINE,
-            DMA0: p.DMA0,
             FLASH_CMPA: p.FLASH_CMPA,
             FLASH_CFPA0: p.FLASH_CFPA0,
             SCT0: p.SCT0,
@@ -281,11 +291,13 @@ impl From<(raw::Peripherals, raw::CorePeripherals)> for Peripherals {
             syscon: Syscon::from(p.SYSCON),
             usbfs: Usbfs::from((p.USB0, p.USBFSH)),
             utick: Utick::from(p.UTICK0),
+            inputmux: InputMux::from(p.INPUTMUX),
+            pint: Pint::from(p.PINT),
+            adc: Adc::from(p.ADC0),
+            dma: Dma::from(p.DMA0),
 
             // Raw peripherals
-            ADC0: p.ADC0,
             CRC_ENGINE: p.CRC_ENGINE,
-            DMA0: p.DMA0,
             FLASH_CMPA: p.FLASH_CMPA,
             FLASH_CFPA0: p.FLASH_CFPA0,
             SCT0: p.SCT0,
