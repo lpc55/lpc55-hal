@@ -1,3 +1,4 @@
+use core::ops::Deref;
 use crate::{
     raw,
     peripherals::{
@@ -27,6 +28,13 @@ pub enum Mode {
     ActiveHigh,
 }
 use Mode::*;
+
+impl Deref for Pint {
+    type Target = raw::pint::RegisterBlock;
+    fn deref(&self) -> &Self::Target {
+        &self.raw
+    }
+}
 
 crate::wrap_stateful_peripheral!(Pint, PINT);
 
