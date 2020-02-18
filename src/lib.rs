@@ -113,11 +113,21 @@ pub fn from(raw: (raw::Peripherals, rtfm::Peripherals)) -> Peripherals {
 /// via `hal::new` or `hal::steal`.
 #[allow(non_snake_case)]
 pub struct Peripherals {
+
+    /// Analog-to-Digital Converter (ADC)
+    pub adc: Adc,
+
     /// Analog control
     pub anactrl: Anactrl,
 
     /// Cryptographic Accelerator and Signal Processing Engine with RAM sharing
     pub casper: Casper,
+
+    /// Standard counter/timer (CTIMER)
+    pub ctimer: Ctimers,
+
+    /// Direct memory access
+    pub dma: Dma,
 
     /// Flash
     pub flash: Flash,
@@ -131,8 +141,14 @@ pub struct Peripherals {
     /// General-purpose I/O (GPIO)
     pub gpio: Gpio,
 
+    /// Input multiplexer
+    pub inputmux: InputMux,
+
     /// I/O configuration
     pub iocon: Iocon,
+
+    /// Pin Interrupt and Pattern Match
+    pub pint: Pint,
 
     /// Power configuration
     pub pmc: Pmc,
@@ -149,29 +165,16 @@ pub struct Peripherals {
     /// Micro-Tick Timer
     pub utick: Utick,
 
-    /// Input multiplexer
-    pub inputmux: InputMux,
-
-    /// Pin Interrupt and Pattern Match
-    pub pint: Pint,
-
-    /// Analog-to-Digital Converter (ADC)
-    pub adc: Adc,
-
-    /// Direct memory access
-    pub dma: Dma,
 
     /// CRC engine - not HAL-ified.
     pub CRC_ENGINE: raw::CRC_ENGINE,
-
-    /// Standard counter/timer (CTIMER)
-    pub ctimer: Ctimers,
 
     pub FLASH_CMPA: raw::FLASH_CMPA,
     pub FLASH_CFPA0: raw::FLASH_CFPA0,
 
     /// Stateful counter/timer (SCTIMER) - not HAL-ified.
     pub SCT0: raw::SCT0,
+
 
     /// CPUID - core peripheral
     pub CPUID: raw::CPUID,
@@ -204,6 +207,7 @@ impl From<(raw::Peripherals, rtfm::Peripherals)> for Peripherals {
         let p = raw.0;
         Peripherals {
             // HAL peripherals
+            adc: Adc::from(p.ADC0),
             anactrl: Anactrl::from(p.ANACTRL),
             casper: Casper::from(p.CASPER),
             ctimer: (
@@ -213,6 +217,7 @@ impl From<(raw::Peripherals, rtfm::Peripherals)> for Peripherals {
                 peripherals::ctimer::Ctimer3::from(p.CTIMER3),
                 peripherals::ctimer::Ctimer4::from(p.CTIMER4),
             ),
+            dma: Dma::from(p.DMA0),
             flash: Flash::from(p.FLASH),
             flexcomm: (
                 peripherals::flexcomm::Flexcomm0::from((p.FLEXCOMM0, p.I2C0, p.I2S0, p.SPI0, p.USART0)),
@@ -227,16 +232,14 @@ impl From<(raw::Peripherals, rtfm::Peripherals)> for Peripherals {
             ),
             gint: Gint::from((p.GINT0, p.GINT1)),
             gpio: Gpio::from(p.GPIO),
+            inputmux: InputMux::from(p.INPUTMUX),
             iocon: Iocon::from(p.IOCON),
+            pint: Pint::from(p.PINT),
             pmc: Pmc::from(p.PMC),
             rng: Rng::from(p.RNG),
             syscon: Syscon::from(p.SYSCON),
             usbfs: Usbfs::from((p.USB0, p.USBFSH)),
             utick: Utick::from(p.UTICK0),
-            inputmux: InputMux::from(p.INPUTMUX),
-            pint: Pint::from(p.PINT),
-            adc: Adc::from(p.ADC0),
-            dma: Dma::from(p.DMA0),
 
             // Raw peripherals
             CRC_ENGINE: p.CRC_ENGINE,
@@ -261,6 +264,7 @@ impl From<(raw::Peripherals, raw::CorePeripherals)> for Peripherals {
         let p = raw.0;
         Peripherals {
             // HAL peripherals
+            adc: Adc::from(p.ADC0),
             anactrl: Anactrl::from(p.ANACTRL),
             casper: Casper::from(p.CASPER),
 
@@ -271,6 +275,7 @@ impl From<(raw::Peripherals, raw::CorePeripherals)> for Peripherals {
                 peripherals::ctimer::Ctimer3::from(p.CTIMER3),
                 peripherals::ctimer::Ctimer4::from(p.CTIMER4),
             ),
+            dma: Dma::from(p.DMA0),
             flash: Flash::from(p.FLASH),
             flexcomm: (
                 peripherals::flexcomm::Flexcomm0::from((p.FLEXCOMM0, p.I2C0, p.I2S0, p.SPI0, p.USART0)),
@@ -285,16 +290,14 @@ impl From<(raw::Peripherals, raw::CorePeripherals)> for Peripherals {
             ),
             gint: Gint::from((p.GINT0, p.GINT1)),
             gpio: Gpio::from(p.GPIO),
+            inputmux: InputMux::from(p.INPUTMUX),
             iocon: Iocon::from(p.IOCON),
+            pint: Pint::from(p.PINT),
             pmc: Pmc::from(p.PMC),
             rng: Rng::from(p.RNG),
             syscon: Syscon::from(p.SYSCON),
             usbfs: Usbfs::from((p.USB0, p.USBFSH)),
             utick: Utick::from(p.UTICK0),
-            inputmux: InputMux::from(p.INPUTMUX),
-            pint: Pint::from(p.PINT),
-            adc: Adc::from(p.ADC0),
-            dma: Dma::from(p.DMA0),
 
             // Raw peripherals
             CRC_ENGINE: p.CRC_ENGINE,

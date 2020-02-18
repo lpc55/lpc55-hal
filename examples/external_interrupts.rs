@@ -1,7 +1,7 @@
 #![no_main]
 #![no_std]
 
-extern crate panic_semihosting;  // 4004 bytes
+crate panic_semihosting;  // 4004 bytes
 // extern crate panic_halt; // 672 bytes
 
 // #[macro_use(block)]
