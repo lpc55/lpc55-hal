@@ -29,7 +29,7 @@ pub enum Mode {
 }
 use Mode::*;
 
-impl Deref for Pint {
+impl<State> Deref for Pint<State> {
     type Target = raw::pint::RegisterBlock;
     fn deref(&self) -> &Self::Target {
         &self.raw

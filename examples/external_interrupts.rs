@@ -1,7 +1,7 @@
 #![no_main]
 #![no_std]
 
-crate panic_semihosting;  // 4004 bytes
+use panic_semihosting;  // 4004 bytes
 // extern crate panic_halt; // 672 bytes
 
 // #[macro_use(block)]
@@ -56,8 +56,6 @@ fn main() -> ! {
 
     // // Dont need mux anymore
     mux.disabled(&mut hal.syscon);
-
-    let pint = pint.release();
 
     // Clear interrupts initially
     pint.rise.write(|w| unsafe { w.bits(1) });
