@@ -127,8 +127,8 @@ for (SCK, MOSI, MISO, CS) where
     PIO4: PinId,
     SPI: Spi,
     SCK: SpiSckPin<PIO1, SPI>,
-    MOSI: SpiMosiPin<PIO3, SPI>,
-    MISO: SpiMisoPin<PIO2, SPI>,
+    MOSI: SpiMosiPin<PIO2, SPI>,
+    MISO: SpiMisoPin<PIO3, SPI>,
     CS: SpiCsPin<PIO4, SPI>,
 {
     const CS: ChipSelect = CS::CS;
