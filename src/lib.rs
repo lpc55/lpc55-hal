@@ -67,6 +67,7 @@ pub use peripherals::{
     rng::Rng,
     syscon::Syscon,
     usbfs::Usbfs,
+    usbhs::Usbhs,
     utick::Utick,
 };
 
@@ -143,6 +144,9 @@ pub struct Peripherals {
 
     /// USB full-speed device or, not implemented, host
     pub usbfs: Usbfs,
+
+    /// USB high-speed device or, not implemented, host
+    pub usbhs: Usbhs,
 
     /// Micro-Tick Timer
     pub utick: Utick,
@@ -224,6 +228,7 @@ impl From<(raw::Peripherals, rtfm::Peripherals)> for Peripherals {
             rng: Rng::from(p.RNG),
             syscon: Syscon::from(p.SYSCON),
             usbfs: Usbfs::from((p.USB0, p.USBFSH)),
+            usbhs: Usbhs::from((p.USBHSD, p.USBHSH)),
             utick: Utick::from(p.UTICK0),
 
             // Raw peripherals
@@ -280,6 +285,7 @@ impl From<(raw::Peripherals, raw::CorePeripherals)> for Peripherals {
             rng: Rng::from(p.RNG),
             syscon: Syscon::from(p.SYSCON),
             usbfs: Usbfs::from((p.USB0, p.USBFSH)),
+            usbhs: Usbhs::from((p.USBHSD, p.USBHSH)),
             utick: Utick::from(p.UTICK0),
 
             // Raw peripherals

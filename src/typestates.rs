@@ -63,6 +63,21 @@ pub mod usbfs_mode {
     impl UsbfsMode for Host {}
 }
 
+pub mod usbhs_mode {
+    pub trait UsbhsMode {}
+
+    pub struct Unknown;
+    impl UsbhsMode for Unknown {}
+
+    pub struct Device;
+    impl UsbhsMode for Device {}
+
+    pub struct Host;
+    impl UsbhsMode for Host {}
+}
+
+
+
 /// Application can only obtain this token from
 /// a frozen Clocks (clock-tree configuration)
 pub struct ClocksSupportFlexcommToken {pub(crate) __: ()}

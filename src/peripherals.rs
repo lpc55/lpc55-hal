@@ -34,4 +34,5 @@ pub mod puf;
 pub mod rng;
 pub mod syscon;
 pub mod usbfs;
+pub mod usbhs;
 pub mod utick;
