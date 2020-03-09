@@ -230,7 +230,7 @@ impl_clock_control!((&mut raw::GINT0, &mut raw::GINT1), gint, ahbclkctrl0);
 impl_clock_control!(raw::PINT, pint, ahbclkctrl0);
 
 impl_clock_control!(raw::USB0, usb0_dev, ahbclkctrl1);
-impl_clock_control!(raw::USBHSD, usb0_dev, ahbclkctrl1);
+impl_clock_control!(raw::USB1, usb0_dev, ahbclkctrl1);
 impl_clock_control!(raw::USBFSH, usb0_hosts, ahbclkctrl2);  // well what about usb0_hostm?
 impl_clock_control!(raw::USBHSH, usb0_hosts, ahbclkctrl2);
 impl_clock_control!(raw::UTICK0, utick, ahbclkctrl1);
@@ -318,7 +318,7 @@ impl_reset_control!(raw::FLEXCOMM6, fc6_rst, presetctrl1);
 impl_reset_control!(raw::FLEXCOMM7, fc7_rst, presetctrl1);
 impl_reset_control!(raw::FLEXCOMM8, hs_lspi_rst, presetctrl2);
 impl_reset_control!(raw::USB0, usb0_dev_rst, presetctrl1);
-impl_reset_control!(raw::USBHSD, usb0_dev_rst, presetctrl1);
+impl_reset_control!(raw::USB1, usb0_dev_rst, presetctrl1);
 impl_reset_control!(raw::UTICK0, utick_rst, presetctrl1);
 
 impl_reset_control!(raw::USBFSH, usb0_hostm_rst, usb0_hosts_rst, presetctrl2);

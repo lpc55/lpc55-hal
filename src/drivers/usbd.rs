@@ -206,7 +206,7 @@ impl usb_device::bus::UsbBus for UsbBus {
             // DATABUFSTART
             unsafe {
                 // lower part is stored in endpoint registers
-                let databufstart = (constants::EP_MEM_ADDR >> 22) as u16;
+                let databufstart = constants::EP_MEM_ADDR as u32;
                 usb.databufstart.modify(|_, w| w.da_buf().bits(databufstart));
             };
 

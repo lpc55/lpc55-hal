@@ -15,7 +15,7 @@ use crate::typestates::{
 
 // Main struct
 pub struct Usbhs<State: init_state::InitState = init_state::Unknown, Mode: usbhs_mode::UsbhsMode = usbhs_mode::Unknown> {
-    pub(crate) raw_hsd: raw::USBHSD,
+    pub(crate) raw_hsd: raw::USB1,
     pub(crate) raw_hsh: raw::USBHSH,
     _state: State,
     _mode: Mode,
@@ -25,7 +25,7 @@ pub type EnabledUsbhsDevice = Usbhs<init_state::Enabled, usbhs_mode::Device>;
 pub type EnabledUsbhsHost = Usbhs<init_state::Enabled, usbhs_mode::Host>;
 
 impl Usbhs {
-    pub fn new(raw_hsd: raw::USBHSD, raw_hsh: raw::USBHSH) -> Self {
+    pub fn new(raw_hsd: raw::USB1, raw_hsh: raw::USBHSH) -> Self {
         Usbhs {
             raw_hsd,
             raw_hsh,
@@ -36,7 +36,7 @@ impl Usbhs {
 }
 
 impl<State: init_state::InitState, Mode: usbhs_mode::UsbhsMode> Usbhs<State, Mode> {
-    pub fn release(self) -> (raw::USBHSD, raw::USBHSH) {
+    pub fn release(self) -> (raw::USB1, raw::USBHSH) {
         (self.raw_hsd, self.raw_hsh)
     }
 
@@ -56,8 +56,8 @@ impl<State: init_state::InitState, Mode: usbhs_mode::UsbhsMode> Usbhs<State, Mod
         // syscon.raw.usb0clksel.modify(|_, w| w.sel().enum_0x3()); // Fro96MHz
         // while syscon.raw.usb0clkdiv.read().reqflag().is_ongoing() {}
 
-        // // turn on USB0 PHY
-        // pmc.power_on(&mut self.raw_fsd);
+        // // turn on USB1 PHY
+        pmc.power_on(&mut self.raw_hsd);
 
         // // reset and turn on clock
         // syscon.reset(&mut self.raw_fsd);
@@ -131,8 +131,8 @@ impl<State: init_state::InitState> Usbhs<State, usbhs_mode::Device> {
     }
 }
 
-impl From<(raw::USBHSD, raw::USBHSH)> for Usbhs {
-    fn from(raw: (raw::USBHSD, raw::USBHSH)) -> Self {
+impl From<(raw::USB1, raw::USBHSH)> for Usbhs {
+    fn from(raw: (raw::USB1, raw::USBHSH)) -> Self {
         Usbhs::new(raw.0, raw.1)
     }
 }

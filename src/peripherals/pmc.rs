@@ -124,7 +124,7 @@ macro_rules! impl_power_control {
 // well maybe there needs to be a USBFS peripheral with power control,
 // and on top of that USBFSD, USBFSHM, USBFSHS... to make this all logical.
 impl_power_control!(raw::USB0, pden_usbfsphy);
-impl_power_control!(raw::USBHSD, pden_usbfsphy);
+impl_power_control!(raw::USB1, pden_usbfsphy);
 impl_power_control!(raw::USBFSH, pden_usbfsphy);
 impl_power_control!(raw::USBHSH, pden_usbfsphy);
 impl_power_control!(raw::ADC0, pden_auxbias);
