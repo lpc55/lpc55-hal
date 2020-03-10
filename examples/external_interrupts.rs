@@ -19,6 +19,7 @@ use hal::{
     peripherals::{
         pint::{
             Mode,
+            Slot,
         },
     },
 };
@@ -51,8 +52,8 @@ fn main() -> ! {
     let mut mux = hal.inputmux.enabled(&mut hal.syscon);
     let mut pint = hal.pint.enabled(&mut hal.syscon);
 
-    pint.enable_interrupt(&mut mux, &input, 0, Mode::RisingEdge);
-    pint.enable_interrupt(&mut mux, &input, 0, Mode::FallingEdge);
+    pint.enable_interrupt(&mut mux, &input, Slot::Slot0, Mode::RisingEdge);
+    pint.enable_interrupt(&mut mux, &input, Slot::Slot0, Mode::FallingEdge);
 
     // // Dont need mux anymore
     mux.disabled(&mut hal.syscon);

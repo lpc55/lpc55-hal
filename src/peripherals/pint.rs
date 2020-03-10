@@ -27,6 +27,21 @@ pub enum Mode {
     ActiveLow,
     ActiveHigh,
 }
+
+/// Bit position 0 - 7 indicating which of the 8 external interrupt positions to use
+#[repr(u8)]
+#[derive(Copy, Clone, Debug)]
+pub enum Slot {
+    Slot0 = 0,
+    Slot1 = 1,
+    Slot2 = 2,
+    Slot3 = 3,
+    Slot4 = 4,
+    Slot5 = 5,
+    Slot6 = 6,
+    Slot7 = 7,
+}
+
 use Mode::*;
 
 impl<State> Deref for Pint<State> {
@@ -69,7 +84,8 @@ impl Pint <init_state::Enabled> {
         &mut self, 
         mux: &mut InputMux<init_state::Enabled>, 
         _pin:  &Pin<PIN, state::Gpio<direction::Input>>, 
-        slot: u8, mode: Mode
+        slot: Slot,
+        mode: Mode
     ){
 
         // Enable pin as external interrupt for ext int source `slot`
@@ -78,7 +94,7 @@ impl Pint <init_state::Enabled> {
             .intpin().bits( (PIN::PORT << 5) as u8 | (PIN::NUMBER) )
         });
 
-        let bit = 1 << slot;
+        let bit = 1 << (slot as u8);
 
         // Clear respective slot bit (default rising)
         self.raw.isel.modify(|r,w| unsafe {
