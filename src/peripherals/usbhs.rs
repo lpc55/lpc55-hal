@@ -1,3 +1,4 @@
+use core::ops::Deref;
 use crate::raw;
 use crate::peripherals::{
     anactrl,
@@ -11,6 +12,9 @@ use crate::typestates::{
     // Fro96MHzEnabledToken,
     ClocksSupportUsbfsToken,
 };
+use crate::traits::{
+    Usb,
+};
 
 
 // Main struct
@@ -23,6 +27,16 @@ pub struct Usbhs<State: init_state::InitState = init_state::Unknown, Mode: usbhs
 
 pub type EnabledUsbhsDevice = Usbhs<init_state::Enabled, usbhs_mode::Device>;
 pub type EnabledUsbhsHost = Usbhs<init_state::Enabled, usbhs_mode::Host>;
+
+impl Deref for EnabledUsbhsDevice {
+    type Target = raw::usb1::RegisterBlock;
+    fn deref(&self) -> &Self::Target {
+        &self.raw_hsd
+    }
+}
+
+unsafe impl Sync for EnabledUsbhsDevice {}
+impl Usb<init_state::Enabled> for EnabledUsbhsDevice {}
 
 impl Usbhs {
     pub fn new(raw_hsd: raw::USB1, raw_hsh: raw::USBHSH) -> Self {

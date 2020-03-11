@@ -10,7 +10,8 @@ use usb_device::{
     endpoint::EndpointType,
 };
 
-use crate::raw::USB0;
+use crate::traits::Usb;
+use crate::typestates::init_state;
 
 use super::{
     endpoint_memory::EndpointBuffer,
@@ -77,13 +78,13 @@ impl Endpoint {
         );
     }
 
-    // pub fn enable_out_interrupt(&self, usb: &USB0) {
+    // pub fn enable_out_interrupt(&self, usb: &USB1) {
     //     // usb.inten.modify(|r, w| unsafe { w.bits(r.bits() | ((1 << 10) - 1)) } );
     //     let i = self.index;
     //     usb.inten.modify(|r, w| unsafe { w.ep_int_en().bits(1 << (i << 1)) });
     // }
 
-    // pub fn enable_in_interrupt(&self, usb: &USB0) {
+    // pub fn enable_in_interrupt(&self, usb: &USB1) {
     //     // usb.inten.modify(|r, w| unsafe { w.bits(r.bits() | ((1 << 10) - 1)) } );
     //     let i = self.index;
     //     usb.inten.modify(|r, w| unsafe { w.ep_int_en().bits(1 << ((i << 1) + 1)) });
@@ -145,7 +146,7 @@ impl Endpoint {
         }
     }
 
-    pub fn configure(&self, cs: &CriticalSection, usb: &USB0, epl: &EndpointRegistersInstance) {
+    pub fn configure<USB: Usb<init_state::Enabled>>(&self, cs: &CriticalSection, usb: &USB, epl: &EndpointRegistersInstance) {
         let ep_type = match self.ep_type {
             Some(t) => t,
             None => { return },
@@ -207,7 +208,7 @@ impl Endpoint {
         Ok(buf.len())
     }
 
-    pub fn read(&self, buf: &mut [u8], cs: &CriticalSection, usb: &USB0, epl: &EndpointRegistersInstance) -> Result<usize> {
+    pub fn read<USB: Usb<init_state::Enabled>>(&self, buf: &mut [u8], cs: &CriticalSection, usb: &USB, epl: &EndpointRegistersInstance) -> Result<usize> {
 
         if !self.is_out_buf_set() { return Err(UsbError::WouldBlock); }
 

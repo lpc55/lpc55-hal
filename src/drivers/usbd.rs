@@ -44,12 +44,14 @@ use usb_device::{
     },
 };
 
-use crate::{
-    raw::USB0,
-    peripherals::usbfs::EnabledUsbfsDevice,
+use crate::traits::{
+    Usb,
 };
-
-
+use crate::{
+    typestates::{
+        init_state,
+    }
+};
 use crate::{
     Pin,
     drivers::pins::PinId,
@@ -69,8 +71,11 @@ impl<P> Usb0VbusPin for Pin<P, pin::state::Special<pin::function::USB0_VBUS>> wh
 /// After the bus is enabled, in practice most access won't mutate the object itself
 /// but only endpoint-specific registers and buffers, the access to which is mostly
 /// arbitrated by endpoint handles.
-pub struct UsbBus {
-    usb_regs: Mutex<USB0>,
+pub struct UsbBus<USB>
+where
+    USB: Usb<init_state::Enabled> + Send,
+{
+    usb_regs: Mutex<USB>,
     ep_regs: Mutex<endpoint_registers::Instance>,
     endpoints: [Endpoint; self::constants::NUM_ENDPOINTS],
     ep_allocator: EndpointMemoryAllocator,
@@ -78,15 +83,18 @@ pub struct UsbBus {
 }
 
 
-impl UsbBus {
+impl<USB> UsbBus<USB>
+where
+    USB: Usb<init_state::Enabled> + Send,
+{
     /// Constructs a new USB peripheral driver.
-    pub fn new<PIN>(usbfsd: EnabledUsbfsDevice, _usb0_vbus_pin: PIN) -> UsbBusAllocator<Self>
+    pub fn new<PIN>(usb_device: USB, _usb0_vbus_pin: PIN) -> UsbBusAllocator<UsbBus<USB>>
         where PIN: Usb0VbusPin + Sync
     {
         use self::constants::NUM_ENDPOINTS;
 
         let bus = UsbBus {
-            usb_regs: Mutex::new(usbfsd.release().0),
+            usb_regs: Mutex::new(usb_device),
             ep_regs: Mutex::new(endpoint_registers::attach().unwrap()),
             ep_allocator: EndpointMemoryAllocator::new(),
             max_endpoint: 0,
@@ -121,7 +129,10 @@ impl UsbBus {
 
 
 // impl<PINS: Send+Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
-impl usb_device::bus::UsbBus for UsbBus {
+impl<USB> usb_device::bus::UsbBus for UsbBus<USB>
+where
+    USB: Usb<init_state::Enabled> + Send,
+{
 
     // override the default (contrary to USB spec),
     // as describe in the user manual
