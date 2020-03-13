@@ -64,6 +64,21 @@ make jlink
 make run-example EXAMPLE=rtfm_led  # or any other example
 ```
 
+## Setup
+To install rust, follow the install instructions from here: [https://rust-embedded.github.io/book/intro/install.html][rust_install_manual]
+
+You also need following targets:
+
+- thumbv8m.main-none-eabi
+- thumbv8m.main-none-eabihf
+
+Just use following command:
+
+```
+  rustup target add thumbv8m.main-none-eabi
+  rustup target add thumbv8m.main-none-eabihf
+```
+
 ## License
 
 [Apache-2.0][apache2-link] or [MIT][mit-link].
@@ -105,3 +120,4 @@ from the various [STM32 HALs][stm32-rs].
 [errata]: https://www.nxp.com/docs/en/errata/ES_LPC55S6x.pdf
 [genericuserguide]: https://static.docs.arm.com/100235/0004/arm_cortex_m33_dgug_100235_0004_00_en.pdf
 [evkusermanual]: https://www.nxp.com/webapp/Download?colCode=UM11158
+[rust_install_manual]: https://rust-embedded.github.io/book/intro/install.html
