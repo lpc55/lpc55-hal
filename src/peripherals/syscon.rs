@@ -318,9 +318,10 @@ impl_reset_control!(raw::FLEXCOMM6, fc6_rst, presetctrl1);
 impl_reset_control!(raw::FLEXCOMM7, fc7_rst, presetctrl1);
 impl_reset_control!(raw::FLEXCOMM8, hs_lspi_rst, presetctrl2);
 impl_reset_control!(raw::USB0, usb0_dev_rst, presetctrl1);
-impl_reset_control!(raw::USB1, usb0_dev_rst, presetctrl1);
+impl_reset_control!(raw::USBHSH, usb1_host_rst, presetctrl2);
+impl_reset_control!(raw::USBPHY, usb1_phy_rst, presetctrl2);
 impl_reset_control!(raw::UTICK0, utick_rst, presetctrl1);
 
 impl_reset_control!(raw::USBFSH, usb0_hostm_rst, usb0_hosts_rst, presetctrl2);
-impl_reset_control!(raw::USBHSH, usb0_hostm_rst, usb0_hosts_rst, presetctrl2);
+impl_reset_control!(raw::USB1, usb1_dev_rst, usb1_ram_rst, presetctrl2);
 

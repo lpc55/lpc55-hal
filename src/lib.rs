@@ -228,7 +228,7 @@ impl From<(raw::Peripherals, rtfm::Peripherals)> for Peripherals {
             rng: Rng::from(p.RNG),
             syscon: Syscon::from(p.SYSCON),
             usbfs: Usbfs::from((p.USB0, p.USBFSH)),
-            usbhs: Usbhs::from((p.USB1, p.USBHSH)),
+            usbhs: Usbhs::from((p.USBPHY, p.USB1, p.USBHSH)),
             utick: Utick::from(p.UTICK0),
 
             // Raw peripherals
@@ -285,7 +285,7 @@ impl From<(raw::Peripherals, raw::CorePeripherals)> for Peripherals {
             rng: Rng::from(p.RNG),
             syscon: Syscon::from(p.SYSCON),
             usbfs: Usbfs::from((p.USB0, p.USBFSH)),
-            usbhs: Usbhs::from((p.USB1, p.USBHSH)),
+            usbhs: Usbhs::from((p.USBPHY, p.USB1, p.USBHSH)),
             utick: Utick::from(p.UTICK0),
 
             // Raw peripherals
