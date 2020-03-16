@@ -16,8 +16,9 @@ use crate::typestates::{
     ClocksSupportUsbfsToken,
 };
 use cortex_m_semihosting::{dbg, heprintln};
-use crate::traits::{
+use crate::traits::usb::{
     Usb,
+    UsbSpeed,
 };
 
 use crate::time::*;
@@ -42,7 +43,15 @@ impl Deref for EnabledUsbhsDevice {
 }
 
 unsafe impl Sync for EnabledUsbhsDevice {}
-impl Usb<init_state::Enabled> for EnabledUsbhsDevice {}
+impl Usb<init_state::Enabled> for EnabledUsbhsDevice {
+    fn get_speed(&self) -> UsbSpeed { 
+        if self.raw_hsd.devcmdstat.read().speed().bits() == 0b10 {
+            UsbSpeed::HighSpeed
+        } else {
+            UsbSpeed::FullSpeed
+        }
+    }
+}
 
 impl Usbhs {
     pub fn new(raw_phy: raw::USBPHY, raw_hsd: raw::USB1, raw_hsh: raw::USBHSH) -> Self {

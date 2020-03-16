@@ -44,7 +44,7 @@ use usb_device::{
     },
 };
 
-use crate::traits::{
+use crate::traits::usb::{
     Usb,
 };
 use crate::{
@@ -161,7 +161,7 @@ where
                     let size = max_packet_size;
                     let buffer = self.ep_allocator.allocate_buffer(size as _)?;
                     ep.set_out_buf(buffer);
-                    debug_assert!(ep.is_out_buf_set());
+                    assert!(ep.is_out_buf_set());
 
                     if index == 0 {
                         let setup = self.ep_allocator.allocate_buffer(8)?;
@@ -202,12 +202,12 @@ where
 
                     // not sure this is needed
                     if ep.is_out_buf_set() {
-                        ep.reset_out_buf(cs, eps);
-                        if index == 0 { ep.reset_setup_buf(cs, eps); }
+                        ep.reset_out_buf(cs, usb, eps);
+                        if index == 0 { ep.reset_setup_buf(cs, usb, eps); }
                         // ep.enable_out_interrupt(usb);
                     }
                     if ep.is_in_buf_set() {
-                        ep.reset_in_buf(cs, eps);
+                        ep.reset_in_buf(cs, usb, eps);
                         // ep.enable_in_interrupt(usb);
                     }
                 }
@@ -224,7 +224,7 @@ where
             // EPLISTSTART
             unsafe {
                 let epliststart = eps.addr;
-                debug_assert!(epliststart as u8 == 0); // needs to be 256 byte aligned
+                assert!(epliststart as u8 == 0); // needs to be 256 byte aligned
                 usb.epliststart.modify(|_, w| w.ep_list().bits(epliststart >> 8));
             }
 
@@ -297,7 +297,7 @@ where
             // Bus reset flag?
             if devcmdstat.read().dres_c().bit_is_set() {
                 devcmdstat.modify(|_, w| w.dres_c().set_bit());
-                // debug_assert!(devcmdstat.read().dres_c().bit_is_clear());
+                // assert!(devcmdstat.read().dres_c().bit_is_clear());
                 return PollResult::Reset
             }
 
@@ -336,7 +336,7 @@ where
 
             if intstat_r.ep0in().bit_is_set() {
                 intstat.write(|w| w.ep0in().set_bit());
-                debug_assert!(intstat.read().ep0in().bit_is_clear());
+                assert!(intstat.read().ep0in().bit_is_clear());
                 ep_in_complete |= bit;
 
                 // EP0 needs manual toggling of Active bits
@@ -358,7 +358,7 @@ where
                 let out_inactive = eps.eps[i].ep_out[0].read().a().is_not_active();
 
                 if out_int {
-                    debug_assert!(out_inactive);
+                    assert!(out_inactive);
                     ep_out |= bit;
                     // EXPERIMENTAL: clear interrupt
                     // usb.intstat.write(|w| unsafe { w.bits(1u32 << out_offset) } );
@@ -385,13 +385,13 @@ where
                     //     devcmdstat.read().intonnak_ao().is_enabled(),
                     // ).ok();
 
-                    // debug_assert!(in_inactive);
+                    // assert!(in_inactive);
                 }
                 if in_int && in_inactive {
                     ep_in_complete |= bit;
                     // clear it
                     usb.intstat.write(|w| unsafe { w.bits(1u32 << in_offset) } );
-                    debug_assert!(eps.eps[i].ep_in[0].read().a().is_not_active());
+                    assert!(eps.eps[i].ep_in[0].read().a().is_not_active());
 
                     // let err_code = usb.info.read().err_code().bits();
                     // let addr_set = devcmdstat.read().dev_addr().bits() > 0;
@@ -424,9 +424,9 @@ where
         if !ep_addr.is_in() { return Err(UsbError::InvalidEndpoint); }
 
         interrupt::free(|cs| {
-            // let usb = self.usb_regs.borrow(cs);
+            let usb = self.usb_regs.borrow(cs);
             let eps = self.ep_regs.borrow(cs);
-            self.endpoints[ep_addr.index()].write(buf, cs, eps)
+            self.endpoints[ep_addr.index()].write(buf, cs, usb, eps)
         })
     }
 

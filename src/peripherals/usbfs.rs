@@ -12,8 +12,9 @@ use crate::typestates::{
     // Fro96MHzEnabledToken,
     ClocksSupportUsbfsToken,
 };
-use crate::traits::{
+use crate::traits::usb::{
     Usb,
+    UsbSpeed,
 };
 
 
@@ -37,7 +38,9 @@ impl Deref for EnabledUsbfsDevice {
 }
 
 unsafe impl Sync for EnabledUsbfsDevice {}
-impl Usb<init_state::Enabled> for EnabledUsbfsDevice {}
+impl Usb<init_state::Enabled> for EnabledUsbfsDevice {
+    fn get_speed(&self) -> UsbSpeed { UsbSpeed::FullSpeed }
+}
 
 impl Usbfs {
     pub fn new(raw_fsd: raw::USB0, raw_fsh: raw::USBFSH) -> Self {

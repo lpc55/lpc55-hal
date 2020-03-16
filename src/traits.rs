@@ -57,8 +57,8 @@ pub mod reg_proxy {
 // maybe put in submodule?
 pub trait Gint: Deref<Target = crate::raw::gint0::RegisterBlock> {}
 
-pub trait Usb <State>: Deref<Target = crate::raw::usb1::RegisterBlock> + Sync  {}
 
 pub mod buttons;
 pub mod flash;
+pub mod usb;
 
