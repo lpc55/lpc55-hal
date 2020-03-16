@@ -1,7 +1,7 @@
 pub type UsbAccessType = u8; // note this is just a type definition, we depend on its size
 
 /// Number of logical endpoints, including control
-pub const NUM_ENDPOINTS: usize = 1 + 4;
+pub const NUM_ENDPOINTS: usize = 1 + 5;
 pub const BYTES_PER_EP_REGISTER: usize = 4*4;
 
 pub const USB1_SRAM_ADDR: usize = 0x4010_0000;
