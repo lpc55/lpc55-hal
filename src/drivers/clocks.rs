@@ -12,6 +12,7 @@ use crate::typestates::{
     // clock_state,
     ClocksSupportFlexcommToken,
     ClocksSupportUsbfsToken,
+    ClocksSupportUsbhsToken,
     ClocksSupportUtickToken,
     ClocksSupportTouchToken,
 };
@@ -37,6 +38,7 @@ use crate::{
 // PLL at 13.mhz does not - might also be a bug
 // in PLL code ofc
 const MIN_USBFS_FREQ: Megahertz = Megahertz(24);
+const MIN_USBHS_FREQ: Megahertz = Megahertz(96);
 const DEFAULT_FREQ: Megahertz = Megahertz(12);
 
 #[derive(Debug, Default)]
@@ -44,6 +46,7 @@ pub struct ClockRequirements {
     pub system_frequency: Option<Megahertz>,
     pub custom_pll: Option<Pll>,
     pub support_usbfs: bool,
+    pub support_usbhs: bool,
 }
 
 #[derive(Debug)]
@@ -63,6 +66,15 @@ impl Clocks {
 
         if fast_enough && can_latch_sof {
             Some(ClocksSupportUsbfsToken{__: ()})
+        } else {
+            None
+        }
+    }
+
+    pub fn support_usbhs_token(&self) -> Option<ClocksSupportUsbhsToken> {
+        let fast_enough = self.system_frequency >= MIN_USBHS_FREQ.into();
+        if fast_enough {
+            Some(ClocksSupportUsbhsToken{__: ()})
         } else {
             None
         }
@@ -141,6 +153,12 @@ impl ClockRequirements {
         self
     }
 
+    pub fn support_usbhs(mut self) -> Self {
+        self.support_usbhs = true;
+        self
+    }
+
+
     pub fn system_frequency<Freq>(mut self, freq: Freq) -> Self where Freq: Into<Megahertz> {
         self.system_frequency = Some(freq.into());
         self
@@ -189,13 +207,22 @@ impl ClockRequirements {
             return Err(ClocksError::AlreadyConfigured);
         }
 
-        let default_freq = if self.support_usbfs { MIN_USBFS_FREQ } else { DEFAULT_FREQ };
+        let default_freq = if self.support_usbfs { 
+            MIN_USBFS_FREQ 
+        } else if self.support_usbhs {
+            MIN_USBHS_FREQ
+        } else { 
+            DEFAULT_FREQ 
+        };
+
         let freq: Megahertz = self.system_frequency.unwrap_or(default_freq);
 
         if self.support_usbfs && freq < MIN_USBFS_FREQ {
             return Err(ClocksError::UsbfsNotFeasible);
         }
-
+        if self.support_usbhs && freq < MIN_USBHS_FREQ {
+            return Err(ClocksError::UsbfsNotFeasible);
+        }
 
         // turn on FRO192M: clear bit 5, according to `fsl_power.h` from the SDK
         // unsafe { pmc.raw.pdruncfgclr0.write(|w| w.bits(1u32 << 5)) };

@@ -88,6 +88,11 @@ pub struct ClocksSupportFlexcommToken {pub(crate) __: ()}
 pub struct ClocksSupportUsbfsToken {pub(crate) __: ()}
 
 /// Application can only obtain this token from
+/// a frozen Clocks (clock-tree configuration) for
+/// which USB clocks have been configured properly.
+pub struct ClocksSupportUsbhsToken {pub(crate) __: ()}
+
+/// Application can only obtain this token from
 /// a frozen Clocks (clock-tree configuration)
 pub struct ClocksSupportUtickToken {pub(crate) __: ()}
 
