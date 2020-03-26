@@ -10,7 +10,7 @@ use usb_device::{
     endpoint::EndpointType,
 };
 
-use crate::traits::usb::Usb;
+use crate::traits::usb::{Usb, UsbSpeed};
 use crate::typestates::init_state;
 
 use super::{
@@ -19,24 +19,25 @@ use super::{
 };
 
 /// Arbitrates access to the endpoint-specific registers and packet buffer memory.
-#[derive(Default)]
 pub struct Endpoint {
     out_buf: Option<Mutex<EndpointBuffer>>,
     setup_buf: Option<Mutex<EndpointBuffer>>,
     in_buf: Option<Mutex<EndpointBuffer>>,
     ep_type: Option<EndpointType>,
     index: u8,
+    usb_speed: UsbSpeed,
 }
 unsafe impl Send for Endpoint {}
 
 impl Endpoint {
-    pub fn new(index: u8) -> Endpoint {
+    pub fn new(index: u8, usb_speed: UsbSpeed) -> Endpoint {
         Endpoint {
             out_buf: None,
             setup_buf: None,
             in_buf: None,
             ep_type: None,
             index,
+            usb_speed,
         }
     }
 
@@ -60,7 +61,7 @@ impl Endpoint {
         self.out_buf = Some(Mutex::new(buffer));
     }
 
-    pub fn reset_out_buf<USB: Usb<init_state::Enabled>>(&self, cs: &CriticalSection, usb: &USB, epl: &EndpointRegistersInstance) {
+    pub fn reset_out_buf(&self, cs: &CriticalSection, epl: &EndpointRegistersInstance) {
         // hardware modifies the NBytes and Offset entries, need to change them back periodically
         if !self.is_out_buf_set() { return; };
 
@@ -68,11 +69,10 @@ impl Endpoint {
         let addroff = self.buf_addroff(buf);
         let len = buf.capacity() as u16;
         let i = self.index as usize;
-        let speed = usb.get_speed();
 
         epl.eps[i].ep_out[0].modify(|_, w| w
-            .nbytes(speed).bits(len)
-            .addroff(speed).bits(addroff)
+            .nbytes(self.usb_speed).bits(len)
+            .addroff(self.usb_speed).bits(addroff)
             .a().active()
             .d().enabled() // technically, marked as R (for reserved?) for EP0
             .s().not_stalled()
@@ -98,14 +98,14 @@ impl Endpoint {
         self.setup_buf = Some(Mutex::new(buffer));
     }
 
-    pub fn reset_setup_buf<USB: Usb<init_state::Enabled>>(&self, cs: &CriticalSection, usb: &USB, epl: &EndpointRegistersInstance) {
+    pub fn reset_setup_buf(&self, cs: &CriticalSection, epl: &EndpointRegistersInstance) {
         // I think this only has to be called once, as hardware never changes ADDROFF
         if !self.is_setup_buf_set() { return; };
 
         let buf = self.setup_buf.as_ref().unwrap().borrow(cs);
         let addroff = self.buf_addroff(buf);
         // SETUP is "second ep0out buffer" --> ep_out[1]
-        epl.eps[0].ep_out[1].modify(|_, w| w.addroff(usb.get_speed()).bits(addroff));
+        epl.eps[0].ep_out[1].modify(|_, w| w.addroff(self.usb_speed).bits(addroff));
     }
 
     // IN
@@ -115,14 +115,13 @@ impl Endpoint {
         self.in_buf = Some(Mutex::new(buffer));
     }
 
-    pub fn reset_in_buf<USB: Usb<init_state::Enabled>>(&self, cs: &CriticalSection, usb: &USB, epl: &EndpointRegistersInstance) {
+    pub fn reset_in_buf(&self, cs: &CriticalSection, epl: &EndpointRegistersInstance) {
         // hardware modifies the NBytes and Offset entries, need to change them back periodically
 
         if !self.is_in_buf_set() { return; };
 
         let buf = self.in_buf.as_ref().unwrap().borrow(cs);
         let addroff = self.buf_addroff(buf);
-        let speed = usb.get_speed();
         // let len = buf.len() as u32;
 
         let i = self.index as usize;
@@ -133,15 +132,15 @@ impl Endpoint {
 
         if i == 0 {
             epl.eps[0].ep_in[0].modify(|_, w| w
-                .nbytes(speed).bits(0)
-                .addroff(speed).bits(addroff)
+                .nbytes(self.usb_speed).bits(0)
+                .addroff(self.usb_speed).bits(addroff)
                 .a().not_active()
                 .s().not_stalled()
             );
         } else {
             epl.eps[i].ep_in[0].modify(|_, w| w
-                .nbytes(speed).bits(0)
-                .addroff(speed).bits(addroff)
+                .nbytes(self.usb_speed).bits(0)
+                .addroff(self.usb_speed).bits(addroff)
                 .d().enabled()
                 .s().not_stalled()
             );
@@ -161,14 +160,14 @@ impl Endpoint {
         usb.intstat.write(|w| unsafe { w.bits(!0) } );
         debug_assert!(usb.intstat.read().bits() == 0);
 
-        self.reset_out_buf(cs, usb, epl);
+        self.reset_out_buf(cs, epl);
         if self.index == 0 {
-            self.reset_setup_buf(cs, usb, epl);
+            self.reset_setup_buf(cs, epl);
         }
-        self.reset_in_buf(cs, usb, epl);
+        self.reset_in_buf(cs, epl);
     }
 
-    pub fn write<USB: Usb<init_state::Enabled>>(&self, buf: &[u8], cs: &CriticalSection, usb: &USB, epl: &EndpointRegistersInstance) -> Result<usize> {
+    pub fn write(&self, buf: &[u8], cs: &CriticalSection, epl: &EndpointRegistersInstance) -> Result<usize> {
         if !self.is_in_buf_set() { return Err(UsbError::WouldBlock); }
         let in_buf = self.in_buf.as_ref().unwrap().borrow(cs);
 
@@ -177,7 +176,6 @@ impl Endpoint {
         }
 
         let i = self.index as usize;
-        let speed = usb.get_speed();
 
         if i == 0 {
             epl.eps[0].ep_in[0].modify(|_, w| w
@@ -185,8 +183,8 @@ impl Endpoint {
             );
             in_buf.write(buf);
             epl.eps[0].ep_in[0].modify(|_, w| w
-                .nbytes(speed).bits(buf.len() as u16)
-                .addroff(speed).bits(self.buf_addroff(in_buf))
+                .nbytes(self.usb_speed).bits(buf.len() as u16)
+                .addroff(self.usb_speed).bits(self.buf_addroff(in_buf))
                 .s().not_stalled()
                 .a().active()
             );
@@ -200,8 +198,8 @@ impl Endpoint {
             }
             in_buf.write(buf);
             epl.eps[i].ep_in[0].modify(|_, w| w
-                .nbytes(speed).bits(buf.len() as u16)
-                .addroff(speed).bits(self.buf_addroff(in_buf))
+                .nbytes(self.usb_speed).bits(buf.len() as u16)
+                .addroff(self.usb_speed).bits(self.buf_addroff(in_buf))
                 .d().enabled()
                 .s().not_stalled()
                 .a().active()
@@ -216,7 +214,6 @@ impl Endpoint {
         if !self.is_out_buf_set() { return Err(UsbError::WouldBlock); }
 
         let i = self.index as usize;
-        let speed = usb.get_speed();
 
         if i != 0 {
             // need an ergonomic way to map i to register field
@@ -235,7 +232,7 @@ impl Endpoint {
                 return Err(UsbError::WouldBlock);
             }
             let out_buf = self.out_buf.as_ref().unwrap().borrow(cs);
-            let nbytes = epl.eps[i].ep_out[0].read().nbytes(usb.get_speed()).bits() as usize;
+            let nbytes = epl.eps[i].ep_out[0].read().nbytes(self.usb_speed).bits() as usize;
 
             // let count = min((out_buf.capacity() - nbytes) as usize, buf.len());
             let count = (out_buf.capacity() - nbytes) as usize;
@@ -246,8 +243,8 @@ impl Endpoint {
 
             // self.reset_out_buf(cs, epl);
             epl.eps[i].ep_out[0].modify(|_, w| w
-                .nbytes(speed).bits(out_buf.capacity() as u16)
-                .addroff(speed).bits(self.buf_addroff(out_buf))
+                .nbytes(self.usb_speed).bits(out_buf.capacity() as u16)
+                .addroff(self.usb_speed).bits(self.buf_addroff(out_buf))
                 .a().active()
                 // .d().enabled()
                 // .s().not_stalled()
@@ -289,17 +286,17 @@ impl Endpoint {
                 debug_assert!(usb.devcmdstat.read().setup().bit_is_clear());
 
                 // prepare to receive more
-                self.reset_out_buf(cs, usb, epl);
+                self.reset_out_buf(cs, epl);
                 Ok(8)
 
             } else {
                 let out_buf = self.out_buf.as_ref().unwrap().borrow(cs);
-                let nbytes = epl.eps[0].ep_out[0].read().nbytes(speed).bits() as usize;
+                let nbytes = epl.eps[0].ep_out[0].read().nbytes(self.usb_speed).bits() as usize;
                 let count = min((out_buf.capacity() - nbytes) as usize, buf.len());
 
                 out_buf.read(&mut buf[..count]);
 
-                self.reset_out_buf(cs, usb, epl);
+                self.reset_out_buf(cs, epl);
                 usb.intstat.write(|w| w.ep0out().set_bit());
 
                 Ok(count)

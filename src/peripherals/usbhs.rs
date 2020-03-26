@@ -43,13 +43,7 @@ impl Deref for EnabledUsbhsDevice {
 
 unsafe impl Sync for EnabledUsbhsDevice {}
 impl Usb<init_state::Enabled> for EnabledUsbhsDevice {
-    fn get_speed(&self) -> UsbSpeed { 
-        if self.raw_hsd.devcmdstat.read().speed().bits() == 0b10 {
-            UsbSpeed::HighSpeed
-        } else {
-            UsbSpeed::FullSpeed
-        }
-    }
+    fn get_speed(&self) -> UsbSpeed { UsbSpeed::HighSpeed }
 }
 
 impl Usbhs {

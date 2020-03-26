@@ -92,6 +92,7 @@ where
         where PIN: Usb0VbusPin + Sync
     {
         use self::constants::NUM_ENDPOINTS;
+        let speed = usb_device.get_speed();
 
         let bus = UsbBus {
             usb_regs: Mutex::new(usb_device),
@@ -104,7 +105,7 @@ where
                 };
 
                 for (i, endpoint) in endpoints.iter_mut().enumerate() {
-                    *endpoint = mem::MaybeUninit::new(Endpoint::new(i as u8));
+                    *endpoint = mem::MaybeUninit::new(Endpoint::new(i as u8, speed));
                 }
 
                 unsafe { mem::transmute::<_, [Endpoint; NUM_ENDPOINTS]>(endpoints) }
@@ -202,12 +203,12 @@ where
 
                     // not sure this is needed
                     if ep.is_out_buf_set() {
-                        ep.reset_out_buf(cs, usb, eps);
-                        if index == 0 { ep.reset_setup_buf(cs, usb, eps); }
+                        ep.reset_out_buf(cs, eps);
+                        if index == 0 { ep.reset_setup_buf(cs, eps); }
                         // ep.enable_out_interrupt(usb);
                     }
                     if ep.is_in_buf_set() {
-                        ep.reset_in_buf(cs, usb, eps);
+                        ep.reset_in_buf(cs, eps);
                         // ep.enable_in_interrupt(usb);
                     }
                 }
@@ -424,9 +425,8 @@ where
         if !ep_addr.is_in() { return Err(UsbError::InvalidEndpoint); }
 
         interrupt::free(|cs| {
-            let usb = self.usb_regs.borrow(cs);
             let eps = self.ep_regs.borrow(cs);
-            self.endpoints[ep_addr.index()].write(buf, cs, usb, eps)
+            self.endpoints[ep_addr.index()].write(buf, cs, eps)
         })
     }
 
