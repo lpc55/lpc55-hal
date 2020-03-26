@@ -62,7 +62,7 @@ jlink:
 # stop-jlink:
 # 	pkill JLinkGDBServer
 
-EXAMPLE := led
+EXAMPLE := led_utick
 
 build-example:
 	cargo build --example $(EXAMPLE)
