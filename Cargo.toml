@@ -62,6 +62,8 @@ default = ["rt"]
 logging = ["cortex-m-funnel", "ufmt"]
 rt = ["lpc55s6x-pac/rt"]
 rtfm-peripherals = ["cortex-m-rtfm"]
+highspeed = []
+fullspeed = []
 # # Boards
 # lpcxpresso55s69 = []
 # solo = []
