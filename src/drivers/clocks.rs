@@ -202,6 +202,59 @@ impl ClockRequirements {
         unreachable!();
     }
 
+    fn configure_pll0(pll: Pll, pmc: &mut Pmc, syscon: &mut Syscon) {
+
+        pmc.raw.pdruncfg0.modify(|_, w| w
+            .pden_pll0().poweredoff()
+            .pden_pll0_sscg().poweredoff()
+        );
+
+        syscon.raw.pll0ctrl.write(|w| unsafe { w
+            .clken().enable()
+            .seli().bits(pll.seli)
+            .selp().bits(pll.selp)
+        });
+
+        syscon.raw.pll0ndec.write(|w| unsafe { w
+            .ndiv().bits(pll.n)
+        });
+        syscon.raw.pll0ndec.write(|w| unsafe { w
+            .ndiv().bits(pll.n)
+            .nreq().set_bit() // latch
+        });
+
+        syscon.raw.pll0pdec.write(|w| unsafe { w
+            .pdiv().bits(pll.p)
+        });
+        syscon.raw.pll0pdec.write(|w| unsafe { w
+            .pdiv().bits(pll.p)
+            .preq().set_bit() // latch
+        });
+
+        syscon.raw.pll0sscg0.write(|w| unsafe { w
+            .md_lbs().bits(0)
+        });
+
+        syscon.raw.pll0sscg1.write(|w| unsafe { w
+            .mdiv_ext().bits(pll.m)
+            .sel_ext().set_bit()
+        });
+        syscon.raw.pll0sscg1.write(|w| unsafe { w
+            .mdiv_ext().bits(pll.m)
+            .sel_ext().set_bit()
+            .mreq().set_bit() // latch
+            .md_req().set_bit() // latch
+        });
+
+        pmc.raw.pdruncfg0.modify(|_, w| w
+            .pden_pll0().poweredon()
+            .pden_pll0_sscg().poweredon()
+        );
+
+        // wait at least 6 ms for PLL to stabilize
+        crate::wait_at_least(6_000);
+    }
+
     /// Requirements solver - tries to generate and configure a clock configuration
     /// from (partial) requirements.
     ///
@@ -250,57 +303,50 @@ impl ClockRequirements {
             freq if freq <= 96.mhz() && 96 % freq.0 == 0 => {
                 (MainClock::Fro96Mhz, 96 / freq.0)
             },
+            // For reference: how to get 150 MHz using 16Mhz external crystal
+            // freq if freq == 150.mhz() && 150 % freq.0 == 0 => {
+            //     // Use crystal as input to PLL0
+            //     // Power on 32M crystal for stable pll operation
+            //     pmc.raw.pdruncfg0.modify(|_,w| w.pden_xtal32m().poweredon());
+            //     pmc.raw.pdruncfg0.modify(|_,w| w.pden_ldoxo32m().poweredon());
+
+            //     // Connect external 32M as clk input
+            //     syscon.raw.clock_ctrl.modify(|_,w| w.clkin_ena().set_bit());
+            //     anactrl.raw.xo32m_ctrl.modify(|_,w| w.enable_system_clk_out().set_bit());
+
+            //     // select clkin for pll0
+            //     syscon.raw.pll0clksel.write(|w| unsafe{ w.bits(1) });
+                
+            //     // 150 MHz settings
+            //     let pll = Pll {
+            //         n: 8,
+            //         m: 150,
+            //         p: 1,
+            //         selp: 31,
+            //         seli: 53,
+            //     };
+
+            //     Self::configure_pll0(pll, pmc, syscon);
+
+            //     (MainClock::Pll0, 1)
+            // }
+            // Get 150 MHz using internal FRO12
+            freq if freq == 150.mhz() => {
+                syscon.raw.pll0clksel.write(|w| { w.sel().enum_0x0() /* FRO 12 MHz input */ });
+                Self::configure_pll0(Pll {
+                    n: 8,
+                    m: 200,
+                    p: 1,
+                    selp: 31,
+                    seli: 53,
+                }, pmc, syscon);
+                (MainClock::Pll0, 1)
+            }
+
             _ => {
                 let pll = Self::get_pll(freq.0);
-                // heprintln!("pll {:?}, freq {}", pll, freq.0).ok();
-
-                pmc.raw.pdruncfg0.modify(|_, w| w
-                    .pden_pll0().poweredoff()
-                    .pden_pll0_sscg().poweredoff()
-                );
-
-                syscon.raw.pll0ctrl.write(|w| unsafe { w
-                    .clken().enable()
-                    .seli().bits(pll.seli)
-                    .selp().bits(pll.selp)
-                });
-
-                syscon.raw.pll0ndec.write(|w| unsafe { w
-                    .ndiv().bits(pll.n)
-                });
-                syscon.raw.pll0ndec.write(|w| unsafe { w
-                    .ndiv().bits(pll.n)
-                    .nreq().set_bit() // latch
-                });
-
-                syscon.raw.pll0pdec.write(|w| unsafe { w
-                    .pdiv().bits(pll.p)
-                });
-                syscon.raw.pll0pdec.write(|w| unsafe { w
-                    .pdiv().bits(pll.p)
-                    .preq().set_bit() // latch
-                });
-
-                syscon.raw.pll0sscg0.write(|w| unsafe { w
-                    .md_lbs().bits(0)
-                });
-
-                syscon.raw.pll0sscg1.write(|w| unsafe { w
-                    .mdiv_ext().bits(pll.m)
-                });
-                syscon.raw.pll0sscg1.write(|w| unsafe { w
-                    .mdiv_ext().bits(pll.m)
-                    .mreq().set_bit() // latch
-                });
-
-                pmc.raw.pdruncfg0.modify(|_, w| w
-                    .pden_pll0().poweredon()
-                    .pden_pll0_sscg().poweredon()
-                );
-
-                // wait at least 6 ms for PLL to stabilize
-                crate::wait_at_least(6_000);
-
+                syscon.raw.pll0clksel.write(|w| { w.sel().enum_0x0() /* FRO 12 MHz input */ });
+                Self::configure_pll0(pll, pmc, syscon);
                 (MainClock::Pll0, 1)
             }
         };
@@ -316,10 +362,8 @@ impl ClockRequirements {
             system_frequency: freq.into(),
         };
 
-        // hprintln!("clocks = {:?}", clocks).ok();
-
         // set highest flash wait cycles
-        syscon.raw.fmccr.modify(|_, w| w.flashtim().flashtim8());
+        syscon.raw.fmccr.modify(|_, w| unsafe{ w.flashtim().bits(11) });
 
         match main_clock {
             MainClock::Fro12Mhz => {
@@ -347,8 +391,20 @@ impl ClockRequirements {
         }
 
         // fix wait cycles
-        let wait_cycles = (freq.0 / 11) + 1;
-        unsafe { syscon.raw.fmccr.modify(|_, w| w.flashtim().bits(wait_cycles as u8 - 1)) };
+        match freq.0 {
+            0 ..= 99 => {
+                unsafe { syscon.raw.fmccr.modify(|_, w| w.flashtim().bits((freq.0/11) as u8 - 1)) };
+            }
+            100 ..= 115 => {
+                unsafe { syscon.raw.fmccr.modify(|_, w| w.flashtim().bits( 9 )) };
+            }
+            116 ..= 130=> {
+                unsafe { syscon.raw.fmccr.modify(|_, w| w.flashtim().bits( 10 )) };
+            }
+            _ => {
+                unsafe { syscon.raw.fmccr.modify(|_, w| w.flashtim().bits( 11 )) };
+            }
+        }
 
         unsafe { CONFIGURED = true };
 
