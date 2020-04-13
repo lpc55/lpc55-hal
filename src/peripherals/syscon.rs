@@ -301,12 +301,14 @@ macro_rules! impl_reset_control {
 }
 
 // to be completed
+impl_reset_control!(raw::ADC0, adc_rst, presetctrl0);
 impl_reset_control!(raw::CASPER, casper_rst, presetctrl2);
 impl_reset_control!(raw::CTIMER0, timer0_rst, presetctrl1);
 impl_reset_control!(raw::CTIMER1, timer1_rst, presetctrl1);
 impl_reset_control!(raw::CTIMER2, timer2_rst, presetctrl1);
 impl_reset_control!(raw::CTIMER3, timer3_rst, presetctrl2);
 impl_reset_control!(raw::CTIMER4, timer4_rst, presetctrl2);
+impl_reset_control!(raw::DMA0, dma0_rst, presetctrl0);
 impl_reset_control!(raw::FLEXCOMM0, fc0_rst, presetctrl1);
 impl_reset_control!(raw::FLEXCOMM1, fc1_rst, presetctrl1);
 impl_reset_control!(raw::FLEXCOMM2, fc2_rst, presetctrl1);
