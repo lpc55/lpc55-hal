@@ -104,6 +104,7 @@ impl<State> Adc<State> {
 
     pub fn enabled(mut self, pmc: &mut Pmc, syscon: &mut Syscon) -> Adc<init_state::Enabled> {
         syscon.enable_clock(&mut self.raw);
+        syscon.reset(&mut self.raw);
         syscon.raw.adcclkdiv.write(|w| {w.reset().set_bit()});
         syscon.raw.adcclkdiv.write(|w| unsafe {w.div().bits(0)});
         syscon.raw.adcclkdiv.write(|w| unsafe {w.bits(0)});
@@ -158,8 +159,8 @@ impl<State> Adc<State> {
         // turn on!
         self.raw.ctrl.modify(|_, w| {w.adcen().set_bit()});
 
-
-        self.autocal();
+        // This breaks adc when it's not being run from debugger for some reason
+        // self.autocal();
 
         self.arm_comparator_channel(3);
         self.arm_normal_channel(3);
