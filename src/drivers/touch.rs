@@ -43,7 +43,7 @@ pub struct TouchSensor<P1 : PinId, P2 :  PinId, P3 : PinId,
 // State : init_state::InitState
 >
 {
-    threshold: u32,
+    threshold: [u32; 3],
     confidence: u32,
     adc: Adc,
     adc_timer: ctimer::Ctimer1<init_state::Enabled>,
@@ -58,10 +58,11 @@ pub struct TouchSensor<P1 : PinId, P2 :  PinId, P3 : PinId,
 // Running average == 8 samples
 const RESULTS_LEN: usize = 128;             // Total buffer size, should be power of 2 to make more efficient
 const RESULTS_LEAD_SIZE: usize = 3;         // Number of initial results to skip, improve latency
+const AVERAGES: usize = 16;
 static mut RESULTS: [u32; RESULTS_LEN] = [0u32; RESULTS_LEN];
 
 // ADC sample period in us
-const CHARGE_PERIOD_US: u32 = 800;
+const CHARGE_PERIOD_US: u32 = 400;
 
 impl<P1,P2,P3> Deref for TouchSensor<P1, P2, P3>
 where P1: PinId, P2: PinId, P3: PinId
@@ -86,7 +87,7 @@ where P1: PinId, P2: PinId, P3: PinId
     /// Threshold is the ADC sample limit where an is considered.
     /// Confidence is the number of times the threshold needs to be crossed
     pub fn new(
-        threshold: u32, 
+        threshold: [u32; 3], 
         confidence: u32,
         adc: Adc, 
         adc_timer: ctimer::Ctimer1<init_state::Enabled>, 
@@ -138,7 +139,7 @@ where P1: PinId, P2: PinId, P3: PinId
         } );
 
         adc.cmdh3.write(|w| unsafe { 
-            w.avgs().avgs_7()          // 2^7 averages
+            w.avgs().avgs_6()          // 2^6 averages
             .cmpen().bits(0b00)         // no compare
             .loop_().bits(0)            // execute once
             .next().bits(4)             // 3 -> 4
@@ -152,7 +153,7 @@ where P1: PinId, P2: PinId, P3: PinId
             .mode().mode_0()
         } );
         adc.cmdh4.write(|w| unsafe { 
-            w.avgs().avgs_7()
+            w.avgs().avgs_6()
             .cmpen().bits(0b00)
             .loop_().bits(0)
             .next().bits(5)             // 4 -> 5
@@ -166,7 +167,7 @@ where P1: PinId, P2: PinId, P3: PinId
             .mode().mode_0()
         } );
         adc.cmdh5.write(|w| unsafe { 
-            w.avgs().avgs_7()
+            w.avgs().avgs_6()
             .loop_().bits(0)
             .next().bits(3)             // 5 -> 3
             .wait_trig().set_bit()
@@ -268,27 +269,27 @@ where P1: PinId, P2: PinId, P3: PinId,
 
     /// Used after an edge is detected to prevent the same
     /// edge being detected twice
-    fn reset_results(&self, button: buttons::Button, val: u32) {
+    fn reset_results(&self, button: buttons::Button, offset: i32) {
         let results = unsafe {&mut RESULTS};
         match button {
             buttons::ButtonTop => {
                 for i in 0 .. RESULTS_LEN {
                     if (results[i] & (0xf << 24)) == (3 << 24) {
-                        results[i] = (results[i] & (!0xffff)) | val;
+                        results[i] = (results[i] & (!0xffff)) | (self.threshold[0] as i32 + offset) as u32;
                     }
                 }
             }
             buttons::ButtonBot => {
                 for i in 0 .. RESULTS_LEN {
                     if (results[i] & (0xf << 24)) == (4 << 24) {
-                        results[i] = (results[i] & (!0xffff)) | val;
+                        results[i] = (results[i] & (!0xffff)) | (self.threshold[1] as i32 + offset) as u32;
                     }
                 }
             }
             buttons::ButtonMid => {
                 for i in 0 .. RESULTS_LEN {
                     if (results[i] & (0xf << 24)) == (5 << 24) {
-                        results[i] = (results[i] & (!0xffff)) | val;
+                        results[i] = (results[i] & (!0xffff)) | (self.threshold[2] as i32 + offset) as u32;
                     }
                 }
             }
@@ -304,15 +305,15 @@ where P1: PinId, P2: PinId, P3: PinId,
         let sync_time = self.sample_timer.tc.read().bits();
 
         // Skip +RESULTS_LEN samples after the last sample written. (iterate through)
-        if sync_time < 3513 {
+        if sync_time < 1192 {
             RESULTS_LEAD_SIZE
         } else {
-            ((((sync_time - 3513)/1598) as usize) + RESULTS_LEN + 1)
+            ((((sync_time - 1192)/802) as usize) + RESULTS_LEN + 1)
         }
     }
 
     /// Calculate moving average of samples from a specified ADC source/channel
-    fn measure_buffer(&self, bufsel: u8, filtered: &mut [u32; 32]){
+    fn measure_buffer(&self, bufsel: u8, filtered: &mut [u32; 40 - AVERAGES]){
         let results = unsafe { &RESULTS };
         let mut buf = [0u32; 40];
         let mut buf_i = 0;
@@ -332,34 +333,35 @@ where P1: PinId, P2: PinId, P3: PinId,
             }
         }
 
-        // Running average of 8 samples to produce 32-length filtered buffer
-        for i in 0 .. 32 {
+        // Running average of AVERAGES samples to produce (40 - AVERAGES) length filtered buffer
+        for i in 0 .. (40 - AVERAGES) {
             let mut sum = 0;
-            for j in 0 .. 8 {
+            for j in 0 .. AVERAGES {
                 let samp = buf[i + j];
                 sum += samp;
             }
-            filtered[i] = sum / 8;
+            filtered[i] = sum / (AVERAGES as u32);
         }
 
     }
 
     /// Use threshold and confidence value to see if indicated state has occured in current buffer
     fn get_state(&self, bufsel: u8, ctype: Compare) -> TouchResult {
-        let mut filtered = [0u32; 32];
+        let mut filtered = [0u32; 40 - AVERAGES];
 
         self.measure_buffer(bufsel, &mut filtered);
 
-        // if bufsel == 5 {
-        //     dbg!(filtered);
-        // }
+        if bufsel == 5 {
+            // dbg!(bufsel);
+            // dbg!(filtered);
+        }
 
         let mut streak = 0u32;
 
         match ctype {
             Compare::AboveThreshold => {
-                for i in 0 .. 32 {
-                    if filtered[i] > self.threshold {
+                for i in 0 .. (40 - AVERAGES) {
+                    if filtered[i] > self.threshold[(5 - bufsel) as usize] {
                         streak += 1;
                         if streak > self.confidence {
                             return TouchResult{is_active: true, at: i};
@@ -368,8 +370,8 @@ where P1: PinId, P2: PinId, P3: PinId,
                 }
             }
             Compare::BelowThreshold => {
-                for i in 0 .. 32 {
-                    if filtered[i] < self.threshold {
+                for i in 0 .. (40 - AVERAGES) {
+                    if filtered[i] < self.threshold[(5 - bufsel) as usize] {
                         streak += 1;
                         if streak > self.confidence {
                             return TouchResult{is_active: true, at: i};
@@ -492,7 +494,7 @@ where P1: PinId, P2: PinId, P3: PinId,
 
         // Erase edge with pressed status.
         if button != buttons::ButtonNone {
-            self.reset_results(button, self.threshold - 1)
+            self.reset_results(button, -1)
         } else {
             return Err(nb::Error::WouldBlock);
         }
@@ -505,7 +507,7 @@ where P1: PinId, P2: PinId, P3: PinId,
 
         // Erase edge with released status.
         if button != buttons::ButtonNone {
-            self.reset_results(button, self.threshold + 1)
+            self.reset_results(button, 1)
         } else {
             return Err(nb::Error::WouldBlock);
         }

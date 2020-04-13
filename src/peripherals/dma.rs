@@ -54,7 +54,7 @@ crate::wrap_stateful_peripheral!(Dma, DMA0);
 impl<State> Dma<State> {
     pub fn enabled(mut self, syscon: &mut Syscon) -> Dma<init_state::Enabled> {
         syscon.enable_clock(&mut self.raw);
-        syscon.raw.presetctrl0.modify(|_,w| { w.dma0_rst().clear_bit() });
+        syscon.reset(&mut self.raw);
 
         self.raw.ctrl.write(|w| {w.enable().set_bit()});
 
