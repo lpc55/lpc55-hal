@@ -6,7 +6,6 @@ use crate::traits::wg::timer::CountDown;
 use crate::{
     typestates::{
         pin::{
-            function,
             PinId,
             state,
             gpio::direction,
@@ -92,7 +91,7 @@ where P1: PinId, P2: PinId, P3: PinId
         adc: Adc,
         adc_timer: ctimer::Ctimer1<init_state::Enabled>,
         sample_timer: ctimer::Ctimer2<init_state::Enabled>,
-        _charge_pin: Pin<pins::Pio1_16, state::Special<function::CTIMER_MAT>>,
+        _charge_pin: Pin<pins::Pio1_16, state::CtimerMatchChannel>,
         buttons: ButtonPins<P1,P2,P3>,
     ) -> Self {
 

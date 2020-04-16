@@ -27,6 +27,9 @@ pub use gint::GroupInterrupt;
 pub mod i2c;
 pub use i2c::I2cMaster;
 
+pub mod pwm;
+pub use pwm::Pwm;
+
 pub mod spi;
 pub use spi::SpiMaster;
 
