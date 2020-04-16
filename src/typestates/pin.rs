@@ -65,8 +65,17 @@ pub mod state {
         pub(crate) _direction: D,
     }
 
+    #[derive(Copy,Clone)]
+    pub enum Channel {
+        Channel0 = 0,
+        Channel1 = 1,
+        Channel2 = 2,
+        Channel3 = 3,
+    }
+
     impl<D> PinState for Gpio<D> where D: Direction {}
     impl<D> PinState for Analog<D> where D: Direction {}
+    impl PinState for Channel {}
 
     pub struct Special<F: Function> {
         pub(crate) _function: F,

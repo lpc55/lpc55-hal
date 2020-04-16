@@ -11,6 +11,7 @@ use crate::{
             state::{
                 self,
                 Special,
+                Channel,
             },
             // All the I2cSclPin etc. are here
             flexcomm as fc,
@@ -261,6 +262,50 @@ macro_rules! analog_pins {
     }
 }
 
+macro_rules! cmat_pins {
+    ($(
+        $method:ident,
+        $field:ident,
+        $pin:ident,
+        $func:expr,
+        $channel:expr;
+    )*) => {
+        /// Transition pin to CTIMER/PWM output
+        $(
+            impl Pin<$pin, state::Unused>  {
+                pub fn $method (
+                    self,
+                    iocon: &mut Iocon<init_state::Enabled>,
+                ) -> Pin<$pin, state::Channel> {
+
+                    // TODO: need to set FUNC to 0 at minimum
+                    iocon.raw.$field.modify(|_, w| unsafe { w
+                        .func().bits($func) // CMAT function 
+                        .mode().inactive() // MODE_INACT, no additional pin function
+                        .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+                        .invert().disabled() // INV_DI, input function is not inverted
+                        .digimode().digital() // DIGITAL_EN, enable digital function
+                        .od().normal() // OPENDRAIN_DI, open drain is disabled
+                    });
+                    
+                    Pin {
+                        id: self.id,
+                        state: $channel,
+                    }
+                }
+            }
+
+            impl Pin<$pin, state::Channel> {
+                pub fn channel(&self) -> state::Channel {
+                    self.state
+                }
+            }
+        )*
+    }
+}
+
+
+
 pins!(
     pio0_0 , Pio0_0 , 0,  0, PinType::A, state::Unused, state::Unused;
     pio0_1 , Pio0_1 , 0,  1, PinType::D, state::Unused, state::Unused;
@@ -352,6 +397,13 @@ analog_pins!(
     pio1_19, Pio1_19, 1, 19, PinType::A, state::Unused, state::Unused, 0xffu8;   // ACMP_ref
 );
 
+cmat_pins!(
+    into_ctimer1_mat3, pio1_16 , Pio1_16, 3, Channel::Channel3;
+    into_ctimer3_mat0, pio0_5 , Pio0_5, 3, Channel::Channel0;
+    into_ctimer3_mat2, pio1_21 , Pio1_21, 3, Channel::Channel2;
+    into_ctimer3_mat1, pio1_19 , Pio1_19, 3, Channel::Channel1;
+);
+
 macro_rules! special_pins {
     ($(
         ($Pin:ty,$pin:ident): {
@@ -392,14 +444,6 @@ macro_rules! special_pins {
             }
         }
     )*)+)*
-    }
-}
-
-special_pins! {
-    (Pio1_16, pio1_16): {
-        (3, CTIMER_MAT): [
-            (into_ctimer1_mat3, Ctimer1, CtimerMatPin),
-        ]
     }
 }
 
