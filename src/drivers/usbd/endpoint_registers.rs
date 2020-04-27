@@ -299,7 +299,7 @@ pub mod epr {
     impl<'a> _TW<'a> {
         #[inline]
         pub fn variant(self, variant: TW) -> &'a mut W {
-            { self.bit(variant._bit()) }
+            self.bit(variant._bit())
         }
         #[inline]
         pub fn generic(self) -> &'a mut W {
@@ -371,7 +371,7 @@ pub mod epr {
     impl<'a> _SW<'a> {
         #[inline]
         pub fn variant(self, variant: SW) -> &'a mut W {
-            { self.bit(variant._bit()) }
+            self.bit(variant._bit())
         }
         #[inline]
         pub fn not_stalled(self) -> &'a mut W {
@@ -443,7 +443,7 @@ pub mod epr {
     impl<'a> _DW<'a> {
         #[inline]
         pub fn variant(self, variant: DW) -> &'a mut W {
-            { self.bit(variant._bit()) }
+            self.bit(variant._bit())
         }
         #[inline]
         pub fn enabled(self) -> &'a mut W {
@@ -515,7 +515,7 @@ pub mod epr {
     impl<'a> _AW<'a> {
         #[inline]
         pub fn variant(self, variant: AW) -> &'a mut W {
-            { self.bit(variant._bit()) }
+            self.bit(variant._bit())
         }
         #[inline]
         pub fn not_active(self) -> &'a mut W {

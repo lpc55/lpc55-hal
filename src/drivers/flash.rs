@@ -1,4 +1,5 @@
 use core::convert::TryInto;
+// use cortex_m_semihosting::hprintln;
 
 use crate::{
     peripherals::{
@@ -19,9 +20,14 @@ use generic_array::{
     GenericArray,
     typenum::{
         U16,
+        U256,
         U512,
+        U1022,
     },
 };
+
+#[cfg(feature = "littlefs")]
+use littlefs2::io::Result as LfsResult;
 
 // one physical word of Flash consists of 128 bits (or 4 u32, or 16 bytes)
 // one page is 32 physical words, or 128 u32s, or 512 bytes)
@@ -232,8 +238,70 @@ enum FlashCommands {
     ReportEcc= 0xD,
 }
 
+#[cfg(feature = "littlefs")]
+impl littlefs2::driver::Storage for FlashGordon {
+    const READ_SIZE: usize = 16;
+    const WRITE_SIZE: usize = 512;
+    const BLOCK_SIZE: usize = 512;
+
+    // currently: 230K -> 230*2 = 460
+    const BLOCK_COUNT: usize = 400;
+    // no wear-leveling for now
+    const BLOCK_CYCLES: isize = -1;
+
+    type CACHE_SIZE = U512;
+    type LOOKAHEADWORDS_SIZE = U16;
+    /// TODO: We can't actually be changed currently
+    type FILENAME_MAX_PLUS_ONE = U256;
+    type PATH_MAX_PLUS_ONE = U256;
+    const FILEBYTES_MAX: usize = littlefs2::ll::LFS_FILE_MAX as _;
+    /// TODO: We can't actually be changed currently
+    type ATTRBYTES_MAX = U1022;
+
+    fn read(&self, off: usize, buf: &mut [u8]) -> LfsResult<usize> {
+        <Self as Read<U16>>::read(self, 0x00064000 + off, buf);
+        // hprintln!("read {} from {}", buf.len(), off).ok();
+        // hprintln!("read {} from {}: {:?}", buf.len(), off, &buf[..16]).ok();
+        Ok(buf.len())
+    }
+
+    fn write(&mut self, off: usize, data: &[u8]) -> LfsResult<usize> {
+        // hprintln!("write {} to {}", data.len(), off).ok();
+        // hprintln!("write {} to {}: {:?}", data.len(), off, &data[..16]).ok();
+        let ret = <Self as WriteErase<U512, U512>>::write(self, 0x00064000 + off, data);
+        // if let Err(error) = ret {
+        //     panic!("error writing: {:?}", &error);
+        // }
+        ret
+            .map(|_| data.len())
+            .map_err(|_| littlefs2::io::Error::Io)
+    }
+
+    fn erase(&mut self, off: usize, len: usize) -> LfsResult<usize> {
+        // hprintln!("erase {} from {}", len, off).ok();
+        let first_page = (0x00064000 + off) / 512;
+        let pages = len / 512;
+        for i in 0..pages {
+            <Self as WriteErase<U512, U512>>::erase_page(self, first_page + i)
+                .map_err(|_| littlefs2::io::Error::Io)?;
+        }
+        // if true {
+        //     hprintln!("checking erasure").ok();
+        //     let mut data = [37u8; 16];
+        //     let now = littlefs2::driver::Storage::read(self, off, &mut data);
+        //     hprintln!("-> {:?}", &data).ok();
+        // }
+        Ok(512 * len)
+    }
+
+}
+
 impl Read<U16> for FlashGordon {
+    // this reads 16B or one flash word
+    // address is in bytes, whereas starta expects address in flash words
+    // so starta = address / 16 = address >> 4
     fn read_native(&self, address: usize, array: &mut GenericArray<u8, U16>) {
+        // hprintln!("native read from {} of {:?} (first 16)", address, &array[..16]).ok();
         let flash = &self.flash.raw;
 
         assert!(flash.int_status.read().done().bit_is_set());
@@ -256,6 +324,7 @@ impl Read<U16> for FlashGordon {
         assert!(flash.int_status.read().err().bit_is_clear());
         debug_assert!(flash.int_status.read().fail().bit_is_clear());
 
+        // each dataw[i] now contains 4 bytes
         for (i, chunk) in array.chunks_mut(4).enumerate() {
             chunk.copy_from_slice(&flash.dataw[i].read().bits().to_ne_bytes());
         }
@@ -270,14 +339,17 @@ impl WriteErase<U512, U512> for FlashGordon {
 
     // TODO: use critical section?
     fn erase_page(&mut self, page: usize) -> Result {
+        // starta is still in flash words, of which a page has 32
+        let starta = page * 32;
+        // hprintln!("native erase page {}", page).ok();
 
         let flash = &self.flash.raw;
         assert!(flash.int_status.read().done().bit_is_set());
         self.clear_status();
         assert!(flash.int_status.read().done().bit_is_clear());
 
-        flash.starta.write(|w| unsafe { w.starta().bits(page as u32) } );
-        flash.stopa.write(|w| unsafe { w.stopa().bits(page as u32 + (1 << 5)) } );
+        flash.starta.write(|w| unsafe { w.starta().bits(starta as u32) } );
+        flash.stopa.write(|w| unsafe { w.stopa().bits(starta as u32) } );
         flash.cmd.write(|w| unsafe { w.bits(FlashCommands::EraseRange as u32) });
         while flash.int_status.read().done().bit_is_clear() {}
 
@@ -296,6 +368,7 @@ impl WriteErase<U512, U512> for FlashGordon {
         // cs: &CriticalSection,
     ) -> Result {
 
+        // hprintln!("native write to {} of {:?} (first 16)", address, &array[..16]).ok();
         let flash = &self.flash.raw;
         assert!(flash.int_status.read().done().bit_is_set());
         self.clear_status();
@@ -309,7 +382,7 @@ impl WriteErase<U512, U512> for FlashGordon {
 
             for (j, word) in chunk.chunks(4).enumerate() {
                 flash.dataw[j].write(|w| unsafe { w.bits(
-                    u32::from_le_bytes(word.try_into().unwrap())
+                    u32::from_ne_bytes(word.try_into().unwrap())
                 ) } );
             }
 
@@ -321,6 +394,9 @@ impl WriteErase<U512, U512> for FlashGordon {
             self.status()?;
         }
         self.clear_status();
+
+        let starta = address >> 4;
+        flash.starta.write(|w| unsafe { w.starta().bits(starta as u32) } );
         flash.cmd.write(|w| unsafe { w.bits(FlashCommands::Program as u32) });
         while flash.int_status.read().done().bit_is_clear() {}
         debug_assert!(flash.int_status.read().err().bit_is_clear());

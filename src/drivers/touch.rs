@@ -31,15 +31,15 @@ use crate::{
 };
 
 pub struct ButtonPins<P1 : PinId, P2 :  PinId, P3 : PinId>(
-    pub Pin<P1, state::Analog<direction::Input>>, 
-    pub Pin<P2, state::Analog<direction::Input>>, 
-    pub Pin<P3, state::Analog<direction::Input>>, 
+    pub Pin<P1, state::Analog<direction::Input>>,
+    pub Pin<P2, state::Analog<direction::Input>>,
+    pub Pin<P3, state::Analog<direction::Input>>,
 );
 
 type Adc = crate::peripherals::adc::Adc<init_state::Enabled>;
 
 
-pub struct TouchSensor<P1 : PinId, P2 :  PinId, P3 : PinId, 
+pub struct TouchSensor<P1 : PinId, P2 :  PinId, P3 : PinId,
 // State : init_state::InitState
 >
 {
@@ -71,7 +71,7 @@ where P1: PinId, P2: PinId, P3: PinId
     fn deref(&self) -> &Self::Target {
         &self.adc
     }
-}   
+}
 
 impl<P1,P2,P3> DerefMut for TouchSensor<P1, P2, P3>
 where P1: PinId, P2: PinId, P3: PinId
@@ -79,7 +79,7 @@ where P1: PinId, P2: PinId, P3: PinId
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.adc
     }
-}   
+}
 
 impl<P1,P2,P3, > TouchSensor<P1, P2, P3, >
 where P1: PinId, P2: PinId, P3: PinId
@@ -87,12 +87,12 @@ where P1: PinId, P2: PinId, P3: PinId
     /// Threshold is the ADC sample limit where an is considered.
     /// Confidence is the number of times the threshold needs to be crossed
     pub fn new(
-        threshold: [u32; 3], 
+        threshold: [u32; 3],
         confidence: u32,
-        adc: Adc, 
-        adc_timer: ctimer::Ctimer1<init_state::Enabled>, 
-        sample_timer: ctimer::Ctimer2<init_state::Enabled>, 
-        _charge_pin: Pin<pins::Pio1_16, state::Special<function::CTIMER_MAT>>, 
+        adc: Adc,
+        adc_timer: ctimer::Ctimer1<init_state::Enabled>,
+        sample_timer: ctimer::Ctimer2<init_state::Enabled>,
+        _charge_pin: Pin<pins::Pio1_16, state::Special<function::CTIMER_MAT>>,
         buttons: ButtonPins<P1,P2,P3>,
     ) -> Self {
 
@@ -132,13 +132,13 @@ where P1: PinId, P2: PinId, P3: PinId
         });
 
 
-        adc.cmdl3.write(|w| unsafe {  
+        adc.cmdl3.write(|w| unsafe {
             w.adch().bits(buttons.0.state.channel)
-            .ctype().ctype_0()          // A-side single ended 
+            .ctype().ctype_0()          // A-side single ended
             .mode().mode_0()            // standard 12-bit resolution
         } );
 
-        adc.cmdh3.write(|w| unsafe { 
+        adc.cmdh3.write(|w| unsafe {
             w.avgs().avgs_6()          // 2^6 averages
             .cmpen().bits(0b00)         // no compare
             .loop_().bits(0)            // execute once
@@ -147,12 +147,12 @@ where P1: PinId, P2: PinId, P3: PinId
         } );
 
 
-        adc.cmdl4.write(|w| unsafe {  
+        adc.cmdl4.write(|w| unsafe {
             w.adch().bits(buttons.1.state.channel)
-            .ctype().ctype_0()  
+            .ctype().ctype_0()
             .mode().mode_0()
         } );
-        adc.cmdh4.write(|w| unsafe { 
+        adc.cmdh4.write(|w| unsafe {
             w.avgs().avgs_6()
             .cmpen().bits(0b00)
             .loop_().bits(0)
@@ -161,12 +161,12 @@ where P1: PinId, P2: PinId, P3: PinId
         } );
 
 
-        adc.cmdl5.write(|w| unsafe {  
+        adc.cmdl5.write(|w| unsafe {
             w.adch().bits(buttons.2.state.channel)
-            .ctype().ctype_0()  
+            .ctype().ctype_0()
             .mode().mode_0()
         } );
-        adc.cmdh5.write(|w| unsafe { 
+        adc.cmdh5.write(|w| unsafe {
             w.avgs().avgs_6()
             .loop_().bits(0)
             .next().bits(3)             // 5 -> 3
@@ -191,7 +191,7 @@ where P1: PinId, P2: PinId, P3: PinId
 }
 
 impl<P1,P2,P3,> TouchSensor<P1, P2, P3, >
-where P1: PinId, P2: PinId, P3: PinId, 
+where P1: PinId, P2: PinId, P3: PinId,
 {
     /// Starts DMA and internal timers to enable touch detection
     pub fn enabled(
@@ -241,7 +241,7 @@ enum Compare {
 
 // for Enabled TouchSensor
 impl<P1,P2,P3,> TouchSensor<P1, P2, P3, >
-where P1: PinId, P2: PinId, P3: PinId, 
+where P1: PinId, P2: PinId, P3: PinId,
 {
 
     /// Count how many elements from a source are available
@@ -308,7 +308,7 @@ where P1: PinId, P2: PinId, P3: PinId,
         if sync_time < 1192 {
             RESULTS_LEAD_SIZE
         } else {
-            ((((sync_time - 1192)/802) as usize) + RESULTS_LEN + 1)
+            (((sync_time - 1192)/802) as usize) + RESULTS_LEN + 1
         }
     }
 
@@ -440,13 +440,13 @@ where P1: PinId, P2: PinId, P3: PinId,
                 if self.has_edge(4, edge_type) { return button }
             }
             buttons::ButtonSides => {
-                if 
+                if
                     self.has_edge(3, edge_type) &&
                     self.has_edge(4, edge_type)
                         { return button }
             }
             buttons::ButtonMid=> {
-                if 
+                if
                     self.has_edge(5, edge_type)
                         {  return button }
             }
@@ -460,12 +460,12 @@ where P1: PinId, P2: PinId, P3: PinId,
 
         buttons::ButtonNone
     }
-    
+
 
 }
 
 impl<P1,P2,P3,> buttons::ButtonPress for TouchSensor<P1, P2, P3, >
-where P1: PinId, P2: PinId, P3: PinId, 
+where P1: PinId, P2: PinId, P3: PinId,
 {
     fn is_pressed(&self, button: buttons::Button) -> bool {
         self.button_get_state(button, Compare::BelowThreshold) != buttons::ButtonNone
@@ -487,7 +487,7 @@ where P1: PinId, P2: PinId, P3: PinId,
 }
 
 impl<P1,P2,P3,> buttons::ButtonEdge for TouchSensor<P1, P2, P3, >
-where P1: PinId, P2: PinId, P3: PinId, 
+where P1: PinId, P2: PinId, P3: PinId,
 {
     fn wait_for_press(&self, button: buttons::Button) -> buttons::Result {
         let button = self.button_has_edge(button, Edge::Falling);
@@ -527,7 +527,7 @@ where P1: PinId, P2: PinId, P3: PinId,
 }
 
 /// Used when debugging to correlate the sync timer to which sample in the circular buffer is newest
-pub fn profile_touch_sensing(touch_sensor: &mut TouchSensor<impl PinId, impl PinId, impl PinId>, 
+pub fn profile_touch_sensing(touch_sensor: &mut TouchSensor<impl PinId, impl PinId, impl PinId>,
                              delay_timer: &mut timer::Timer<impl ctimer::Ctimer<init_state::Enabled>>,
                             copy: &mut [u32],
                             times: &mut [u32],
