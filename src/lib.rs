@@ -35,7 +35,7 @@
 //! }
 //! ```
 
-pub extern crate lpc55s6x_pac as raw;
+pub extern crate lpc55_pac as raw;
 
 pub mod prelude;
 
