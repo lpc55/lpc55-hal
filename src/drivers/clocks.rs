@@ -134,6 +134,7 @@ pub enum ClocksError {
     AlreadyConfigured,
     NotFeasible,
     UsbfsNotFeasible,
+    UsbhsNotFeasible,
 }
 
 pub type Result<T> = core::result::Result<T, ClocksError>;
@@ -221,7 +222,7 @@ impl ClockRequirements {
             return Err(ClocksError::UsbfsNotFeasible);
         }
         if self.support_usbhs && freq < MIN_USBHS_FREQ {
-            return Err(ClocksError::UsbfsNotFeasible);
+            return Err(ClocksError::UsbhsNotFeasible);
         }
 
         // turn on FRO192M: clear bit 5, according to `fsl_power.h` from the SDK

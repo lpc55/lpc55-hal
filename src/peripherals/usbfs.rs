@@ -39,7 +39,7 @@ impl Deref for EnabledUsbfsDevice {
 
 unsafe impl Sync for EnabledUsbfsDevice {}
 impl Usb<init_state::Enabled> for EnabledUsbfsDevice {
-    fn get_speed(&self) -> UsbSpeed { UsbSpeed::FullSpeed }
+    const SPEED: UsbSpeed = UsbSpeed::FullSpeed;
 }
 
 impl Usbfs {

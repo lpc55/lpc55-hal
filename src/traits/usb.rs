@@ -6,5 +6,5 @@ pub enum UsbSpeed{
     HighSpeed,
 }
 pub trait Usb <State>: Deref<Target = crate::raw::usb1::RegisterBlock> + Sync  {
-    fn get_speed(&self) -> UsbSpeed;
+    const SPEED: UsbSpeed;
 }
