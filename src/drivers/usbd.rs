@@ -77,7 +77,7 @@ where
 {
     usb_regs: Mutex<USB>,
     ep_regs: Mutex<endpoint_registers::Instance>,
-    endpoints: [Endpoint; self::constants::NUM_ENDPOINTS],
+    endpoints: [Endpoint<USB>; self::constants::NUM_ENDPOINTS],
     ep_allocator: EndpointMemoryAllocator,
     max_endpoint: usize,
 }
@@ -92,7 +92,6 @@ where
         where PIN: Usb0VbusPin + Sync
     {
         use self::constants::NUM_ENDPOINTS;
-        let speed = usb_device.get_speed();
 
         let bus = UsbBus {
             usb_regs: Mutex::new(usb_device),
@@ -100,15 +99,15 @@ where
             ep_allocator: EndpointMemoryAllocator::new(),
             max_endpoint: 0,
             endpoints: {
-                let mut endpoints: [mem::MaybeUninit<Endpoint>; NUM_ENDPOINTS] = unsafe {
+                let mut endpoints: [mem::MaybeUninit<Endpoint<USB>>; NUM_ENDPOINTS] = unsafe {
                     mem::MaybeUninit::uninit().assume_init()
                 };
 
                 for (i, endpoint) in endpoints.iter_mut().enumerate() {
-                    *endpoint = mem::MaybeUninit::new(Endpoint::new(i as u8, speed));
+                    *endpoint = mem::MaybeUninit::new(Endpoint::<USB>::new(i as u8));
                 }
 
-                unsafe { mem::transmute::<_, [Endpoint; NUM_ENDPOINTS]>(endpoints) }
+                unsafe { mem::transmute::<_, [Endpoint<USB>; NUM_ENDPOINTS]>(endpoints) }
             },
         };
 
@@ -162,7 +161,7 @@ where
                     let size = max_packet_size;
                     let buffer = self.ep_allocator.allocate_buffer(size as _)?;
                     ep.set_out_buf(buffer);
-                    assert!(ep.is_out_buf_set());
+                    debug_assert!(ep.is_out_buf_set());
 
                     if index == 0 {
                         let setup = self.ep_allocator.allocate_buffer(8)?;
@@ -225,7 +224,7 @@ where
             // EPLISTSTART
             unsafe {
                 let epliststart = eps.addr;
-                assert!(epliststart as u8 == 0); // needs to be 256 byte aligned
+                debug_assert!(epliststart as u8 == 0); // needs to be 256 byte aligned
                 usb.epliststart.modify(|_, w| w.ep_list().bits(epliststart >> 8));
             }
 
@@ -298,7 +297,7 @@ where
             // Bus reset flag?
             if devcmdstat.read().dres_c().bit_is_set() {
                 devcmdstat.modify(|_, w| w.dres_c().set_bit());
-                // assert!(devcmdstat.read().dres_c().bit_is_clear());
+                // debug_assert!(devcmdstat.read().dres_c().bit_is_clear());
                 return PollResult::Reset
             }
 
@@ -337,7 +336,7 @@ where
 
             if intstat_r.ep0in().bit_is_set() {
                 intstat.write(|w| w.ep0in().set_bit());
-                assert!(intstat.read().ep0in().bit_is_clear());
+                debug_assert!(intstat.read().ep0in().bit_is_clear());
                 ep_in_complete |= bit;
 
                 // EP0 needs manual toggling of Active bits
@@ -359,7 +358,7 @@ where
                 let out_inactive = eps.eps[i].ep_out[0].read().a().is_not_active();
 
                 if out_int {
-                    assert!(out_inactive);
+                    debug_assert!(out_inactive);
                     ep_out |= bit;
                     // EXPERIMENTAL: clear interrupt
                     // usb.intstat.write(|w| unsafe { w.bits(1u32 << out_offset) } );
@@ -386,13 +385,13 @@ where
                     //     devcmdstat.read().intonnak_ao().is_enabled(),
                     // ).ok();
 
-                    // assert!(in_inactive);
+                    // debug_assert!(in_inactive);
                 }
                 if in_int && in_inactive {
                     ep_in_complete |= bit;
                     // clear it
                     usb.intstat.write(|w| unsafe { w.bits(1u32 << in_offset) } );
-                    assert!(eps.eps[i].ep_in[0].read().a().is_not_active());
+                    debug_assert!(eps.eps[i].ep_in[0].read().a().is_not_active());
 
                     // let err_code = usb.info.read().err_code().bits();
                     // let addr_set = devcmdstat.read().dev_addr().bits() > 0;
