@@ -21,7 +21,7 @@ cortex-m = "0.6"
 cortex-m-semihosting = "0.3"
 embedded-hal = { version = "0.2", features = ["unproven"] }
 generic-array = "0.13.2"
-lpc55s6x-pac = "0.0.8"
+lpc55-pac = "0.1.0"
 
 nb = "0.1"
 # no-panic = "0.1.12"
@@ -60,8 +60,10 @@ ssd1306 = "0.3.0-alpha.2"
 [features]
 default = ["rt"]
 logging = ["cortex-m-funnel", "ufmt"]
-rt = ["lpc55s6x-pac/rt"]
+rt = ["lpc55-pac/rt"]
 rtfm-peripherals = ["cortex-m-rtfm"]
+highspeed = []
+fullspeed = []
 # # Boards
 # lpcxpresso55s69 = []
 # solo = []
