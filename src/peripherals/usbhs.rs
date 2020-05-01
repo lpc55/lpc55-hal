@@ -42,8 +42,11 @@ impl Deref for EnabledUsbhsDevice {
 }
 
 unsafe impl Sync for EnabledUsbhsDevice {}
+
+#[cfg(feature = "highspeed-usb")]
 impl Usb<init_state::Enabled> for EnabledUsbhsDevice {
     const SPEED: UsbSpeed = UsbSpeed::HighSpeed;
+    // const NUM_ENDPOINTS: usize = 1 + 5;
 }
 
 impl Usbhs {
@@ -103,33 +106,33 @@ impl<State: init_state::InitState, Mode: usbhs_mode::UsbhsMode> Usbhs<State, Mod
         syscon.enable_clock(&mut self.raw_phy);
 
         // Initial config of PHY control registers
-        self.raw_phy.ctrl.write(|w| { 
+        self.raw_phy.ctrl.write(|w| {
             w
             .sftrst().clear_bit()
         });
 
-        self.raw_phy.pll_sic.modify(|_,w| 
+        self.raw_phy.pll_sic.modify(|_,w|
             w
-            .pll_div_sel().bits(6) /* 16MHz = xtal32m */ 
+            .pll_div_sel().bits(6) /* 16MHz = xtal32m */
             .pll_reg_enable().set_bit()
         );
 
         self.raw_phy.pll_sic_clr.write(|w| unsafe {
             // must be done, according to SDK.
-            w.bits(1 << 16 /* mystery bit */) 
+            w.bits(1 << 16 /* mystery bit */)
         });
 
         // Must wait at least 15 us for pll-reg to stabilize
         timer.start(15.us());
         nb::block!(timer.wait()).ok();
 
-        self.raw_phy.pll_sic.modify(|_,w| { 
+        self.raw_phy.pll_sic.modify(|_,w| {
             w
             .pll_power().set_bit()
             .pll_en_usb_clks().set_bit()
         });
 
-        self.raw_phy.ctrl.modify(|_,w| { 
+        self.raw_phy.ctrl.modify(|_,w| {
             w
             .clkgate().clear_bit()
             .enautoclr_clkgate().set_bit()

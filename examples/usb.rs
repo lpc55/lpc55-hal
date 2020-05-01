@@ -54,13 +54,8 @@ fn main() -> ! {
     let mut delay_timer = Timer::new(hal.ctimer.0.enabled(&mut syscon));
 
     // Can use compile to use either the "HighSpeed" or "FullSpeed" USB peripheral.
-    // Default is high speed. 
-    #[cfg( 
-        any( 
-            all(not(feature = "fullspeed"), not(feature = "highspeed")), 
-            feature="highspeed"
-        )
-    )]
+    // Default is full speed.
+    #[cfg(feature = "highspeed-usb")]
     let usb_peripheral = hal.usbhs.enabled_as_device(
         &mut anactrl,
         &mut pmc,
@@ -70,7 +65,7 @@ fn main() -> ! {
                         .unwrap()
     );
 
-    #[cfg(feature = "fullspeed")]
+    #[cfg(not(feature = "highspeed-usb"))]
     let usb_peripheral = hal.usbfs.enabled_as_device(
         &mut anactrl,
         &mut pmc,

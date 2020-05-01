@@ -666,16 +666,16 @@ pub mod epr {
         #[doc = "Bits 0:15 - Endpoint buffer address offset for full speed, or bits 0:10 for high speed"]
         #[inline]
         pub fn addroff<USB: Usb<init_state::Enabled>>(&mut self) -> _ADDROFFW {
-            _ADDROFFW { 
-                w: self, 
+            _ADDROFFW {
+                w: self,
                 field: AddrOffField::from(USB::SPEED),
             }
         }
         #[doc = "Bits 16:25 - Endpoint buffer NBytes for full speed, or bits 25:11 for high speed"]
         #[inline]
         pub fn nbytes<USB: Usb<init_state::Enabled>>(&mut self) -> _NBYTESW {
-            _NBYTESW { 
-                w: self, 
+            _NBYTESW {
+                w: self,
                 field: NbytesField::from(USB::SPEED),
             }
         }
