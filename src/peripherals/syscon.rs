@@ -206,6 +206,27 @@ macro_rules! impl_clock_control {
             }
         }
     };
+
+    ($clock_control:ty, $clock1:ident, $clock2:ident, $register:ident) => {
+        impl ClockControl for $clock_control {
+            fn enable_clock(&self, s: &mut Syscon) {
+                s.raw.$register.modify(|_, w| w.$clock1().enable());
+                s.raw.$register.modify(|_, w| w.$clock2().enable());
+                while s.raw.$register.read().$clock1().is_disable() {}
+                while s.raw.$register.read().$clock2().is_disable() {}
+            }
+
+            fn disable_clock(&self, s: &mut Syscon) {
+                s.raw.$register.modify(|_, w| w.$clock1().disable());
+                s.raw.$register.modify(|_, w| w.$clock2().disable());
+            }
+
+            fn is_clock_enabled(&self, s: &Syscon) -> bool {
+                s.raw.$register.read().$clock1().is_enable() &&
+                s.raw.$register.read().$clock2().is_enable()
+            }
+        }
+    };
 }
 
 impl_clock_control!(raw::ADC0, adc, ahbclkctrl0);
@@ -231,7 +252,10 @@ impl_clock_control!((&mut raw::GINT0, &mut raw::GINT1), gint, ahbclkctrl0);
 impl_clock_control!(raw::PINT, pint, ahbclkctrl0);
 
 impl_clock_control!(raw::USB0, usb0_dev, ahbclkctrl1);
+impl_clock_control!(raw::USBPHY, usb1_phy, ahbclkctrl2);
+impl_clock_control!(raw::USB1, usb1_dev, usb1_ram, ahbclkctrl2);
 impl_clock_control!(raw::USBFSH, usb0_hosts, ahbclkctrl2);  // well what about usb0_hostm?
+impl_clock_control!(raw::USBHSH, usb1_host, ahbclkctrl2);
 impl_clock_control!(raw::UTICK0, utick, ahbclkctrl1);
 
 impl_clock_control!(raw::ANACTRL, analog_ctrl, ahbclkctrl2);
@@ -317,7 +341,10 @@ impl_reset_control!(raw::FLEXCOMM6, fc6_rst, presetctrl1);
 impl_reset_control!(raw::FLEXCOMM7, fc7_rst, presetctrl1);
 impl_reset_control!(raw::FLEXCOMM8, hs_lspi_rst, presetctrl2);
 impl_reset_control!(raw::USB0, usb0_dev_rst, presetctrl1);
+impl_reset_control!(raw::USBHSH, usb1_host_rst, presetctrl2);
+impl_reset_control!(raw::USBPHY, usb1_phy_rst, presetctrl2);
 impl_reset_control!(raw::UTICK0, utick_rst, presetctrl1);
 
 impl_reset_control!(raw::USBFSH, usb0_hostm_rst, usb0_hosts_rst, presetctrl2);
+impl_reset_control!(raw::USB1, usb1_dev_rst, usb1_ram_rst, presetctrl2);
 

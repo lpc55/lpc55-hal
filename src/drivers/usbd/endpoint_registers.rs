@@ -3,6 +3,8 @@ use super::constants::{
     NUM_ENDPOINTS,
     EP_MEM_ADDR,
 };
+use crate::traits::usb::UsbSpeed;
+
 static mut ENDPOINT_REGISTERS_ATTACHED: bool = false;
 
 pub struct Instance {
@@ -60,7 +62,7 @@ impl Instance {
 
 }
 
-fn new(addr: u32) -> Instance {
+pub fn new(addr: u32) -> Instance {
     let mut instance = Instance {
         addr,
         _marker: PhantomData,
@@ -110,6 +112,53 @@ pub unsafe fn steal() -> Instance {
 
 
 pub mod epr {
+    use super::UsbSpeed;
+    use crate::typestates::init_state;
+    use crate::traits::usb::Usb;
+
+    struct NbytesField {
+        mask: u32,
+        offset: u32,
+    }
+    struct AddrOffField{
+        mask: u32,
+        offset: u32,
+    }
+
+    impl From<UsbSpeed> for NbytesField {
+        fn from(speed: UsbSpeed) -> Self {
+            match speed {
+                UsbSpeed::FullSpeed => {
+                    const MASK: u32 = (1 << 10) - 1;
+                    const OFFSET: u32 = 16;
+                    NbytesField {mask: MASK, offset: OFFSET}
+                }
+                UsbSpeed::HighSpeed => {
+                    const MASK: u32 = (1 << 15) - 1;
+                    const OFFSET: u32 = 11;
+                    NbytesField {mask: MASK, offset: OFFSET}
+                }
+            }
+        }
+    }
+
+    impl From<UsbSpeed> for AddrOffField {
+        fn from(speed: UsbSpeed) -> Self {
+            match speed {
+                UsbSpeed::FullSpeed => {
+                    const MASK: u32 = 0xffff;
+                    const OFFSET: u32 = 0;
+                    AddrOffField {mask: MASK, offset: OFFSET}
+                }
+                UsbSpeed::HighSpeed => {
+                    const MASK: u32 = (1 << 11) - 1;
+                    const OFFSET: u32 = 0;
+                    AddrOffField {mask: MASK, offset: OFFSET}
+                }
+            }
+        }
+    }
+
     impl super::EPR {
         pub fn modify<F>(&self, f: F) where
             for<'w> F: FnOnce(&R, &'w mut W) -> &'w mut W
@@ -159,14 +208,13 @@ pub mod epr {
 
     pub struct _ADDROFFW<'a> {
         w: &'a mut W,
+        field: AddrOffField,
     }
     impl<'a> _ADDROFFW<'a> {
         #[inline]
         pub fn bits(self, value: u16) -> &'a mut W {
-            const MASK: u16 = !0;
-            const OFFSET: u8 = 0;
-            self.w.bits &= !((MASK as u32) << OFFSET);
-            self.w.bits |= ((value & MASK) as u32) << OFFSET;
+            self.w.bits &= !((self.field.mask) << self.field.offset);
+            self.w.bits |= ((value as u32) & self.field.mask ) << self.field.offset;
             self.w
         }
     }
@@ -183,14 +231,13 @@ pub mod epr {
 
     pub struct _NBYTESW<'a> {
         w: &'a mut W,
+        field: NbytesField,
     }
     impl<'a> _NBYTESW<'a> {
         #[inline]
         pub fn bits(self, value: u16) -> &'a mut W {
-            const MASK: u16 = (1 << 10) - 1;
-            const OFFSET: u8 = 16;
-            self.w.bits &= !((MASK as u32) << OFFSET);
-            self.w.bits |= ((value & MASK) as u32) << OFFSET;
+            self.w.bits &= !((self.field.mask) << self.field.offset);
+            self.w.bits |= ((value as u32) & self.field.mask ) << self.field.offset;
             self.w
         }
     }
@@ -534,25 +581,17 @@ pub mod epr {
         pub fn bits(&self) -> u32 {
             self.bits
         }
-        #[doc = "Bits 0:15 - Endpoint buffer address offset"]
+        #[doc = "Bits 0:15 - Endpoint buffer address offset for full speed, or bits 0:10 for high speed"]
         #[inline]
-        pub fn addroff(&self) -> ADDROFFR {
-            let bits = {
-                const MASK: u16 = !0;
-                const OFFSET: u8 = 0;
-                ((self.bits >> OFFSET) & MASK as u32) as u16
-            };
-            ADDROFFR { bits }
+        pub fn addroff<USB: Usb<init_state::Enabled>>(&self) -> ADDROFFR {
+            let field = AddrOffField::from(USB::SPEED);
+            ADDROFFR { bits: ((self.bits >> field.offset) & field.mask as u32) as u16 }
         }
-        #[doc = "Bits 16:25 - Endpoint buffer NBytes"]
+        #[doc = "Bits 16:25 - Endpoint buffer NBytes while in full speed operation, or bits 11:25 for high speed operation."]
         #[inline]
-        pub fn nbytes(&self) -> NBYTESR {
-            let bits = {
-                const MASK: u16 = (1 << 10) - 1;
-                const OFFSET: u8 = 16;
-                ((self.bits >> OFFSET) & MASK as u32) as u16
-            };
-            NBYTESR { bits }
+        pub fn nbytes<USB: Usb<init_state::Enabled>>(&self) -> NBYTESR {
+            let field = NbytesField::from(USB::SPEED);
+            NBYTESR { bits: ((self.bits >> field.offset) & field.mask as u32) as u16 }
         }
         #[doc = "Bit 26 - Endpoint type"]
         #[inline]
@@ -624,15 +663,21 @@ pub mod epr {
             self.bits = bits;
             self
         }
-        #[doc = "Bits 0:15 - Endpoint buffer address offset"]
+        #[doc = "Bits 0:15 - Endpoint buffer address offset for full speed, or bits 0:10 for high speed"]
         #[inline]
-        pub fn addroff(&mut self) -> _ADDROFFW {
-            _ADDROFFW { w: self }
+        pub fn addroff<USB: Usb<init_state::Enabled>>(&mut self) -> _ADDROFFW {
+            _ADDROFFW { 
+                w: self, 
+                field: AddrOffField::from(USB::SPEED),
+            }
         }
-        #[doc = "Bits 16:25 - Endpoint buffer NBytes"]
+        #[doc = "Bits 16:25 - Endpoint buffer NBytes for full speed, or bits 25:11 for high speed"]
         #[inline]
-        pub fn nbytes(&mut self) -> _NBYTESW {
-            _NBYTESW { w: self }
+        pub fn nbytes<USB: Usb<init_state::Enabled>>(&mut self) -> _NBYTESW {
+            _NBYTESW { 
+                w: self, 
+                field: NbytesField::from(USB::SPEED),
+            }
         }
         #[doc = "Bit 26 - Endpoint type"]
         #[inline]

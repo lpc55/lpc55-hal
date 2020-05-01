@@ -11,9 +11,11 @@ use hal::prelude::*;
 use lpc55_hal as hal;
 
 use usb_device::test_class::TestClass;
+use usb_device::device::{UsbDeviceBuilder,UsbVidPid};
 use hal::drivers::{
     pins,
     UsbBus,
+    Timer,
 };
 
 #[entry]
@@ -30,25 +32,57 @@ fn main() -> ! {
     iocon.disabled(&mut syscon); // perfectionist ;)
 
     let clocks = hal::ClockRequirements::default()
-        // .fro96mhz_main_clock()
-        // .system_frequency(12.mhz())
-        .system_frequency(24.mhz())
-        .support_usbfs()
+        .system_frequency(96.mhz())
+        .support_usbhs()
         .configure(&mut anactrl, &mut pmc, &mut syscon)
         .expect("Clock configuration failed");
 
-    let token = clocks.support_usbfs_token().expect(
-        "Fro96MHz is not enabled or CPU freq below 12MHz, both of which the USB needs");
 
-    let usbfsd = hal.usbfs.enabled_as_device(
+    let mut delay_timer = Timer::new(hal.ctimer.0.enabled(&mut syscon));
+
+    // Can use compile to use either the "HighSpeed" or "FullSpeed" USB peripheral.
+    // Default is high speed. 
+    #[cfg( 
+        any( 
+            all(not(feature = "fullspeed"), not(feature = "highspeed")), 
+            feature="highspeed"
+        )
+    )]
+    let usb_peripheral = hal.usbhs.enabled_as_device(
         &mut anactrl,
         &mut pmc,
         &mut syscon,
-        token);
+        &mut delay_timer,
+        clocks.support_usbhs_token()
+                        .unwrap()
+    );
 
-    let usb_bus = UsbBus::new(usbfsd, usb0_vbus_pin);
+    #[cfg(feature = "fullspeed")]
+    let usb_peripheral = hal.usbfs.enabled_as_device(
+        &mut anactrl,
+        &mut pmc,
+        &mut syscon,
+        clocks.support_usbfs_token()
+                        .unwrap()
+    );
+
+
+    let usb_bus = UsbBus::new(usb_peripheral, usb0_vbus_pin);
+
+    const VID: u16 = 0x16c0;
+    const PID: u16 = 0x05dc;
+    const MANUFACTURER: &'static str = "TestClass Manufacturer";
+    const PRODUCT: &'static str = "virkkunen.net usb-device TestClass";
+    const SERIAL_NUMBER: &'static str = "TestClass Serial";
+
     let mut test = TestClass::new(&usb_bus);
-    let mut usb_dev = { test.make_device(&usb_bus) };
+    let mut usb_dev = UsbDeviceBuilder::new(&usb_bus, UsbVidPid(VID, PID))
+        .manufacturer(MANUFACTURER)
+        .product(PRODUCT)
+        .serial_number(SERIAL_NUMBER)
+        .max_packet_size_0(64)
+        .build();
+
 
     loop {
         if usb_dev.poll(&mut [&mut test]) {

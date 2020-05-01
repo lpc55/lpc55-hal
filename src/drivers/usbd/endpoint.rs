@@ -2,6 +2,9 @@ use core::{
     cmp::min,
 };
 
+#[cfg(not(feature = "nosync"))]
+use core::marker::PhantomData;
+
 use cortex_m::interrupt::{Mutex, CriticalSection};
 
 use usb_device::{
@@ -10,7 +13,8 @@ use usb_device::{
     endpoint::EndpointType,
 };
 
-use crate::raw::USB0;
+use crate::traits::usb::Usb;
+use crate::typestates::init_state;
 
 use super::{
     endpoint_memory::EndpointBuffer,
@@ -18,24 +22,28 @@ use super::{
 };
 
 /// Arbitrates access to the endpoint-specific registers and packet buffer memory.
-#[derive(Default)]
-pub struct Endpoint {
+pub struct Endpoint  <USB>
+where USB: Usb<init_state::Enabled> {
     out_buf: Option<Mutex<EndpointBuffer>>,
     setup_buf: Option<Mutex<EndpointBuffer>>,
     in_buf: Option<Mutex<EndpointBuffer>>,
     ep_type: Option<EndpointType>,
     index: u8,
+    pub(crate) _marker: PhantomData<USB>,
 }
-unsafe impl Send for Endpoint {}
+unsafe impl<USB> Send for Endpoint<USB>
+where USB: Usb<init_state::Enabled> + Send {}
 
-impl Endpoint {
-    pub fn new(index: u8) -> Endpoint {
-        Endpoint {
+impl<USB> Endpoint <USB>
+where USB: Usb<init_state::Enabled> {
+    pub fn new(index: u8) -> Endpoint<USB> {
+        Endpoint::<USB> {
             out_buf: None,
             setup_buf: None,
             in_buf: None,
             ep_type: None,
             index,
+            _marker: PhantomData,
         }
     }
 
@@ -69,21 +77,21 @@ impl Endpoint {
         let i = self.index as usize;
 
         epl.eps[i].ep_out[0].modify(|_, w| w
-            .nbytes().bits(len)
-            .addroff().bits(addroff)
+            .nbytes::<USB>().bits(len)
+            .addroff::<USB>().bits(addroff)
             .a().active()
             .d().enabled() // technically, marked as R (for reserved?) for EP0
             .s().not_stalled()
         );
     }
 
-    // pub fn enable_out_interrupt(&self, usb: &USB0) {
+    // pub fn enable_out_interrupt(&self, usb: &USB1) {
     //     // usb.inten.modify(|r, w| unsafe { w.bits(r.bits() | ((1 << 10) - 1)) } );
     //     let i = self.index;
     //     usb.inten.modify(|r, w| unsafe { w.ep_int_en().bits(1 << (i << 1)) });
     // }
 
-    // pub fn enable_in_interrupt(&self, usb: &USB0) {
+    // pub fn enable_in_interrupt(&self, usb: &USB1) {
     //     // usb.inten.modify(|r, w| unsafe { w.bits(r.bits() | ((1 << 10) - 1)) } );
     //     let i = self.index;
     //     usb.inten.modify(|r, w| unsafe { w.ep_int_en().bits(1 << ((i << 1) + 1)) });
@@ -103,7 +111,7 @@ impl Endpoint {
         let buf = self.setup_buf.as_ref().unwrap().borrow(cs);
         let addroff = self.buf_addroff(buf);
         // SETUP is "second ep0out buffer" --> ep_out[1]
-        epl.eps[0].ep_out[1].modify(|_, w| w.addroff().bits(addroff));
+        epl.eps[0].ep_out[1].modify(|_, w| w.addroff::<USB>().bits(addroff));
     }
 
     // IN
@@ -130,22 +138,22 @@ impl Endpoint {
 
         if i == 0 {
             epl.eps[0].ep_in[0].modify(|_, w| w
-                .nbytes().bits(0)
-                .addroff().bits(addroff)
+                .nbytes::<USB>().bits(0)
+                .addroff::<USB>().bits(addroff)
                 .a().not_active()
                 .s().not_stalled()
             );
         } else {
             epl.eps[i].ep_in[0].modify(|_, w| w
-                .nbytes().bits(0)
-                .addroff().bits(addroff)
+                .nbytes::<USB>().bits(0)
+                .addroff::<USB>().bits(addroff)
                 .d().enabled()
                 .s().not_stalled()
             );
         }
     }
 
-    pub fn configure(&self, cs: &CriticalSection, usb: &USB0, epl: &EndpointRegistersInstance) {
+    pub fn configure(&self, cs: &CriticalSection, usb: &USB, epl: &EndpointRegistersInstance) {
         let ep_type = match self.ep_type {
             Some(t) => t,
             None => { return },
@@ -181,8 +189,8 @@ impl Endpoint {
             );
             in_buf.write(buf);
             epl.eps[0].ep_in[0].modify(|_, w| w
-                .nbytes().bits(buf.len() as u16)
-                .addroff().bits(self.buf_addroff(in_buf))
+                .nbytes::<USB>().bits(buf.len() as u16)
+                .addroff::<USB>().bits(self.buf_addroff(in_buf))
                 .s().not_stalled()
                 .a().active()
             );
@@ -196,8 +204,8 @@ impl Endpoint {
             }
             in_buf.write(buf);
             epl.eps[i].ep_in[0].modify(|_, w| w
-                .nbytes().bits(buf.len() as u16)
-                .addroff().bits(self.buf_addroff(in_buf))
+                .nbytes::<USB>().bits(buf.len() as u16)
+                .addroff::<USB>().bits(self.buf_addroff(in_buf))
                 .d().enabled()
                 .s().not_stalled()
                 .a().active()
@@ -207,7 +215,7 @@ impl Endpoint {
         Ok(buf.len())
     }
 
-    pub fn read(&self, buf: &mut [u8], cs: &CriticalSection, usb: &USB0, epl: &EndpointRegistersInstance) -> Result<usize> {
+    pub fn read(&self, buf: &mut [u8], cs: &CriticalSection, usb: &USB, epl: &EndpointRegistersInstance) -> Result<usize> {
 
         if !self.is_out_buf_set() { return Err(UsbError::WouldBlock); }
 
@@ -229,9 +237,9 @@ impl Endpoint {
             if !ep_out_int || ep_out_is_active {
                 return Err(UsbError::WouldBlock);
             }
-
             let out_buf = self.out_buf.as_ref().unwrap().borrow(cs);
-            let nbytes = epl.eps[i].ep_out[0].read().nbytes().bits() as usize;
+
+            let nbytes = epl.eps[i].ep_out[0].read().nbytes::<USB>().bits() as usize;
 
             // let count = min((out_buf.capacity() - nbytes) as usize, buf.len());
             let count = (out_buf.capacity() - nbytes) as usize;
@@ -242,8 +250,8 @@ impl Endpoint {
 
             // self.reset_out_buf(cs, epl);
             epl.eps[i].ep_out[0].modify(|_, w| w
-                .nbytes().bits(out_buf.capacity() as u16)
-                .addroff().bits(self.buf_addroff(out_buf))
+                .nbytes::<USB>().bits(out_buf.capacity() as u16)
+                .addroff::<USB>().bits(self.buf_addroff(out_buf))
                 .a().active()
                 // .d().enabled()
                 // .s().not_stalled()
@@ -290,7 +298,7 @@ impl Endpoint {
 
             } else {
                 let out_buf = self.out_buf.as_ref().unwrap().borrow(cs);
-                let nbytes = epl.eps[0].ep_out[0].read().nbytes().bits() as usize;
+                let nbytes = epl.eps[0].ep_out[0].read().nbytes::<USB>().bits() as usize;
                 let count = min((out_buf.capacity() - nbytes) as usize, buf.len());
 
                 out_buf.read(&mut buf[..count]);

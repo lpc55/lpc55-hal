@@ -4,7 +4,7 @@
 extern crate panic_semihosting;
 // extern crate panic_halt;
 use cortex_m_rt::entry;
-// use cortex_m_semihosting::{dbg, hprintln};
+// use cortex_m_semihosting::{dbg, heprintln};
 
 #[allow(unused_imports)]
 use hal::prelude::*;
@@ -18,8 +18,8 @@ use usb_device::device::{UsbDeviceBuilder, UsbVidPid};
 use hal::drivers::{
     pins,
     UsbBus,
+    Timer,
 };
-
 
 #[entry]
 fn main() -> ! {
@@ -46,27 +46,42 @@ fn main() -> ! {
     let clocks = hal::ClockRequirements::default()
         // .system_frequency(24.mhz())
         // .system_frequency(72.mhz())
-        // .system_frequency(25.mhz())
-        .support_usbfs()
+        .system_frequency(96.mhz())
+        .support_usbhs()
         .configure(&mut anactrl, &mut pmc, &mut syscon)
         .unwrap();
-        // .expect("Clock configuration failed");
 
-    let token = clocks.support_usbfs_token()
-        .unwrap();
-        // .expect(
-        //     "Fro96MHz is not enabled or CPU freq below 24MHz, both of which the USB needs");
+    let mut delay_timer = Timer::new(hal.ctimer.0.enabled(&mut syscon));
 
-    let usbfsd = hal.usbfs.enabled_as_device(
+    // Can use compile to use either the "HighSpeed" or "FullSpeed" USB peripheral.
+    // Default is high speed. 
+    #[cfg( 
+        any( 
+            all(not(feature = "fullspeed"), not(feature = "highspeed")), 
+            feature="highspeed"
+        )
+    )]
+    let usb_peripheral = hal.usbhs.enabled_as_device(
         &mut anactrl,
         &mut pmc,
         &mut syscon,
-        token,
+        &mut delay_timer,
+        clocks.support_usbhs_token()
+                        .unwrap()
     );
 
-    // let usb_bus = UsbBus::new(peripherals.USB0, (usb0_vbus,));
-    let usb_bus = UsbBus::new(usbfsd, usb0_vbus_pin);
-    // let mut serial = SerialPort::new(&usb_bus);
+    #[cfg(feature = "fullspeed")]
+    let usb_peripheral = hal.usbfs.enabled_as_device(
+        &mut anactrl,
+        &mut pmc,
+        &mut syscon,
+        clocks.support_usbfs_token()
+                        .unwrap()
+    );
+
+
+    let usb_bus = UsbBus::new(usb_peripheral, usb0_vbus_pin);
+
     let mut cdc_acm = CdcAcmClass::new(&usb_bus, 8);
 
     let mut usb_dev = UsbDeviceBuilder::new(&usb_bus, UsbVidPid(0x1209, 0xcc1d))
@@ -74,8 +89,8 @@ fn main() -> ! {
         .product("Demo Demo Demo")
         .serial_number("2019-10-10")
         .device_release(0x0123)
-        // using default of 8 seems to work now
-        // .max_packet_size_0(64)
+        // Must be 64 bytes for HighSpeed
+        .max_packet_size_0(64)
         // .device_class(USB_CLASS_CDC)
         .build();
 

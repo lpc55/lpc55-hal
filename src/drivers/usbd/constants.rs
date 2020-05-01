@@ -1,6 +1,15 @@
 pub type UsbAccessType = u8; // note this is just a type definition, we depend on its size
 
 /// Number of logical endpoints, including control
+/// Default is high speed (6 endpoints). 
+#[cfg( 
+    any( 
+        all(not(feature = "fullspeed"), not(feature = "highspeed")), 
+        feature="highspeed"
+    )
+)]
+pub const NUM_ENDPOINTS: usize = 1 + 5;
+#[cfg(feature = "fullspeed")]
 pub const NUM_ENDPOINTS: usize = 1 + 4;
 pub const BYTES_PER_EP_REGISTER: usize = 4*4;
 

@@ -119,10 +119,29 @@ macro_rules! impl_power_control {
             }
         }
     };
+
+    ($power_control:ty, $register1:ident, $register2:ident) => {
+        impl PowerControl for $power_control {
+            fn powered_on(&self, pmc: &mut Pmc) {
+                pmc.raw.pdruncfg0.modify(|_, w| w.$register1().poweredon());
+                pmc.raw.pdruncfg0.modify(|_, w| w.$register2().poweredon());
+            }
+
+            fn powered_off(&self, pmc: &mut Pmc) {
+                pmc.raw.pdruncfg0.modify(|_, w| w.$register1().poweredoff());
+                pmc.raw.pdruncfg0.modify(|_, w| w.$register2().poweredoff());
+            }
+
+            fn is_powered(&self, pmc: &Pmc) -> bool {
+                pmc.raw.pdruncfg0.read().$register1().is_poweredon() &&
+                pmc.raw.pdruncfg0.read().$register2().is_poweredon()
+            }
+        }
+    };
 }
 
 // well maybe there needs to be a USBFS peripheral with power control,
 // and on top of that USBFSD, USBFSHM, USBFSHS... to make this all logical.
 impl_power_control!(raw::USB0, pden_usbfsphy);
-impl_power_control!(raw::USBFSH, pden_usbfsphy);
+impl_power_control!(raw::USBPHY, pden_usbhsphy, pden_ldousbhs);
 impl_power_control!(raw::ADC0, pden_auxbias);

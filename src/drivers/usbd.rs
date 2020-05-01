@@ -44,12 +44,14 @@ use usb_device::{
     },
 };
 
-use crate::{
-    raw::USB0,
-    peripherals::usbfs::EnabledUsbfsDevice,
+use crate::traits::usb::{
+    Usb,
 };
-
-
+use crate::{
+    typestates::{
+        init_state,
+    }
+};
 use crate::{
     Pin,
     drivers::pins::PinId,
@@ -69,37 +71,43 @@ impl<P> Usb0VbusPin for Pin<P, pin::state::Special<pin::function::USB0_VBUS>> wh
 /// After the bus is enabled, in practice most access won't mutate the object itself
 /// but only endpoint-specific registers and buffers, the access to which is mostly
 /// arbitrated by endpoint handles.
-pub struct UsbBus {
-    usb_regs: Mutex<USB0>,
+pub struct UsbBus<USB>
+where
+    USB: Usb<init_state::Enabled> + Send,
+{
+    usb_regs: Mutex<USB>,
     ep_regs: Mutex<endpoint_registers::Instance>,
-    endpoints: [Endpoint; self::constants::NUM_ENDPOINTS],
+    endpoints: [Endpoint<USB>; self::constants::NUM_ENDPOINTS],
     ep_allocator: EndpointMemoryAllocator,
     max_endpoint: usize,
 }
 
 
-impl UsbBus {
+impl<USB> UsbBus<USB>
+where
+    USB: Usb<init_state::Enabled> + Send,
+{
     /// Constructs a new USB peripheral driver.
-    pub fn new<PIN>(usbfsd: EnabledUsbfsDevice, _usb0_vbus_pin: PIN) -> UsbBusAllocator<Self>
+    pub fn new<PIN>(usb_device: USB, _usb0_vbus_pin: PIN) -> UsbBusAllocator<UsbBus<USB>>
         where PIN: Usb0VbusPin + Sync
     {
         use self::constants::NUM_ENDPOINTS;
 
         let bus = UsbBus {
-            usb_regs: Mutex::new(usbfsd.release().0),
+            usb_regs: Mutex::new(usb_device),
             ep_regs: Mutex::new(endpoint_registers::attach().unwrap()),
             ep_allocator: EndpointMemoryAllocator::new(),
             max_endpoint: 0,
             endpoints: {
-                let mut endpoints: [mem::MaybeUninit<Endpoint>; NUM_ENDPOINTS] = unsafe {
+                let mut endpoints: [mem::MaybeUninit<Endpoint<USB>>; NUM_ENDPOINTS] = unsafe {
                     mem::MaybeUninit::uninit().assume_init()
                 };
 
                 for (i, endpoint) in endpoints.iter_mut().enumerate() {
-                    *endpoint = mem::MaybeUninit::new(Endpoint::new(i as u8));
+                    *endpoint = mem::MaybeUninit::new(Endpoint::<USB>::new(i as u8));
                 }
 
-                unsafe { mem::transmute::<_, [Endpoint; NUM_ENDPOINTS]>(endpoints) }
+                unsafe { mem::transmute::<_, [Endpoint<USB>; NUM_ENDPOINTS]>(endpoints) }
             },
         };
 
@@ -121,7 +129,10 @@ impl UsbBus {
 
 
 // impl<PINS: Send+Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
-impl usb_device::bus::UsbBus for UsbBus {
+impl<USB> usb_device::bus::UsbBus for UsbBus<USB>
+where
+    USB: Usb<init_state::Enabled> + Send,
+{
 
     // override the default (contrary to USB spec),
     // as describe in the user manual
@@ -206,7 +217,7 @@ impl usb_device::bus::UsbBus for UsbBus {
             // DATABUFSTART
             unsafe {
                 // lower part is stored in endpoint registers
-                let databufstart = (constants::EP_MEM_ADDR >> 22) as u16;
+                let databufstart = constants::EP_MEM_ADDR as u32;
                 usb.databufstart.modify(|_, w| w.da_buf().bits(databufstart));
             };
 
@@ -413,7 +424,6 @@ impl usb_device::bus::UsbBus for UsbBus {
         if !ep_addr.is_in() { return Err(UsbError::InvalidEndpoint); }
 
         interrupt::free(|cs| {
-            // let usb = self.usb_regs.borrow(cs);
             let eps = self.ep_regs.borrow(cs);
             self.endpoints[ep_addr.index()].write(buf, cs, eps)
         })
