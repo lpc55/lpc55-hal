@@ -78,5 +78,6 @@ opt-level = "z"
 
 [patch.crates-io]
 cortex-m-funnel = { git = "https://github.com/conorpp/cortex-m-funnel" }
-heapless = { path = "../heapless" }
-ufmt = { path = "../ufmt" }
+# ufmt = { path = "../ufmt" }
+ufmt = { git = "https://github.com/nickray/ufmt", branch = "nickray-derive-empty-enums" }
+ufmt-macros = { git = "https://github.com/nickray/ufmt", branch = "nickray-derive-empty-enums" }
