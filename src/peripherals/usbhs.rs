@@ -136,7 +136,7 @@ impl<State: init_state::InitState, Mode: usbhs_mode::UsbhsMode> Usbhs<State, Mod
             w
             .clkgate().clear_bit()
             .enautoclr_clkgate().set_bit()
-            .enautoclr_phy_pwd().set_bit()
+            .enautoclr_phy_pwd().clear_bit()
         });
 
         // Turn on everything in PHY
@@ -177,6 +177,10 @@ impl EnabledUsbhsDevice {
             err_code: self.raw_hsd.info.read().err_code().bits(),
             frame_nr: self.raw_hsd.info.read().frame_nr().bits(),
         }
+    }
+
+    pub fn disable_high_speed(&mut self) {
+        self.raw_phy.pwd_set.write(|w| unsafe { w.bits(1<<12) /* TXPWDV2I */} );
     }
 }
 
