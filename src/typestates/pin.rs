@@ -66,7 +66,7 @@ pub mod state {
     }
 
     #[derive(Copy,Clone)]
-    pub enum Channel {
+    pub enum CtimerMatchChannel {
         Channel0 = 0,
         Channel1 = 1,
         Channel2 = 2,
@@ -75,7 +75,7 @@ pub mod state {
 
     impl<D> PinState for Gpio<D> where D: Direction {}
     impl<D> PinState for Analog<D> where D: Direction {}
-    impl PinState for Channel {}
+    impl PinState for CtimerMatchChannel {}
 
     pub struct Special<F: Function> {
         pub(crate) _function: F,
