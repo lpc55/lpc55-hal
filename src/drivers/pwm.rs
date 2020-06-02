@@ -9,7 +9,7 @@ use crate::time::{
 use crate::typestates::{
     init_state,
     pin::state::{
-        Channel,
+        CtimerMatchChannel,
     }
 };
 
@@ -34,11 +34,12 @@ where TIMER: Ctimer<init_state::Enabled> {
     }
 
 }
+//pin: & Pin<impl PinId, state::Analog<direction::Input>>
 
-impl<TIMER> wg::Pwm for Pwm<TIMER> 
+impl<TIMER> wg::Pwm for Pwm<TIMER>
 where TIMER: Ctimer<init_state::Enabled>
 {
-    type Channel = Channel;
+    type Channel = CtimerMatchChannel;
     type Time = MicroSeconds;
     type Duty = u8;
 
@@ -46,54 +47,54 @@ where TIMER: Ctimer<init_state::Enabled>
         // Match should reset and stop timer, and generate interrupt.
         self.timer.mcr.modify(|_,w| {
             w
-            .mr3i().set_bit() 
+            .mr3i().set_bit()
             .mr3r().set_bit()
             .mr3s().clear_bit()
         });
 
-        self.timer.pwmc.modify(|_,w| 
+        self.timer.pwmc.modify(|_,w|
             w.
             pwmen3().clear_bit()
         );
 
         match channel {
-            Channel::Channel0 => {
+            CtimerMatchChannel::Channel0 => {
                 self.timer.mcr.modify(|_,w| {
                     w
-                    .mr0i().set_bit() 
+                    .mr0i().set_bit()
                     .mr0r().clear_bit()
                     .mr0s().clear_bit()
                 });
-                self.timer.pwmc.modify(|_,w| 
+                self.timer.pwmc.modify(|_,w|
                     w.
                     pwmen0().set_bit()
                 );
             }
-            Channel::Channel1 => {
+            CtimerMatchChannel::Channel1 => {
                 self.timer.mcr.modify(|_,w| {
                     w
-                    .mr1i().set_bit() 
+                    .mr1i().set_bit()
                     .mr1r().clear_bit()
                     .mr1s().clear_bit()
                 });
-                self.timer.pwmc.modify(|_,w| 
+                self.timer.pwmc.modify(|_,w|
                     w.
                     pwmen1().set_bit()
                 );
             }
-            Channel::Channel2 => {
+            CtimerMatchChannel::Channel2 => {
                 self.timer.mcr.modify(|_,w| {
                     w
-                    .mr2i().set_bit() 
+                    .mr2i().set_bit()
                     .mr2r().clear_bit()
                     .mr2s().clear_bit()
                 });
-                self.timer.pwmc.modify(|_,w| 
+                self.timer.pwmc.modify(|_,w|
                     w.
                     pwmen2().set_bit()
                 );
             }
-            Channel::Channel3 => {
+            CtimerMatchChannel::Channel3 => {
                 panic!("Cannot use channel 3 for PWM.");
             }
         }
@@ -113,43 +114,43 @@ where TIMER: Ctimer<init_state::Enabled>
 
     fn disable(&mut self, channel: Self::Channel) {
         match channel {
-            Channel::Channel0 => {
+            CtimerMatchChannel::Channel0 => {
                 self.timer.mcr.modify(|_,w| {
                     w
-                    .mr0i().clear_bit() 
+                    .mr0i().clear_bit()
                     .mr0r().clear_bit()
                     .mr0s().clear_bit()
                 });
-                self.timer.pwmc.modify(|_,w| 
+                self.timer.pwmc.modify(|_,w|
                     w.
                     pwmen0().clear_bit()
                 );
             }
-            Channel::Channel1 => {
+            CtimerMatchChannel::Channel1 => {
                 self.timer.mcr.modify(|_,w| {
                     w
-                    .mr1i().clear_bit() 
+                    .mr1i().clear_bit()
                     .mr1r().clear_bit()
                     .mr1s().clear_bit()
                 });
-                self.timer.pwmc.modify(|_,w| 
+                self.timer.pwmc.modify(|_,w|
                     w.
                     pwmen1().clear_bit()
                 );
             }
-            Channel::Channel2 => {
+            CtimerMatchChannel::Channel2 => {
                 self.timer.mcr.modify(|_,w| {
                     w
-                    .mr2i().clear_bit() 
+                    .mr2i().clear_bit()
                     .mr2r().clear_bit()
                     .mr2s().clear_bit()
                 });
-                self.timer.pwmc.modify(|_,w| 
+                self.timer.pwmc.modify(|_,w|
                     w.
                     pwmen2().clear_bit()
                 );
             }
-            Channel::Channel3 => {
+            CtimerMatchChannel::Channel3 => {
                 panic!("Cannot use channel 3 for PWM.");
             }
         }
