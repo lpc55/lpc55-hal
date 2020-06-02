@@ -11,7 +11,7 @@ use crate::{
             state::{
                 self,
                 Special,
-                Channel,
+                CtimerMatchChannel,
             },
             // All the I2cSclPin etc. are here
             flexcomm as fc,
@@ -245,7 +245,7 @@ macro_rules! analog_pins {
                         .od().normal() // OPENDRAIN_DI, open drain is disabled
                         .asw().set_bit() // ASW, analog input enabled
                     );
-                    
+
                     // self.state.dirclr[T::PORT].write(|w| unsafe { w.dirclrp().bits(T::MASK) });
                     let pin = Pin {
                         id: self.id,
@@ -262,7 +262,7 @@ macro_rules! analog_pins {
     }
 }
 
-macro_rules! cmat_pins {
+macro_rules! ctimer_match_output_pins {
     ($(
         $method:ident,
         $field:ident,
@@ -276,18 +276,18 @@ macro_rules! cmat_pins {
                 pub fn $method (
                     self,
                     iocon: &mut Iocon<init_state::Enabled>,
-                ) -> Pin<$pin, state::Channel> {
+                ) -> Pin<$pin, state::CtimerMatchChannel> {
 
                     // TODO: need to set FUNC to 0 at minimum
                     iocon.raw.$field.modify(|_, w| unsafe { w
-                        .func().bits($func) // CMAT function 
+                        .func().bits($func) // CMAT function
                         .mode().inactive() // MODE_INACT, no additional pin function
                         .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
                         .invert().disabled() // INV_DI, input function is not inverted
                         .digimode().digital() // DIGITAL_EN, enable digital function
                         .od().normal() // OPENDRAIN_DI, open drain is disabled
                     });
-                    
+
                     Pin {
                         id: self.id,
                         state: $channel,
@@ -295,8 +295,8 @@ macro_rules! cmat_pins {
                 }
             }
 
-            impl Pin<$pin, state::Channel> {
-                pub fn channel(&self) -> state::Channel {
+            impl Pin<$pin, state::CtimerMatchChannel> {
+                pub fn channel(&self) -> state::CtimerMatchChannel{
                     self.state
                 }
             }
@@ -397,11 +397,15 @@ analog_pins!(
     pio1_19, Pio1_19, 1, 19, PinType::A, state::Unused, state::Unused, 0xffu8;   // ACMP_ref
 );
 
-cmat_pins!(
-    into_ctimer1_mat3, pio1_16 , Pio1_16, 3, Channel::Channel3;
-    into_ctimer3_mat0, pio0_5 , Pio0_5, 3, Channel::Channel0;
-    into_ctimer3_mat2, pio1_21 , Pio1_21, 3, Channel::Channel2;
-    into_ctimer3_mat1, pio1_19 , Pio1_19, 3, Channel::Channel1;
+ctimer_match_output_pins!(
+    into_ctimer1_mat3, pio1_16 , Pio1_16, 3, CtimerMatchChannel::Channel3;
+    into_ctimer3_mat0, pio0_5 , Pio0_5, 3, CtimerMatchChannel::Channel0;
+    into_ctimer3_mat2, pio1_21 , Pio1_21, 3, CtimerMatchChannel::Channel2;
+    into_ctimer3_mat1, pio1_19 , Pio1_19, 3, CtimerMatchChannel::Channel1;
+
+    into_ctimer2_mat2, pio1_7, Pio1_7, 3, CtimerMatchChannel::Channel2;
+    into_ctimer2_mat1, pio1_6, Pio1_6, 3, CtimerMatchChannel::Channel1;
+    into_ctimer2_mat1, pio1_4, Pio1_4, 3, CtimerMatchChannel::Channel1;
 );
 
 macro_rules! special_pins {

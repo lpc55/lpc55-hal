@@ -36,6 +36,11 @@ fn sin(x: f32) -> f32
     res
 }
 
+fn print_type_of<T>(_: &T) {
+    use cortex_m_semihosting::{hprintln};
+    hprintln!("{}", core::any::type_name::<T>()).ok();
+}
+
 #[entry]
 fn main() -> ! {
 
@@ -50,11 +55,18 @@ fn main() -> ! {
     let pins = Pins::take().unwrap();
 
     let mut delay_timer = Timer::new(hal.ctimer.0.enabled(&mut hal.syscon));
-    let mut pwm = Pwm::new(hal.ctimer.3.enabled(&mut hal.syscon));
 
-    let red = pins.pio1_21.into_ctimer3_mat2(&mut iocon);
-    let green = pins.pio0_5.into_ctimer3_mat0(&mut iocon);
-    let blue = pins.pio1_19.into_ctimer3_mat1(&mut iocon);
+    // Xpresso LED (they used same channel for two pins)
+    let mut pwm = Pwm::new(hal.ctimer.2.enabled(&mut hal.syscon));
+    let red = pins.pio1_4.into_ctimer2_mat1(&mut iocon);
+    let green = pins.pio1_7.into_ctimer2_mat2(&mut iocon);
+    let blue = pins.pio1_6.into_ctimer2_mat1(&mut iocon);
+
+    // Bee LED
+    // let mut pwm = Pwm::new(hal.ctimer.3.enabled(&mut hal.syscon));
+    // let red = pins.pio1_21.into_ctimer3_mat2(&mut iocon);
+    // let green = pins.pio0_5.into_ctimer3_mat0(&mut iocon);
+    // let blue = pins.pio1_19.into_ctimer3_mat1(&mut iocon);
 
     // 0 = 100% high voltage / off
     // 128 = 50% high/low voltage
@@ -65,6 +77,8 @@ fn main() -> ! {
     pwm.enable(green.channel());
     pwm.enable(red.channel());
     pwm.enable(blue.channel());
+
+    print_type_of(&blue);
 
     let mut duties = [0f32, 30f32, 60f32];
     let increments = [0.3f32, 0.2f32, 0.1f32];
@@ -87,13 +101,13 @@ fn main() -> ! {
             match i {
                 0 => {
                     // need to tune down red some
-                    pwm.set_duty(red.channel(), duty/2);
+                    pwm.set_duty(red.channel(), duty/10);
                 }
                 1 => {
-                    pwm.set_duty(green.channel(), duty);
+                    pwm.set_duty(green.channel(), duty/5);
                 }
                 2 => {
-                    pwm.set_duty(blue.channel(), duty);
+                    pwm.set_duty(blue.channel(), duty/5);
                 }
                 _ => {}
             }
