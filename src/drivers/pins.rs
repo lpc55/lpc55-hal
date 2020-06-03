@@ -3,6 +3,7 @@ use crate::{
         gpio::Gpio,
         iocon::Iocon,
         flexcomm,
+        ctimer,
     },
     typestates::{
         init_state,
@@ -11,7 +12,6 @@ use crate::{
             state::{
                 self,
                 Special,
-                CtimerMatchChannel,
             },
             // All the I2cSclPin etc. are here
             flexcomm as fc,
@@ -264,11 +264,13 @@ macro_rules! analog_pins {
 
 macro_rules! ctimer_match_output_pins {
     ($(
+        $ctimer:ty,
         $method:ident,
         $field:ident,
         $pin:ident,
         $func:expr,
-        $channel:expr;
+        $channel_type:ident,
+        $channel_number:expr;
     )*) => {
         /// Transition pin to CTIMER/PWM output
         $(
@@ -276,7 +278,7 @@ macro_rules! ctimer_match_output_pins {
                 pub fn $method (
                     self,
                     iocon: &mut Iocon<init_state::Enabled>,
-                ) -> Pin<$pin, state::CtimerMatchChannel> {
+                ) -> Pin<$pin, state::Special<function::$channel_type<$ctimer>>> {
 
                     // TODO: need to set FUNC to 0 at minimum
                     iocon.raw.$field.modify(|_, w| unsafe { w
@@ -290,14 +292,17 @@ macro_rules! ctimer_match_output_pins {
 
                     Pin {
                         id: self.id,
-                        state: $channel,
+                        state: state::Special{
+                            _function: function::$channel_type {_marker: core::marker::PhantomData}
+                        }
                     }
                 }
             }
 
-            impl Pin<$pin, state::CtimerMatchChannel> {
-                pub fn channel(&self) -> state::CtimerMatchChannel{
-                    self.state
+            impl Pin<$pin, state::Special<function::$channel_type<$ctimer>>> {
+                pub const CHANNEL: u8 = $channel_number;
+                pub fn get_channel(&self) -> u8 {
+                    Self::CHANNEL
                 }
             }
         )*
@@ -398,14 +403,14 @@ analog_pins!(
 );
 
 ctimer_match_output_pins!(
-    into_ctimer1_mat3, pio1_16 , Pio1_16, 3, CtimerMatchChannel::Channel3;
-    into_ctimer3_mat0, pio0_5 , Pio0_5, 3, CtimerMatchChannel::Channel0;
-    into_ctimer3_mat2, pio1_21 , Pio1_21, 3, CtimerMatchChannel::Channel2;
-    into_ctimer3_mat1, pio1_19 , Pio1_19, 3, CtimerMatchChannel::Channel1;
+    ctimer::Ctimer1<init_state::Enabled>, into_match_output, pio1_16 , Pio1_16, 3, MATCH_OUTPUT3, 3;
+    ctimer::Ctimer3<init_state::Enabled>, into_match_output, pio0_5 , Pio0_5, 3, MATCH_OUTPUT0, 0;
+    ctimer::Ctimer3<init_state::Enabled>, into_match_output, pio1_21 , Pio1_21, 3, MATCH_OUTPUT2, 2;
+    ctimer::Ctimer3<init_state::Enabled>, into_match_output, pio1_19 , Pio1_19, 3, MATCH_OUTPUT1, 1;
 
-    into_ctimer2_mat2, pio1_7, Pio1_7, 3, CtimerMatchChannel::Channel2;
-    into_ctimer2_mat1, pio1_6, Pio1_6, 3, CtimerMatchChannel::Channel1;
-    into_ctimer2_mat1, pio1_4, Pio1_4, 3, CtimerMatchChannel::Channel1;
+    ctimer::Ctimer2<init_state::Enabled>, into_match_output, pio1_7, Pio1_7, 3, MATCH_OUTPUT2, 2;
+    ctimer::Ctimer2<init_state::Enabled>, into_match_output, pio1_6, Pio1_6, 3, MATCH_OUTPUT1, 1;
+    ctimer::Ctimer2<init_state::Enabled>, into_match_output, pio1_4, Pio1_4, 3, MATCH_OUTPUT1, 1;
 );
 
 macro_rules! special_pins {
