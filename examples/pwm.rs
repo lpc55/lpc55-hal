@@ -58,9 +58,9 @@ fn main() -> ! {
 
     // Xpresso LED (they used same channel for two pins)
     let mut pwm = Pwm::new(hal.ctimer.2.enabled(&mut hal.syscon));
-    let red = pins.pio1_4.into_ctimer2_mat1(&mut iocon);
-    let green = pins.pio1_7.into_ctimer2_mat2(&mut iocon);
-    let blue = pins.pio1_6.into_ctimer2_mat1(&mut iocon);
+    let blue = pins.pio1_6.into_match_output(&mut iocon);
+    let green = pins.pio1_7.into_match_output(&mut iocon);
+    let red = pins.pio1_4.into_match_output(&mut iocon);
 
     // Bee LED
     // let mut pwm = Pwm::new(hal.ctimer.3.enabled(&mut hal.syscon));
@@ -71,12 +71,12 @@ fn main() -> ! {
     // 0 = 100% high voltage / off
     // 128 = 50% high/low voltage
     // 255 = 0% high voltage/ fully on
-    pwm.set_duty(green.channel(), 0);
-    pwm.set_duty(red.channel(), 0);
-    pwm.set_duty(blue.channel(), 0);
-    pwm.enable(green.channel());
-    pwm.enable(red.channel());
-    pwm.enable(blue.channel());
+    pwm.set_duty(green.get_channel(), 0);
+    pwm.set_duty(red.get_channel(), 0);
+    pwm.set_duty(blue.get_channel(), 0);
+    pwm.enable(green.get_channel());
+    pwm.enable(red.get_channel());
+    pwm.enable(blue.get_channel());
 
     print_type_of(&blue);
 
@@ -101,13 +101,13 @@ fn main() -> ! {
             match i {
                 0 => {
                     // need to tune down red some
-                    pwm.set_duty(red.channel(), duty/10);
+                    pwm.set_duty(red.get_channel(), duty/10);
                 }
                 1 => {
-                    pwm.set_duty(green.channel(), duty/5);
+                    pwm.set_duty(green.get_channel(), duty/5);
                 }
                 2 => {
-                    pwm.set_duty(blue.channel(), duty/5);
+                    pwm.set_duty(blue.get_channel(), duty/5);
                 }
                 _ => {}
             }
