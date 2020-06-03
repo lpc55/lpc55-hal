@@ -9,6 +9,9 @@ pub mod prelude {
     pub use super::usbd::prelude::*;
 }
 
+pub mod aes;
+pub use aes::{Aes, Key as AesKey};
+
 pub mod clocks;
 pub use clocks::ClockRequirements;
 
@@ -37,6 +40,9 @@ pub mod serial;
 pub use serial::Serial;
 
 pub mod rng;
+
+pub mod sha;
+pub use sha::{Sha1, Sha256};
 
 pub mod usbd;
 pub use usbd::UsbBus;
