@@ -238,6 +238,8 @@ enum FlashCommands {
     ReportEcc= 0xD,
 }
 
+const BASE_OFFSET: usize = 0x0007_d000;
+
 #[cfg(feature = "littlefs")]
 impl littlefs2::driver::Storage for FlashGordon {
     const READ_SIZE: usize = 16;
@@ -245,9 +247,11 @@ impl littlefs2::driver::Storage for FlashGordon {
     const BLOCK_SIZE: usize = 512;
 
     // currently: 230K -> 230*2 = 460
-    const BLOCK_COUNT: usize = 400;
+    // const BLOCK_COUNT: usize = 400;
+    const BLOCK_COUNT: usize = 200;
     // no wear-leveling for now
     const BLOCK_CYCLES: isize = -1;
+    // const BASE_OFFSET: usize = 0x0006_4000;
 
     type CACHE_SIZE = U512;
     type LOOKAHEADWORDS_SIZE = U16;
@@ -259,7 +263,7 @@ impl littlefs2::driver::Storage for FlashGordon {
     type ATTRBYTES_MAX = U1022;
 
     fn read(&self, off: usize, buf: &mut [u8]) -> LfsResult<usize> {
-        <Self as Read<U16>>::read(self, 0x00064000 + off, buf);
+        <Self as Read<U16>>::read(self, BASE_OFFSET + off, buf);
         // hprintln!("read {} from {}", buf.len(), off).ok();
         // hprintln!("read {} from {}: {:?}", buf.len(), off, &buf[..16]).ok();
         Ok(buf.len())
@@ -268,7 +272,7 @@ impl littlefs2::driver::Storage for FlashGordon {
     fn write(&mut self, off: usize, data: &[u8]) -> LfsResult<usize> {
         // hprintln!("write {} to {}", data.len(), off).ok();
         // hprintln!("write {} to {}: {:?}", data.len(), off, &data[..16]).ok();
-        let ret = <Self as WriteErase<U512, U512>>::write(self, 0x00064000 + off, data);
+        let ret = <Self as WriteErase<U512, U512>>::write(self, BASE_OFFSET + off, data);
         // if let Err(error) = ret {
         //     panic!("error writing: {:?}", &error);
         // }
@@ -279,7 +283,7 @@ impl littlefs2::driver::Storage for FlashGordon {
 
     fn erase(&mut self, off: usize, len: usize) -> LfsResult<usize> {
         // hprintln!("erase {} from {}", len, off).ok();
-        let first_page = (0x00064000 + off) / 512;
+        let first_page = (BASE_OFFSET + off) / 512;
         let pages = len / 512;
         for i in 0..pages {
             <Self as WriteErase<U512, U512>>::erase_page(self, first_page + i)

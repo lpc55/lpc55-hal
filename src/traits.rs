@@ -1,5 +1,9 @@
 use core::ops::Deref;
 
+pub use block_cipher;
+pub use block_cipher_trait;
+pub use digest;
+
 // TODO: is this renaming confusing?
 // Using the name as is is not so nice
 // `wg` is for "Rust Embedded Working Group (WG)"

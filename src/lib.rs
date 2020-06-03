@@ -61,6 +61,7 @@ pub use peripherals::{
     flexcomm::Flexcomm,
     gpio::Gpio,
     gint::Gint,
+    hashcrypt::Hashcrypt,
     inputmux::InputMux,
     iocon::Iocon,
     pint::Pint,
@@ -141,6 +142,9 @@ pub struct Peripherals {
 
     /// General-purpose I/O (GPIO)
     pub gpio: Gpio,
+
+    /// SHA and AES Engine
+    pub hashcrypt: Hashcrypt,
 
     /// Input multiplexer
     pub inputmux: InputMux,
@@ -236,6 +240,7 @@ impl From<(raw::Peripherals, rtfm::Peripherals)> for Peripherals {
             ),
             gint: Gint::from((p.GINT0, p.GINT1)),
             gpio: Gpio::from(p.GPIO),
+            hashcrypt: Hashcrypt::from(p.HASHCRYPT),
             inputmux: InputMux::from(p.INPUTMUX),
             iocon: Iocon::from(p.IOCON),
             pint: Pint::from(p.PINT),
@@ -295,6 +300,7 @@ impl From<(raw::Peripherals, raw::CorePeripherals)> for Peripherals {
             ),
             gint: Gint::from((p.GINT0, p.GINT1)),
             gpio: Gpio::from(p.GPIO),
+            hashcrypt: Hashcrypt::from(p.HASHCRYPT),
             inputmux: InputMux::from(p.INPUTMUX),
             iocon: Iocon::from(p.IOCON),
             pint: Pint::from(p.PINT),
@@ -357,6 +363,13 @@ pub fn enable_cycle_counter() {
 
 pub fn get_cycle_count() -> u32 {
     raw::DWT::get_cycle_count()
+}
+
+pub fn count_cycles<Output>(f: impl FnOnce() -> Output) -> (u32, Output) {
+    let before = get_cycle_count();
+    let outcome = f();
+    let after = get_cycle_count();
+    (after - before, outcome)
 }
 
 
