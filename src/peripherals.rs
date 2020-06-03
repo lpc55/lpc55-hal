@@ -28,6 +28,7 @@ pub mod flash;
 pub mod flexcomm;
 pub mod gint;
 pub mod gpio;
+pub mod hashcrypt;
 pub mod inputmux;
 pub mod iocon;
 pub mod pint;

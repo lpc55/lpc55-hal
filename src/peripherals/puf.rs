@@ -16,11 +16,11 @@ use crate::{
 // 2. The KC is a fixed 4-byte header with formation on key index, length, etc.
 // 3. Derive a real key using `GetKey` and an input `KC`.  The key will be generated and given to the proper
 //    IP via secure bus, or given raw if that was the index in `KC`.
-trait PufStates {}    
-pub struct Started;    
-pub struct Enrolled;    
-impl PufStates for Started {}    
-impl PufStates for Enrolled {}    
+trait PufStates {}
+pub struct Started;
+pub struct Enrolled;
+impl PufStates for Started {}
+impl PufStates for Enrolled {}
 
 /// PUF error
 #[derive(Debug)]
@@ -88,7 +88,7 @@ impl<T> Puf<init_state::Enabled<T>> {
         Ok(())
     }
 
-    fn read_data(&self, data: &mut [u8]) -> (){
+    fn read_data(&self, data: &mut [u8]) {
         let mut count = 0;
         while self.raw.stat.read().busy().bit_is_set() {
             if self.raw.stat.read().codeoutavail().bit_is_set() {
@@ -113,7 +113,7 @@ impl<T> Puf<init_state::Enabled<T>> {
     //
     // key_code: Returned KC
     //  This is fed to a started PUF to derive a key.
-    pub fn generate_key(&self, key_size: u32, key_index: u8, key_code: &mut [u8]) -> Result<()>{
+    pub fn generate_key(&self, key_size: u32, key_index: u8, key_code: &mut [u8]) -> Result<()> {
 
         if self.raw.allow.read().allowsetkey().bit_is_clear() {
             return Err(Error::NotAllowed);
@@ -151,7 +151,7 @@ impl<T> Puf<init_state::Enabled<T>> {
 
 }
 // Must enroll once per device.  Enrolling consumes the PUF and device must be restarted.
-impl Puf<init_state::Enabled> 
+impl Puf<init_state::Enabled>
 {
 
     // Enroll a new key for the PUF.  Writes 1192-byte AC to buffer which should be stored in NV memory.
@@ -181,7 +181,7 @@ impl Puf<init_state::Enabled>
         if self.raw.allow.read().allowstart().bit_is_clear() {
             return Err(Error::NotAllowed);
         }
-        
+
         self.raw.ctrl.write(|w| { w.start().set_bit() } );
 
         self.wait_for_cmd()?;
@@ -208,7 +208,7 @@ impl Puf<init_state::Enabled>
 }
 
 impl Puf<init_state::Enabled<Started>> {
-    pub fn get_key(&self, key_destination: raw::puf::keyenable::KEY_A, key_code: &[u8], key: &mut [u8]) -> Result< usize >{
+    pub fn get_key(&self, key_destination: raw::puf::keyenable::KEY_A, key_code: &[u8], key: &mut [u8]) -> Result<usize> {
         if self.raw.allow.read().allowgetkey().bit_is_clear() {
             return Err(Error::NotAllowed);
         }

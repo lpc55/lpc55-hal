@@ -55,7 +55,7 @@ fn main() -> ! {
         .unwrap();
 
     // Acquire PUF in an enabled state
-    let adc = hal::Adc::from(hal.ADC0).enabled(&mut hal.pmc, &mut hal.syscon);
+    let adc = hal.adc.enabled(&mut hal.pmc, &mut hal.syscon);
     // let adc = hal::Adc::from(dp.ADC0).enabled(&mut syscon);
 
     let adc = adc.release();
@@ -90,7 +90,7 @@ fn main() -> ! {
 
     // channel 13 (1V ref), single ended A, high res
     adc.cmdl1.write(|w| unsafe {  w.adch().bits(13)
-                                .ctype().ctype_0()  
+                                .ctype().ctype_0()
                                 .mode().mode_1()
                                 } );
 
@@ -123,7 +123,7 @@ fn main() -> ! {
     let result = adc.resfifo[0].read().bits();
     let valid = result & 0x80000000;
     let sample = (result & 0xffff) as u16;
-   
+
     if valid != 0 {
         heprintln!("sample = {:02x}", sample).unwrap();
     } else {
