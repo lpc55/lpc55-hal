@@ -117,3 +117,49 @@ pub struct HS_SPI_SSEL2 {}
 impl Function for HS_SPI_SSEL2 {}
 pub struct HS_SPI_SSEL3 {}
 impl Function for HS_SPI_SSEL3 {}
+
+use crate::peripherals::ctimer;
+use crate::typestates::init_state::Enabled;
+use core::marker::PhantomData;
+
+pub struct MATCH_OUTPUT0<CTIMER> where CTIMER: ctimer::Ctimer<Enabled>
+{
+    pub _marker: PhantomData<CTIMER>
+}
+pub struct MATCH_OUTPUT1<CTIMER> where CTIMER: ctimer::Ctimer<Enabled>
+{
+    pub _marker: PhantomData<CTIMER>
+}
+pub struct MATCH_OUTPUT2<CTIMER> where CTIMER: ctimer::Ctimer<Enabled>
+{
+    pub _marker: PhantomData<CTIMER>
+}
+pub struct MATCH_OUTPUT3<CTIMER> where CTIMER: ctimer::Ctimer<Enabled>
+{
+    pub _marker: PhantomData<CTIMER>
+}
+
+impl Function for MATCH_OUTPUT0<ctimer::Ctimer0<Enabled>>{}
+impl Function for MATCH_OUTPUT1<ctimer::Ctimer0<Enabled>>{}
+impl Function for MATCH_OUTPUT2<ctimer::Ctimer0<Enabled>>{}
+impl Function for MATCH_OUTPUT3<ctimer::Ctimer0<Enabled>>{}
+
+impl Function for MATCH_OUTPUT0<ctimer::Ctimer1<Enabled>>{}
+impl Function for MATCH_OUTPUT1<ctimer::Ctimer1<Enabled>>{}
+impl Function for MATCH_OUTPUT2<ctimer::Ctimer1<Enabled>>{}
+impl Function for MATCH_OUTPUT3<ctimer::Ctimer1<Enabled>>{}
+
+impl Function for MATCH_OUTPUT0<ctimer::Ctimer2<Enabled>>{}
+impl Function for MATCH_OUTPUT1<ctimer::Ctimer2<Enabled>>{}
+impl Function for MATCH_OUTPUT2<ctimer::Ctimer2<Enabled>>{}
+impl Function for MATCH_OUTPUT3<ctimer::Ctimer2<Enabled>>{}
+
+impl Function for MATCH_OUTPUT0<ctimer::Ctimer3<Enabled>>{}
+impl Function for MATCH_OUTPUT1<ctimer::Ctimer3<Enabled>>{}
+impl Function for MATCH_OUTPUT2<ctimer::Ctimer3<Enabled>>{}
+impl Function for MATCH_OUTPUT3<ctimer::Ctimer3<Enabled>>{}
+
+impl Function for MATCH_OUTPUT0<ctimer::Ctimer4<Enabled>>{}
+impl Function for MATCH_OUTPUT1<ctimer::Ctimer4<Enabled>>{}
+impl Function for MATCH_OUTPUT2<ctimer::Ctimer4<Enabled>>{}
+impl Function for MATCH_OUTPUT3<ctimer::Ctimer4<Enabled>>{}

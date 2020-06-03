@@ -9,6 +9,7 @@ use crate::{
             PinId,
             state,
             gpio::direction,
+            function,
         },
         init_state,
         ClocksSupportTouchToken,
@@ -91,7 +92,7 @@ where P1: PinId, P2: PinId, P3: PinId
         adc: Adc,
         adc_timer: ctimer::Ctimer1<init_state::Enabled>,
         sample_timer: ctimer::Ctimer2<init_state::Enabled>,
-        _charge_pin: Pin<pins::Pio1_16, state::CtimerMatchChannel>,
+        _charge_pin: Pin<pins::Pio1_16, state::Special<function::MATCH_OUTPUT3<ctimer::Ctimer1<init_state::Enabled>>>>,
         buttons: ButtonPins<P1,P2,P3>,
     ) -> Self {
 

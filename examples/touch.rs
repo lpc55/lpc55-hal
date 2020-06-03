@@ -76,7 +76,7 @@ fn main() -> ! {
 
     let touch_timer = hal.ctimer.1.enabled(&mut hal.syscon);
     let touch_sync_timer = hal.ctimer.2.enabled(&mut hal.syscon);
-    let charge_pin = pins.pio1_16.into_ctimer1_mat3(&mut iocon);
+    let charge_pin = pins.pio1_16.into_match_output(&mut iocon);
 
     let mut dma = hal::Dma::from(hal.dma).enabled(&mut hal.syscon);
 
