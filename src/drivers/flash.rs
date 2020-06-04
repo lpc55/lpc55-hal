@@ -18,13 +18,11 @@ use crate::{
 
 use generic_array::{
     GenericArray,
-    typenum::{
-        U16,
-        U256,
-        U512,
-        U1022,
-    },
+    typenum::{U16, U512},
 };
+
+#[cfg(feature = "littlefs")]
+use generic_array::typenum::{U256, U1022};
 
 #[cfg(feature = "littlefs")]
 use littlefs2::io::Result as LfsResult;
