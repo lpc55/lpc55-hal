@@ -12,6 +12,8 @@ use crate::typestates::{
     // Fro96MHzEnabledToken,
     ClocksSupportUsbfsToken,
 };
+
+#[cfg(not(feature = "highspeed-usb"))]
 use crate::traits::usb::{
     Usb,
     UsbSpeed,
