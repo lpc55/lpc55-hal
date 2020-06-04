@@ -33,9 +33,10 @@ impl<State> Deref for Adc<State> {
     fn deref(&self) -> &Self::Target {
         &self.raw
     }
-}   
+}
 
 impl<State> Adc<State> {
+    #[allow(dead_code)]
     fn autocal (&mut self,) {
         // Calibration + offset trimming
         self.raw.ofstrim.write(|w| unsafe {
@@ -68,7 +69,7 @@ impl<State> Adc<State> {
 
     pub fn arm_normal_channel(&mut self, channel_id: u8) {
         self.raw.cmdl2.write(|w| unsafe {  w.adch().bits(channel_id)
-                                    .ctype().ctype_0()  
+                                    .ctype().ctype_0()
                                     .mode().mode_0()
                                     } );
         self.raw.cmdh2.write(|w| unsafe { w.avgs().avgs_7()
@@ -80,7 +81,7 @@ impl<State> Adc<State> {
 
     pub fn arm_comparator_channel(&mut self, channel_id: u8) {
         self.raw.cmdl1.write(|w| unsafe {  w.adch().bits(channel_id)
-                                    .ctype().ctype_0()  
+                                    .ctype().ctype_0()
                                     .mode().mode_0()
                                     } );
         self.raw.cmdh1.write(|w| unsafe { w.avgs().avgs_7()      // average 2^3 samples
@@ -124,10 +125,10 @@ impl<State> Adc<State> {
 
         self.raw.ctrl.write(|w| {
             w.adcen().clear_bit()  // Turn off prior to configuration
-        }); 
+        });
         self.raw.cfg.write(|w| {
             w.pwren().clear_bit()  //Must be cleared prior to ADC being enabled
-        }); 
+        });
 
 
         self.raw.ctrl.write(|w| {
