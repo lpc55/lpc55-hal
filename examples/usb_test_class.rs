@@ -38,7 +38,7 @@ fn main() -> ! {
         .expect("Clock configuration failed");
 
 
-    let mut delay_timer = Timer::new(hal.ctimer.0.enabled(&mut syscon));
+    let mut delay_timer = Timer::new(hal.ctimer.0.enabled(&mut syscon, clocks.support_1mhz_fro_token().unwrap()));
 
     // Can use compile to use either the "HighSpeed" or "FullSpeed" USB peripheral.
     // Default is full speed.

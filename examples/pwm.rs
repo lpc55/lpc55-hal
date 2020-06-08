@@ -46,7 +46,7 @@ fn main() -> ! {
 
     let mut hal = hal::new();
 
-    let _clocks = hal::ClockRequirements::default()
+    let clocks = hal::ClockRequirements::default()
         .system_frequency(96.mhz())
         .configure(&mut hal.anactrl, &mut hal.pmc, &mut hal.syscon)
         .unwrap();
@@ -54,10 +54,10 @@ fn main() -> ! {
     let mut iocon = hal.iocon.enabled(&mut hal.syscon);
     let pins = Pins::take().unwrap();
 
-    let mut delay_timer = Timer::new(hal.ctimer.0.enabled(&mut hal.syscon));
+    let mut delay_timer = Timer::new(hal.ctimer.0.enabled(&mut hal.syscon, clocks.support_1mhz_fro_token().unwrap()));
 
     // Xpresso LED (they used same channel for two pins)
-    let mut pwm = Pwm::new(hal.ctimer.2.enabled(&mut hal.syscon));
+    let mut pwm = Pwm::new(hal.ctimer.2.enabled(&mut hal.syscon, clocks.support_1mhz_fro_token().unwrap()));
     let blue = pins.pio1_6.into_match_output(&mut iocon);
     let green = pins.pio1_7.into_match_output(&mut iocon);
     let red = pins.pio1_4.into_match_output(&mut iocon);

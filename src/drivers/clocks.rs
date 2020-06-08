@@ -15,6 +15,7 @@ use crate::typestates::{
     ClocksSupportUsbhsToken,
     ClocksSupportUtickToken,
     ClocksSupportTouchToken,
+    ClocksSupport1MhzFroToken,
 };
 use crate::{
     peripherals::{
@@ -84,6 +85,10 @@ impl Clocks {
         Some(ClocksSupportUtickToken{__: ()})
     }
 
+    pub fn support_1mhz_fro_token(&self) -> Option<ClocksSupport1MhzFroToken> {
+        Some(ClocksSupport1MhzFroToken{__: ()})
+    }
+
     pub fn support_touch_token(&self) -> Option<ClocksSupportTouchToken> {
         if self.system_frequency.0 >= 96 {
             Some(ClocksSupportTouchToken{__: ()})
@@ -91,7 +96,7 @@ impl Clocks {
             None
         }
     }
-    
+
 }
 
 /// Output of Pll is: M/(2NP) times input
@@ -208,12 +213,12 @@ impl ClockRequirements {
             return Err(ClocksError::AlreadyConfigured);
         }
 
-        let default_freq = if self.support_usbfs { 
-            MIN_USBFS_FREQ 
+        let default_freq = if self.support_usbfs {
+            MIN_USBFS_FREQ
         } else if self.support_usbhs {
             MIN_USBHS_FREQ
-        } else { 
-            DEFAULT_FREQ 
+        } else {
+            DEFAULT_FREQ
         };
 
         let freq: Megahertz = self.system_frequency.unwrap_or(default_freq);
