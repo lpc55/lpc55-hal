@@ -6,6 +6,7 @@ use crate::{
     },
     typestates::{
         init_state,
+        ClocksSupport1MhzFroToken,
     },
 };
 
@@ -30,12 +31,12 @@ macro_rules! ctimer {
         fn deref(&self) -> &Self::Target {
             &self.raw
         }
-    }   
+    }
     impl Ctimer<init_state::Enabled> for $c_hal<init_state::Enabled> {}
-    
+
 
     impl<State> $c_hal<State> {
-        pub fn enabled(mut self, syscon: &mut Syscon, ) -> $c_hal <init_state::Enabled> {
+        pub fn enabled(mut self, syscon: &mut Syscon, _token: ClocksSupport1MhzFroToken) -> $c_hal <init_state::Enabled> {
             syscon.enable_clock(&mut self.raw);
             syscon.raw.$register().write(|w| { w.sel().$clock_input() } );
             syscon.reset(&mut self.raw);
