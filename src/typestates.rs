@@ -100,6 +100,10 @@ pub struct ClocksSupportUtickToken {pub(crate) __: ()}
 /// a frozen Clocks (clock-tree configuration)
 pub struct ClocksSupportTouchToken{pub(crate) __: ()}
 
+/// Application can only obtain this token from
+/// a frozen Clocks (clock-tree configuration)
+pub struct ClocksSupport1MhzFroToken{pub(crate) __: ()}
+
 pub mod flash_state {
 }
 

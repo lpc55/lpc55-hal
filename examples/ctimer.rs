@@ -28,12 +28,12 @@ fn main() -> ! {
     // Get pointer to all device peripherals.
     let mut hal = hal::new();
 
-    let _clocks = hal::ClockRequirements::default()
+    let clocks = hal::ClockRequirements::default()
         .system_frequency(12.mhz())
         .configure(&mut hal.anactrl, &mut hal.pmc, &mut hal.syscon)
         .unwrap();
 
-    let ctimer = hal.ctimer.1.enabled(&mut hal.syscon);
+    let ctimer = hal.ctimer.1.enabled(&mut hal.syscon, clocks.support_1mhz_fro_token().unwrap());
     let mut cdriver = Timer::new(ctimer);
 
     heprintln!("looping 1 Hz").unwrap();
