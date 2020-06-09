@@ -58,7 +58,6 @@ pub mod reg_proxy {
 pub trait Gint: Deref<Target = crate::raw::gint0::RegisterBlock> {}
 
 
-pub mod buttons;
 pub mod flash;
 pub mod usb;
 
