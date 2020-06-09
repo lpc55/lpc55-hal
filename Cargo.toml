@@ -18,8 +18,7 @@ circle-ci = { repository = "nickray/lpc55-hal" }
 [dependencies]
 bare-metal = "0.2"
 block-buffer = "0.7.3"
-block-cipher-trait = "0.6.2"
-block-cipher = { version = "0.7.0-pre", git = "https://github.com/RustCrypto/traits" }
+block-cipher = "0.7.0"
 cortex-m = "0.6"
 cortex-m-semihosting = "0.3"
 digest = "0.8.1"
