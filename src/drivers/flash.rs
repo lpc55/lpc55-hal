@@ -236,7 +236,8 @@ enum FlashCommands {
     ReportEcc= 0xD,
 }
 
-const BASE_OFFSET: usize = 0x0007_d000;
+// const BASE_OFFSET: usize = 0x0007_d000;
+const BASE_OFFSET: usize = 0x0008_9800;
 
 #[cfg(feature = "littlefs")]
 impl littlefs2::driver::Storage for FlashGordon {
@@ -246,7 +247,8 @@ impl littlefs2::driver::Storage for FlashGordon {
 
     // currently: 230K -> 230*2 = 460
     // const BLOCK_COUNT: usize = 400;
-    const BLOCK_COUNT: usize = 200;
+    // const BLOCK_COUNT: usize = 200;
+    const BLOCK_COUNT: usize = 160;
     // no wear-leveling for now
     const BLOCK_CYCLES: isize = -1;
     // const BASE_OFFSET: usize = 0x0006_4000;
