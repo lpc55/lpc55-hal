@@ -18,15 +18,14 @@ use hal::{
         Pins,
         Timer,
         timer::Lap,
-        TouchSensor,
-        touch::ButtonPins,
-        touch::profile_touch_sensing,
+        touch::{
+            TouchSensorChannel,
+            TouchSensor,
+            ButtonPins,
+            Edge,
+            profile_touch_sensing,
+        }
     },
-    traits::{
-        buttons,
-        buttons::ButtonPress,
-        buttons::ButtonEdge,
-    }
 };
 pub use hal::typestates::pin::state;
 
@@ -107,36 +106,41 @@ fn main() -> ! {
     delay_timer.start(300.ms());
     block!(delay_timer.wait()).unwrap();
 
-    // heprintln!("looping").unwrap();
-
     loop {
 
-        let p = touch_sensor.wait_for_any_press();
-        match p {
-            Ok(buttons::Button::ButtonTop) => {
-                red.set_low().unwrap();
-            }
-            Ok(buttons::Button::ButtonBot) => {
-                green.set_low().unwrap();
-            }
-            Ok(buttons::Button::ButtonMid) => {
-                blue.set_low().unwrap();
-            }
-            _ => {}
+        // Check for a press
+        if touch_sensor.has_edge(TouchSensorChannel::Channel1, Edge::Falling) {
+            touch_sensor.reset_results(TouchSensorChannel::Channel1, -1);
+            red.set_low().unwrap();
         }
 
-        let p = touch_sensor.wait_for_any_release();
-        match p {
-            Ok(buttons::Button::ButtonTop) => {
-                red.set_high().unwrap();
-            }
-            Ok(buttons::Button::ButtonBot) => {
-                green.set_high().unwrap();
-            }
-            Ok(buttons::Button::ButtonMid) => {
-                blue.set_high().unwrap();
-            }
-            _ => {}
+        if touch_sensor.has_edge(TouchSensorChannel::Channel2, Edge::Falling) {
+            touch_sensor.reset_results(TouchSensorChannel::Channel2, -1);
+            green.set_low().unwrap();
         }
+
+        if touch_sensor.has_edge(TouchSensorChannel::Channel3, Edge::Falling) {
+            touch_sensor.reset_results(TouchSensorChannel::Channel3, -1);
+            blue.set_low().unwrap();
+        }
+
+
+
+        // Check for a release
+        if touch_sensor.has_edge(TouchSensorChannel::Channel1, Edge::Rising) {
+            touch_sensor.reset_results(TouchSensorChannel::Channel1, 1);
+            red.set_high().unwrap();
+        }
+
+        if touch_sensor.has_edge(TouchSensorChannel::Channel2, Edge::Rising) {
+            touch_sensor.reset_results(TouchSensorChannel::Channel2, 1);
+            green.set_high().unwrap();
+        }
+
+        if touch_sensor.has_edge(TouchSensorChannel::Channel3, Edge::Rising) {
+            touch_sensor.reset_results(TouchSensorChannel::Channel3, 1);
+            blue.set_high().unwrap();
+        }
+
     }
 }

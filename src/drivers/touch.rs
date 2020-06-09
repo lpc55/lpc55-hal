@@ -1,5 +1,4 @@
 use core::ops::{Deref, DerefMut};
-use nb;
 // use cortex_m_semihosting::dbg;
 // use cortex_m_semihosting::heprintln;
 use crate::traits::wg::timer::CountDown;
@@ -25,10 +24,15 @@ use crate::{
         dma::Dma,
     },
     time::*,
-    traits::{
-        buttons,
-    },
 };
+
+/// This driver supports 3 touch sensing channels and this enum maps to the physical ADC channel.
+#[derive(Copy,Clone)]
+pub enum TouchSensorChannel {
+    Channel1 = 3,
+    Channel2 = 4,
+    Channel3 = 5,
+}
 
 pub struct ButtonPins<P1 : PinId, P2 :  PinId, P3 : PinId>(
     pub Pin<P1, state::Analog<direction::Input>>,
@@ -226,13 +230,13 @@ pub struct TouchResult {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
-enum Edge {
+pub enum Edge {
     Rising,
     Falling
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
-enum Compare {
+pub enum Compare {
     AboveThreshold,
     BelowThreshold
 }
@@ -269,34 +273,34 @@ where P1: PinId, P2: PinId, P3: PinId,
 
     /// Used after an edge is detected to prevent the same
     /// edge being detected twice
-    fn reset_results(&self, button: buttons::Button, offset: i32) {
+    pub fn reset_results(&self, channel: TouchSensorChannel, offset: i32) {
         let results = unsafe {&mut RESULTS};
-        match button {
-            buttons::ButtonTop => {
-                for i in 0 .. RESULTS_LEN {
-                    if (results[i] & (0xf << 24)) == (3 << 24) {
-                        results[i] = (results[i] & (!0xffff)) | (self.threshold[0] as i32 + offset) as u32;
-                    }
-                }
-            }
-            buttons::ButtonBot => {
-                for i in 0 .. RESULTS_LEN {
-                    if (results[i] & (0xf << 24)) == (4 << 24) {
-                        results[i] = (results[i] & (!0xffff)) | (self.threshold[1] as i32 + offset) as u32;
-                    }
-                }
-            }
-            buttons::ButtonMid => {
-                for i in 0 .. RESULTS_LEN {
-                    if (results[i] & (0xf << 24)) == (5 << 24) {
-                        results[i] = (results[i] & (!0xffff)) | (self.threshold[2] as i32 + offset) as u32;
-                    }
-                }
-            }
-            _ => {
-                panic!("Invalid button for buffer selection");
+        // match button {
+            // buttons::ButtonTop => {
+        for i in 0 .. RESULTS_LEN {
+            if (results[i] & (0xf << 24)) == ((channel as u32) << 24) {
+                results[i] = (results[i] & (!0xffff)) | (self.threshold[(channel as usize) - 3] as i32 + offset) as u32;
             }
         }
+            // }
+            // buttons::ButtonBot => {
+                // for i in 0 .. RESULTS_LEN {
+                //     if (results[i] & (0xf << 24)) == (4 << 24) {
+                //         results[i] = (results[i] & (!0xffff)) | (self.threshold[1] as i32 + offset) as u32;
+                //     }
+                // }
+            // }
+            // buttons::ButtonMid => {
+                // for i in 0 .. RESULTS_LEN {
+                //     if (results[i] & (0xf << 24)) == (5 << 24) {
+                //         results[i] = (results[i] & (!0xffff)) | (self.threshold[2] as i32 + offset) as u32;
+                //     }
+                // }
+            // }
+            // _ => {
+            //     panic!("Invalid button for buffer selection");
+            // }
+        // }
 
     }
 
@@ -346,9 +350,9 @@ where P1: PinId, P2: PinId, P3: PinId,
     }
 
     /// Use threshold and confidence value to see if indicated state has occured in current buffer
-    fn get_state(&self, bufsel: u8, ctype: Compare) -> TouchResult {
+    pub fn get_state(&self, channel: TouchSensorChannel, ctype: Compare) -> TouchResult {
         let mut filtered = [0u32; 40 - AVERAGES];
-
+        let bufsel = channel as u8;
         self.measure_buffer(bufsel, &mut filtered);
 
         if bufsel == 5 {
@@ -383,39 +387,11 @@ where P1: PinId, P2: PinId, P3: PinId,
         TouchResult{is_active: false, at: 0}
     }
 
-    /// Map internal cmd number to Button type
-    fn button_get_state (&self, button: buttons::Button, ctype: Compare) -> buttons::Button {
-        match button {
-            buttons::ButtonTop => {
-                if self.get_state(3, ctype).is_active { return button };
-            }
-            buttons::ButtonBot => {
-                if self.get_state(4, ctype).is_active { return button };
-            }
-            buttons::ButtonSides => {
-                if self.get_state(4, ctype).is_active && self.get_state(3, ctype).is_active
-                    { return button };
-            }
-            buttons::ButtonMid=> {
-                if self.get_state(5, ctype).is_active  { return button };
-            }
-            buttons::ButtonAny => {
-                if self.get_state(5, ctype).is_active { return buttons::ButtonMid };
-                if self.get_state(4, ctype).is_active { return buttons::ButtonBot};
-                if self.get_state(3, ctype).is_active { return buttons::ButtonTop};
-            }
-            buttons::ButtonNone => {
-                return button;
-            }
-        }
-        return buttons::ButtonNone;
-    }
-
 
     /// Indicate if an edge has occured in current buffer.  Does not reset.
-    fn has_edge (&self, bufsel: u8, edge_type: Edge,) -> bool {
-        let low = self.get_state(bufsel, Compare::BelowThreshold);
-        let high= self.get_state(bufsel, Compare::AboveThreshold);
+    pub fn has_edge (&self, channel: TouchSensorChannel, edge_type: Edge,) -> bool {
+        let low = self.get_state(channel, Compare::BelowThreshold);
+        let high= self.get_state(channel, Compare::AboveThreshold);
 
         if high.is_active && low.is_active {
             match edge_type {
@@ -430,101 +406,9 @@ where P1: PinId, P2: PinId, P3: PinId,
         false
     }
 
-    /// Map internal cmd number to Button type
-    fn button_has_edge (&self, button: buttons::Button, edge_type: Edge,) -> buttons::Button {
-        match button {
-            buttons::ButtonTop => {
-                if self.has_edge(3, edge_type) { return button }
-            }
-            buttons::ButtonBot => {
-                if self.has_edge(4, edge_type) { return button }
-            }
-            buttons::ButtonSides => {
-                if
-                    self.has_edge(3, edge_type) &&
-                    self.has_edge(4, edge_type)
-                        { return button }
-            }
-            buttons::ButtonMid=> {
-                if
-                    self.has_edge(5, edge_type)
-                        {  return button }
-            }
-            buttons::ButtonAny => {
-                if self.has_edge(3, edge_type) {return buttons::ButtonTop}
-                if self.has_edge(4, edge_type) {return buttons::ButtonBot}
-                if self.has_edge(5, edge_type) {return buttons::ButtonMid}
-            }
-            buttons::ButtonNone => {}
-        }
-
-        buttons::ButtonNone
-    }
-
 
 }
 
-impl<P1,P2,P3,> buttons::ButtonPress for TouchSensor<P1, P2, P3, >
-where P1: PinId, P2: PinId, P3: PinId,
-{
-    fn is_pressed(&self, button: buttons::Button) -> bool {
-        self.button_get_state(button, Compare::BelowThreshold) != buttons::ButtonNone
-    }
-
-    fn is_released(&self, button: buttons::Button) -> bool {
-        self.button_get_state(button, Compare::AboveThreshold) != buttons::ButtonNone
-    }
-
-
-    fn get_status(&self) -> buttons::Buttons {
-        buttons::Buttons {
-            top: self.is_pressed(buttons::ButtonTop),
-            bot: self.is_pressed(buttons::ButtonBot),
-            mid: self.is_pressed(buttons::ButtonMid),
-        }
-    }
-
-}
-
-impl<P1,P2,P3,> buttons::ButtonEdge for TouchSensor<P1, P2, P3, >
-where P1: PinId, P2: PinId, P3: PinId,
-{
-    fn wait_for_press(&self, button: buttons::Button) -> buttons::Result {
-        let button = self.button_has_edge(button, Edge::Falling);
-
-        // Erase edge with pressed status.
-        if button != buttons::ButtonNone {
-            self.reset_results(button, -1)
-        } else {
-            return Err(nb::Error::WouldBlock);
-        }
-
-        Ok(button)
-    }
-
-    fn wait_for_release(&self, button: buttons::Button) -> buttons::Result {
-        let button = self.button_has_edge(button, Edge::Rising);
-
-        // Erase edge with released status.
-        if button != buttons::ButtonNone {
-            self.reset_results(button, 1)
-        } else {
-            return Err(nb::Error::WouldBlock);
-        }
-
-        Ok(button)
-    }
-
-    /// See wait_for_press
-    fn wait_for_any_press(&self, ) -> buttons::Result{
-        self.wait_for_press(buttons::ButtonAny)
-    }
-
-    /// See wait_for_release
-    fn wait_for_any_release(&self, ) -> buttons::Result{
-        self.wait_for_release(buttons::ButtonAny)
-    }
-}
 
 /// Used when debugging to correlate the sync timer to which sample in the circular buffer is newest
 pub fn profile_touch_sensing(touch_sensor: &mut TouchSensor<impl PinId, impl PinId, impl PinId>,
