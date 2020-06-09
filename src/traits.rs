@@ -1,7 +1,6 @@
 use core::ops::Deref;
 
 pub use block_cipher;
-pub use block_cipher_trait;
 pub use digest;
 
 // TODO: is this renaming confusing?
