@@ -41,7 +41,7 @@ fn main() -> ! {
 
     // Can use compile to use either the "HighSpeed" or "FullSpeed" USB peripheral.
     // Default is full speed.
-    #[cfg(feature = "highspeed-usb")]
+    #[cfg(feature = "highspeed-usb-example")]
     let usb_peripheral = hal.usbhs.enabled_as_device(
         &mut anactrl,
         &mut pmc,
@@ -51,7 +51,7 @@ fn main() -> ! {
                         .unwrap()
     );
 
-    #[cfg(not(feature = "highspeed-usb"))]
+    #[cfg(not(feature = "highspeed-usb-example"))]
     let usb_peripheral = hal.usbfs.enabled_as_device(
         &mut anactrl,
         &mut pmc,

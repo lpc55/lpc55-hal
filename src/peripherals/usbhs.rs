@@ -16,7 +16,6 @@ use crate::typestates::{
     ClocksSupportUsbhsToken,
 };
 
-#[cfg(feature = "highspeed-usb")]
 use crate::traits::usb::{
     Usb,
     UsbSpeed,
@@ -45,7 +44,6 @@ impl Deref for EnabledUsbhsDevice {
 
 unsafe impl Sync for EnabledUsbhsDevice {}
 
-#[cfg(feature = "highspeed-usb")]
 impl Usb<init_state::Enabled> for EnabledUsbhsDevice {
     const SPEED: UsbSpeed = UsbSpeed::HighSpeed;
     // const NUM_ENDPOINTS: usize = 1 + 5;
