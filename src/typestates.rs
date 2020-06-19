@@ -80,28 +80,34 @@ pub mod usbhs_mode {
 
 /// Application can only obtain this token from
 /// a frozen Clocks (clock-tree configuration)
+#[derive(Copy, Clone)]
 pub struct ClocksSupportFlexcommToken {pub(crate) __: ()}
 
 /// Application can only obtain this token from
 /// a frozen Clocks (clock-tree configuration) for
 /// which USB clocks have been configured properly.
+#[derive(Copy, Clone)]
 pub struct ClocksSupportUsbfsToken {pub(crate) __: ()}
 
 /// Application can only obtain this token from
 /// a frozen Clocks (clock-tree configuration) for
 /// which USB clocks have been configured properly.
+#[derive(Copy, Clone)]
 pub struct ClocksSupportUsbhsToken {pub(crate) __: ()}
 
 /// Application can only obtain this token from
 /// a frozen Clocks (clock-tree configuration)
+#[derive(Copy, Clone)]
 pub struct ClocksSupportUtickToken {pub(crate) __: ()}
 
 /// Application can only obtain this token from
 /// a frozen Clocks (clock-tree configuration)
+#[derive(Copy, Clone)]
 pub struct ClocksSupportTouchToken{pub(crate) __: ()}
 
 /// Application can only obtain this token from
 /// a frozen Clocks (clock-tree configuration)
+#[derive(Copy, Clone)]
 pub struct ClocksSupport1MhzFroToken{pub(crate) __: ()}
 
 pub mod flash_state {

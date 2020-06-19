@@ -41,6 +41,7 @@ fn main() -> ! {
         .system_frequency(96.mhz())
         .configure(&mut hal.anactrl, &mut hal.pmc, &mut hal.syscon)
         .unwrap();
+    let fro_token = clocks.support_1mhz_fro_token().unwrap();
 
     let touch_token = clocks.support_touch_token().unwrap();
 
@@ -67,7 +68,7 @@ fn main() -> ! {
         .into_gpio_pin(&mut iocon, &mut gpio)
         .into_output(Level::High);
 
-    let mut delay_timer = Timer::new(hal.ctimer.0.enabled(&mut hal.syscon, clocks.support_1mhz_fro_token().unwrap()));
+    let mut delay_timer = Timer::new(hal.ctimer.0.enabled(&mut hal.syscon, fro_token));
 
     let button_pins = ButtonPins(but1,but2,but3);
 
