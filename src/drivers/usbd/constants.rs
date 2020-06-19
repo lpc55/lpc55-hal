@@ -1,16 +1,10 @@
 pub type UsbAccessType = u8; // note this is just a type definition, we depend on its size
 
-// TODO: Ideally, user could use both FS and HS peripherals.
-// Then the Cargo feature could go away as well.
-// For this, would need to move NUM_ENDPOINTS from global constants
-// to associated constant (of traits::usb::Usb),
-// but this does not currently work.
 /// Number of logical endpoints, including control
-/// Default is full speed (5 endpoints).
-#[cfg(feature = "highspeed-usb")]
+///
+/// Despite the UM claiming that USB FS has 1 + 4 and USB HS has 1 + 5,
+/// even the FS supports 1 + 5 endpoints.
 pub const NUM_ENDPOINTS: usize = 1 + 5;
-#[cfg(not(feature = "highspeed-usb"))]
-pub const NUM_ENDPOINTS: usize = 1 + 4;
 pub const BYTES_PER_EP_REGISTER: usize = 4*4;
 
 pub const USB1_SRAM_ADDR: usize = 0x4010_0000;

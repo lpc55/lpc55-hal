@@ -71,7 +71,8 @@ littlefs = ["littlefs2"]
 logging = ["cortex-m-funnel", "ufmt"]
 rt = ["lpc55-pac/rt"]
 rtfm-peripherals = ["cortex-m-rtfm"]
-highspeed-usb = []
+# no longer a HAL feature, just for the usb examples
+highspeed-usb-example = []
 # # Boards
 # lpcxpresso55s69 = []
 # solo = []

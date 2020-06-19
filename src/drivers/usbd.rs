@@ -71,6 +71,9 @@ impl<P> Usb0VbusPin for Pin<P, pin::state::Special<pin::function::USB0_VBUS>> wh
 /// After the bus is enabled, in practice most access won't mutate the object itself
 /// but only endpoint-specific registers and buffers, the access to which is mostly
 /// arbitrated by endpoint handles.
+///
+/// Warning: Currently, `UsbBus` uses the same `USB1_SRAM` memory region for both FS and HS
+/// peripherals, so it's not possible to use both peripherals at the same time with this driver.
 pub struct UsbBus<USB>
 where
     USB: Usb<init_state::Enabled> + Send,
