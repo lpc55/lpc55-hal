@@ -7,7 +7,7 @@ use core::marker::PhantomData;
 
 static mut ENDPOINT_LIST_ATTACHED: bool = false;
 
-pub const USB1_SRAM_ADDR: u32 = 0x4010_0000;
+pub use super::constants::USB1_SRAM_ADDR;
 pub const DA_BUF_ADDR: u32 = 0x4000_0000;  // 4MB = increments of 0x40_0000
 /// There are only two possible choices here:
 /// - 0x100 to use the USB1_SRAM
