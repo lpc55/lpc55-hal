@@ -53,17 +53,17 @@ where TIMER: Ctimer<init_state::Enabled> {
 }
 
 
-impl<TIMER> timer::CountDown for Timer<TIMER> 
+impl<TIMER> timer::CountDown for Timer<TIMER>
 where TIMER: Ctimer<init_state::Enabled>
 {
     type Time = TimeUnits;
 
-    fn start<T>(&mut self, count: T) 
+    fn start<T>(&mut self, count: T)
     where T: Into<Self::Time>
     {
         // Match should reset and stop timer, and generate interrupt.
         self.timer.mcr.modify(|_,w| {
-            w.mr0i().set_bit() 
+            w.mr0i().set_bit()
             .mr0r().set_bit()
             .mr0s().set_bit()
         } );
@@ -106,6 +106,7 @@ where TIMER: Ctimer<init_state::Enabled>
             w.crst().set_bit()
             .cen().clear_bit()
         });
+        self.timer.ir.write(|w| {w.mr0int().set_bit()});
         Ok(())
     }
 }
