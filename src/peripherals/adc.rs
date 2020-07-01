@@ -20,13 +20,56 @@ use crate::{
     }
 };
 
+pub struct Config {
+    pub conversion_delay: u16,
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        Config{
+            conversion_delay: 0,
+        }
+    }
+}
+
 pub enum ChannelType {
     Comparator = 0,
     Cancel = 1,
     Normal = 2,
 }
 
-crate::wrap_stateful_peripheral!(Adc, ADC0);
+pub struct Adc<State = init_state::Unknown> {
+    pub(crate) raw: raw::ADC0,
+    pub _state: State,
+    config: Config,
+}
+
+impl core::convert::From<raw::ADC0> for Adc {
+    fn from(raw: raw::ADC0) -> Self {
+        Adc::new(raw)
+    }
+}
+
+impl Adc {
+    fn new(raw: raw::ADC0) -> Self {
+        Adc {
+            raw,
+            _state: init_state::Unknown,
+            config: Default::default(),
+        }
+    }
+
+    pub unsafe fn steal() -> Self {
+        // seems a little wastefule to steal the full peripherals but ok..
+        Self::new(raw::Peripherals::steal().ADC0)
+    }
+}
+
+impl<State> Adc<State> {
+    pub fn release(self) -> raw::ADC0 {
+        self.raw
+    }
+}
 
 impl<State> Deref for Adc<State> {
     type Target = raw::adc0::RegisterBlock;
@@ -103,6 +146,11 @@ impl<State> Adc<State> {
         self.raw.ctrl.modify(|_,w| { w.rstfifo0().set_bit().rstfifo1().set_bit() })
     }
 
+    pub fn configure(mut self, config: Config) -> Adc<State> {
+        self.config = config;
+        self
+    }
+
     pub fn enabled(mut self, pmc: &mut Pmc, syscon: &mut Syscon) -> Adc<init_state::Enabled> {
         syscon.enable_clock(&mut self.raw);
         syscon.reset(&mut self.raw);
@@ -146,11 +194,17 @@ impl<State> Adc<State> {
         });
 
 
-        // No pause for now, but could be interesting
-        self.raw.pause.write(|w| unsafe {
-            w.pausedly().bits(0)
-            .pauseen().clear_bit()
-        });
+        if self.config.conversion_delay > 0 {
+            self.raw.pause.write(|w| unsafe {
+                w.pausedly().bits(self.config.conversion_delay)
+                .pauseen().set_bit()
+            });
+        } else {
+            self.raw.pause.write(|w| unsafe {
+                w.pausedly().bits(0)
+                .pauseen().clear_bit()
+            });
+        }
 
         // Set 0 for watermark
         self.raw.fctrl[0].write(|w| unsafe{w.fwmark().bits(0)});
@@ -198,6 +252,7 @@ impl<State> Adc<State> {
         Adc {
             raw: self.raw,
             _state: init_state::Enabled(()),
+            config: Default::default(),
         }
     }
 
@@ -209,6 +264,7 @@ impl<State> Adc<State> {
         Adc {
             raw: self.raw,
             _state: init_state::Disabled,
+            config: Default::default(),
         }
     }
 }
