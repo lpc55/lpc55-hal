@@ -47,7 +47,6 @@ fn main() -> ! {
         // .system_frequency(24.mhz())
         // .system_frequency(72.mhz())
         .system_frequency(96.mhz())
-        .support_usbhs()
         .configure(&mut anactrl, &mut pmc, &mut syscon)
         .unwrap();
 
