@@ -67,14 +67,14 @@ fn main() -> ! {
         .into_gpio_pin(&mut iocon, &mut gpio)
         .into_output(Level::High);
 
-    let mut delay_timer = Timer::new(hal.ctimer.0.enabled(&mut hal.syscon));
+    let mut delay_timer = Timer::new(hal.ctimer.0.enabled(&mut hal.syscon, clocks.support_1mhz_fro_token().unwrap()));
 
     let button_pins = ButtonPins(but1,but2,but3);
 
     let adc = hal::Adc::from(hal.adc).enabled(&mut hal.pmc, &mut hal.syscon);
 
-    let touch_timer = hal.ctimer.1.enabled(&mut hal.syscon);
-    let touch_sync_timer = hal.ctimer.2.enabled(&mut hal.syscon);
+    let touch_timer = hal.ctimer.1.enabled(&mut hal.syscon, clocks.support_1mhz_fro_token().unwrap());
+    let touch_sync_timer = hal.ctimer.2.enabled(&mut hal.syscon, clocks.support_1mhz_fro_token().unwrap());
     let charge_pin = pins.pio1_16.into_match_output(&mut iocon);
 
     let mut dma = hal::Dma::from(hal.dma).enabled(&mut hal.syscon);
