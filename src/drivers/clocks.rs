@@ -46,11 +46,9 @@ const DEFAULT_FREQ: Megahertz = Megahertz(12);
 pub struct ClockRequirements {
     pub system_frequency: Option<Megahertz>,
     pub custom_pll: Option<Pll>,
-    pub support_usbfs: bool,
-    pub support_usbhs: bool,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct Clocks {
     main_clock: MainClock,
     system_frequency: Hertz,
@@ -138,8 +136,6 @@ pub enum ClocksError {
     // TODO: Add "cause"
     AlreadyConfigured,
     NotFeasible,
-    UsbfsNotFeasible,
-    UsbhsNotFeasible,
 }
 
 pub type Result<T> = core::result::Result<T, ClocksError>;
@@ -149,21 +145,6 @@ pub type Result<T> = core::result::Result<T, ClocksError>;
 // - make sure Fro12 and Fro96 are even powered
 
 impl ClockRequirements {
-    // TODO: need all these builder methods?
-    // Or have user fill the struct by hand, using the defaults?
-
-    /// Ensures that the resulting clock configuration
-    /// supports USBFS.
-    pub fn support_usbfs(mut self) -> Self {
-        self.support_usbfs = true;
-        self
-    }
-
-    pub fn support_usbhs(mut self) -> Self {
-        self.support_usbhs = true;
-        self
-    }
-
 
     pub fn system_frequency<Freq>(mut self, freq: Freq) -> Self where Freq: Into<Megahertz> {
         self.system_frequency = Some(freq.into());
@@ -255,47 +236,7 @@ impl ClockRequirements {
         crate::wait_at_least(6_000);
     }
 
-    /// Requirements solver - tries to generate and configure a clock configuration
-    /// from (partial) requirements.
-    ///
-    /// It's a bit ridiculous to do this in code, but no idea how to avoid it.
-    ///
-    /// Can be called only once, to not invalidate previous configurations
-    pub fn configure(self, anactrl: &mut Anactrl, pmc: &mut Pmc, syscon: &mut Syscon) -> Result<Clocks> {
-        if unsafe { CONFIGURED } {
-            return Err(ClocksError::AlreadyConfigured);
-        }
-
-        let default_freq = if self.support_usbfs {
-            MIN_USBFS_FREQ
-        } else if self.support_usbhs {
-            MIN_USBHS_FREQ
-        } else {
-            DEFAULT_FREQ
-        };
-
-        let freq: Megahertz = self.system_frequency.unwrap_or(default_freq);
-
-        if self.support_usbfs && freq < MIN_USBFS_FREQ {
-            return Err(ClocksError::UsbfsNotFeasible);
-        }
-        if self.support_usbhs && freq < MIN_USBHS_FREQ {
-            return Err(ClocksError::UsbhsNotFeasible);
-        }
-
-        // turn on FRO192M: clear bit 5, according to `fsl_power.h` from the SDK
-        // unsafe { pmc.raw.pdruncfgclr0.write(|w| w.bits(1u32 << 5)) };
-        // but it's hidden in UM, so let's assume this is always cleared
-
-        // turn on 1mhz, 12mhz and 96mhz clocks
-        anactrl.raw.fro192m_ctrl.modify(|_, w| w.ena_96mhzclk().enable());
-        anactrl.raw.fro192m_ctrl.modify(|_, w| w.ena_12mhzclk().enable());
-        // TODO: not clear what the difference of these two is; eg. are both needed?
-        syscon.raw.clock_ctrl.modify(|_, w| w
-            .fro1mhz_clk_ena().enable()
-            .fro1mhz_utick_ena().enable()
-        );
-
+    fn get_clock_source_and_div_for_freq(freq: Megahertz, pmc: &mut Pmc, syscon: &mut Syscon) -> (MainClock, u8) {
         let (main_clock, sys_divider) = match freq {
             freq if freq <= 12.mhz() && 12 % freq.0 == 0 => {
                 (MainClock::Fro12Mhz, 12 / freq.0)
@@ -316,7 +257,7 @@ impl ClockRequirements {
 
             //     // select clkin for pll0
             //     syscon.raw.pll0clksel.write(|w| unsafe{ w.bits(1) });
-                
+
             //     // 150 MHz settings
             //     let pll = Pll {
             //         n: 8,
@@ -351,17 +292,10 @@ impl ClockRequirements {
             }
         };
         debug_assert!(sys_divider < 256);
-        let sys_divider = sys_divider as u8;
+        (main_clock, sys_divider as u8)
+    }
 
-        if self.support_usbfs && main_clock != MainClock::Fro96Mhz {
-            return Err(ClocksError::UsbfsNotFeasible);
-        }
-
-        let clocks = Clocks {
-            main_clock,
-            system_frequency: freq.into(),
-        };
-
+    fn set_new_clock_source(freq: Megahertz, main_clock: MainClock, sys_divider: u8, syscon: &mut Syscon) {
         // set highest flash wait cycles
         syscon.raw.fmccr.modify(|_, w| unsafe{ w.flashtim().bits(11) });
 
@@ -405,10 +339,56 @@ impl ClockRequirements {
                 unsafe { syscon.raw.fmccr.modify(|_, w| w.flashtim().bits( 11 )) };
             }
         }
+    }
+
+    /// Requirements solver - tries to generate and configure a clock configuration
+    /// from (partial) requirements.
+    ///
+    /// Can be called only once, to not invalidate previous configurations
+    pub fn configure(self, anactrl: &mut Anactrl, pmc: &mut Pmc, syscon: &mut Syscon) -> Result<Clocks> {
+        if unsafe { CONFIGURED } {
+            return Err(ClocksError::AlreadyConfigured);
+        }
+
+        let freq: Megahertz = self.system_frequency.unwrap_or(DEFAULT_FREQ);
+
+        // turn on FRO192M: clear bit 5, according to `fsl_power.h` from the SDK
+        // unsafe { pmc.raw.pdruncfgclr0.write(|w| w.bits(1u32 << 5)) };
+        // but it's hidden in UM, so let's assume this is always cleared
+
+        // turn on 1mhz, 12mhz and 96mhz clocks
+        anactrl.raw.fro192m_ctrl.modify(|_, w| w.ena_96mhzclk().enable());
+        anactrl.raw.fro192m_ctrl.modify(|_, w| w.ena_12mhzclk().enable());
+        // TODO: not clear what the difference of these two is; eg. are both needed?
+        syscon.raw.clock_ctrl.modify(|_, w| w
+            .fro1mhz_clk_ena().enable()
+            .fro1mhz_utick_ena().enable()
+        );
+
+        let (main_clock, sys_divider) = Self::get_clock_source_and_div_for_freq(freq, pmc, syscon);
+        Self::set_new_clock_source(freq, main_clock, sys_divider, syscon);
 
         unsafe { CONFIGURED = true };
 
-        Ok(clocks)
+        Ok(Clocks {
+            main_clock,
+            system_frequency: freq.into(),
+        })
+    }
 
+    /// Same as above, but allows clock to be changed after an initial configuration.
+    /// This is unsafe because it's up to the developer to ensure the new configuration is okay for
+    /// the device peripherals being used.
+    pub unsafe fn reconfigure(self, _clocks: Clocks, pmc: &mut Pmc, syscon: &mut Syscon) -> Clocks {
+        let freq: Megahertz = self.system_frequency.unwrap_or(DEFAULT_FREQ);
+
+        let (main_clock, sys_divider) = Self::get_clock_source_and_div_for_freq(freq, pmc, syscon);
+
+        Self::set_new_clock_source(freq, main_clock, sys_divider, syscon);
+
+        Clocks {
+            main_clock,
+            system_frequency: freq.into(),
+        }
     }
 }

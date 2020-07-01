@@ -39,12 +39,12 @@ fn main() -> ! {
     let mut pmc = hal.pmc;
     let mut syscon = hal.syscon;
 
-    let _clocks = hal::ClockRequirements::default()
+    let clocks = hal::ClockRequirements::default()
         .system_frequency(150.mhz())
         .configure(&mut anactrl, &mut pmc, &mut syscon)
         .unwrap();
 
-    let mut timer = Timer::new(hal.ctimer.0.enabled(&mut syscon));
+    let mut timer = Timer::new(hal.ctimer.0.enabled(&mut syscon, clocks.support_1mhz_fro_token().unwrap()));
 
     hal::enable_cycle_counter();
 
