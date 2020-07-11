@@ -235,7 +235,7 @@ where
             usb.devcmdstat.modify(|_, w| w.dev_en().set_bit().dcon().set_bit());
 
             // HERE TOO?
-            usb.inten.modify(|r, w| unsafe { w.bits(r.bits() | ((1 << 10) - 1)) } );
+            usb.inten.modify(|r, w| unsafe { w.bits(r.bits() | ((1 << 11) - 1)) } );
             usb.inten.modify(|r, w| unsafe { w.bits(r.bits() | (1 << 31)) } );
         });
     }
