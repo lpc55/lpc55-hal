@@ -15,7 +15,7 @@ use hal::{
 
 type RedLed = hal::Pin<pins::Pio1_6, pin::state::Gpio<pin::gpio::direction::Output>>;
 
-#[rtfm::app(device = crate::hal::raw, peripherals = true)]
+#[rtic::app(device = crate::hal::raw, peripherals = true)]
 const APP: () = {
     struct Resources {
         led: RedLed,

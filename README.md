@@ -17,7 +17,7 @@ over platform-dependencies, allowing firmware and drivers to be quite portable.
 
 It also implements the [`usb-device`][usb-device] framework.
 
-Moreover, this library is compatible with the Cortex-M implementation of [RTFM][cortex-m-rtfm],
+Moreover, this library is compatible with the Cortex-M implementation of [RTIC][cortex-m-rtic],
 a concurrency framework supporting preemptive multitasking with minimal footprint.
 
 ## Status
@@ -34,7 +34,7 @@ Next up will be:
 
 See also the low-level companion library [LPC55S6x PAC][lpc55s6x-pac].
 
-This HAL is intended to work with `cortex-m-rtfm` v0.5.
+This HAL is intended to work with `cortex-m-rtic` v0.5.
 
 ## Documentation
 
@@ -61,7 +61,7 @@ After flashing [J-Link firmware][jlink-fw] on the on-board LPCXpresso V2 debugge
 make jlink
 
 # in another terminal
-make run-example EXAMPLE=rtfm_led  # or any other example
+make run-example EXAMPLE=rtic_led  # or any other example
 ```
 
 ## Setup
@@ -92,7 +92,7 @@ from the various [STM32 HALs][stm32-rs].
 [cortex-m33]: https://developer.arm.com/ip-products/processors/cortex-m/cortex-m33
 [embedded-hal]: https://lib.rs/embedded-hal
 [usb-device]: https://lib.rs/usb-device
-[cortex-m-rtfm]: https://lib.rs/cortex-m-rtfm
+[cortex-m-rtic]: https://lib.rs/cortex-m-rtic
 [lpc55s6x-pac]: https://lib.rs/lpc55s6x-pac
 [lpc8xx-hal]: https://github.com/lpc-rs/lpc8xx-hal
 [stm32-rs]: https://github.com/stm32-rs
