@@ -5,9 +5,9 @@ build-both:
 clean:
 	rm -rf venv
 
-view-rtfm-expansion:
-	rustfmt target/rtfm-expansion.rs
-	vi target/rtfm-expansion.rs
+view-rtic-expansion:
+	rustfmt target/rtic-expansion.rs
+	vi target/rtic-expansion.rs
 
 # turn off the LEDs and whatnot
 darkness:

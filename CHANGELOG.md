@@ -28,7 +28,7 @@ Architectural changes:
 - move from "single file per peripheral" to split between
   HAL wrappers for peripherals, and actual drivers
 - get rid of a lot of references/lifetimes which don't
-  cooperate with RTFM
+  cooperate with RTIC
 
 The clock tree will definitely need some more work.
 It's a conundrum between compile-time vs runtime checks,

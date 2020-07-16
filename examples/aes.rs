@@ -14,11 +14,10 @@ use hal::prelude::*;
 #[allow(unused_imports)]
 use lpc55_hal as hal;
 
-use aes_soft::block_cipher_trait::BlockCipher as _;
-use aes_soft::block_cipher_trait::generic_array::GenericArray as GA12;
+use aes_soft::block_cipher::{BlockCipher, NewBlockCipher};
 
 use block_cipher::BlockCipher as _;
-use ga14::GenericArray as GA14;
+use generic_array::GenericArray;
 
 use cortex_m_semihosting::{dbg, hprintln};
 
@@ -29,24 +28,23 @@ fn main() -> ! {
     let mut hashcrypt = hal::Hashcrypt::from(dp.HASHCRYPT).enabled(&mut syscon);
 
     let raw_key = [0u8; 32];
-    let key12 = GA12::from_slice(&raw_key);
+    let key = GenericArray::from_slice(&raw_key);
 
     let raw_block = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
-    let block12 = GA12::clone_from_slice(&raw_block);
-    let block14 = GA14::clone_from_slice(&raw_block);
+    let block = GenericArray::clone_from_slice(&raw_block);
 
     //
     // via software
     //
-    let mut sw_block = block12.clone();
-    let cipher = aes_soft::Aes256::new(&key12);
+    let mut sw_block = block.clone();
+    let cipher = aes_soft::Aes256::new(&key);
 
     let (sw_cyc_enc, _) = hal::count_cycles(|| {
         cipher.encrypt_block(&mut sw_block);
     });
     hprintln!("encrypting with aes-soft took {} cycles", sw_cyc_enc).unwrap();
 
-    let sw_encrypted_block: [u8; 16] = sw_block.as_ref().try_into().unwrap();
+    let sw_encrypted_block: [u8; 16] = sw_block[..].try_into().unwrap();
 
     let (sw_cyc_dec, _) = hal::count_cycles(|| {
         cipher.decrypt_block(&mut sw_block);
@@ -54,12 +52,12 @@ fn main() -> ! {
     hprintln!("decrypting with aes-soft took {} cycles", sw_cyc_dec).unwrap();
 
     // check sw decrypt⚬encrypt = id
-    assert_eq!(sw_block, block12);
+    assert_eq!(sw_block, block);
 
     //
     // via hardware
     //
-    let mut hw_block = block14.clone();
+    let mut hw_block = block.clone();
     let cipher = hashcrypt.aes256(&raw_key);
 
     cipher.prime_for_encryption();
@@ -85,7 +83,7 @@ fn main() -> ! {
     hprintln!("speedup: {}x", sw_cyc_dec / hw_cyc_dec).unwrap();
 
     // check hw decrypt⚬encrypt = id
-    assert_eq!(hw_block, block14);
+    assert_eq!(hw_block, block);
 
 
     // // Finally, PUF key

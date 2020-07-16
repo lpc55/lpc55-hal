@@ -12,9 +12,9 @@
 //! In as much as possible, it is a goal for this HAL that drivers implement
 //! general interfaces (under `traits`).
 //!
-//! The main intended use case of this HAL is in the context of RTFM.
+//! The main intended use case of this HAL is in the context of RTIC.
 //!
-//! To get started without RTFM, try something like:
+//! To get started without RTIC, try something like:
 //! ```
 //! let hal = hal::Peripherals::take().unwrap(); // layer 2
 //! let pins = hal::Pins::take().unwrap(); // layer 3
@@ -90,8 +90,8 @@ pub fn new() -> Peripherals {
     take().unwrap()
 }
 
-/// This is the main (monolithic) entry point to the HAL for non-RTFM applications.
-/// For RTFM, use `hal::<Peripheral>::from(<raw_peripheral>)` as needed.
+/// This is the main (monolithic) entry point to the HAL for non-RTIC applications.
+/// For RTIC, use `hal::<Peripheral>::from(<raw_peripheral>)` as needed.
 pub fn take() -> Option<Peripherals> {
     Some(Peripherals::from((
         raw::Peripherals::take()?,//.expect("raw device peripherals already taken elsewhere"),
@@ -99,13 +99,13 @@ pub fn take() -> Option<Peripherals> {
     )))
 }
 
-#[cfg(not(feature = "rtfm-peripherals"))]
+#[cfg(not(feature = "rtic-peripherals"))]
 pub fn from(raw: (raw::Peripherals, raw::CorePeripherals)) -> Peripherals {
     Peripherals::from(raw)
 }
 
-#[cfg(feature = "rtfm-peripherals")]
-pub fn from(raw: (raw::Peripherals, rtfm::Peripherals)) -> Peripherals {
+#[cfg(feature = "rtic-peripherals")]
+pub fn from(raw: (raw::Peripherals, rtic::Peripherals)) -> Peripherals {
     Peripherals::from(raw)
 }
 
@@ -202,15 +202,15 @@ pub struct Peripherals {
     /// System Control Block (SCB) - core peripheral
     pub SCB: raw::SCB,
 
-    #[cfg(not(feature = "rtfm-peripherals"))]
+    #[cfg(not(feature = "rtic-peripherals"))]
     /// SysTick: System Timer - core peripheral
-    #[cfg(not(feature = "rtfm-peripherals"))]
+    #[cfg(not(feature = "rtic-peripherals"))]
     pub SYST: raw::SYST,
 }
 
-#[cfg(feature = "rtfm-peripherals")]
-impl From<(raw::Peripherals, rtfm::Peripherals)> for Peripherals {
-    fn from(raw: (raw::Peripherals, rtfm::Peripherals)) -> Self {
+#[cfg(feature = "rtic-peripherals")]
+impl From<(raw::Peripherals, rtic::Peripherals)> for Peripherals {
+    fn from(raw: (raw::Peripherals, rtic::Peripherals)) -> Self {
         let cp = raw.1;
         let p = raw.0;
         Peripherals {
@@ -324,7 +324,7 @@ impl From<(raw::Peripherals, raw::CorePeripherals)> for Peripherals {
             MPU: cp.MPU,
             NVIC: cp.NVIC,
             SCB: cp.SCB,
-            #[cfg(not(feature = "rtfm-peripherals"))]
+            #[cfg(not(feature = "rtic-peripherals"))]
             SYST: cp.SYST,
         }
     }
@@ -332,7 +332,7 @@ impl From<(raw::Peripherals, raw::CorePeripherals)> for Peripherals {
 
 impl Peripherals {
 
-    #[cfg(not(feature = "rtfm-peripherals"))]
+    #[cfg(not(feature = "rtic-peripherals"))]
     pub fn take() -> Option<Self> {
         Some(Self::from((
             raw::Peripherals::take()?,
@@ -340,17 +340,17 @@ impl Peripherals {
         )))
     }
 
-    // rtfm::Peripherals::take does not exist
+    // rtic::Peripherals::take does not exist
     //
-    // #[cfg(feature = "rtfm-peripherals")]
+    // #[cfg(feature = "rtic-peripherals")]
     // pub fn take() -> Option<Self> {
     //     Some(Self::from((
     //         raw::Peripherals::take()?,
-    //         rtfm::Peripherals::take()?,
+    //         rtic::Peripherals::take()?,
     //     )))
     // }
 
-    #[cfg(not(feature = "rtfm-peripherals"))]
+    #[cfg(not(feature = "rtic-peripherals"))]
     pub unsafe fn steal() -> Self {
         Self::from((raw::Peripherals::steal(), raw::CorePeripherals::steal()))
     }

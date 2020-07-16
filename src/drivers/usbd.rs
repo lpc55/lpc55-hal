@@ -119,7 +119,7 @@ where
 
     pub fn clear_interrupt(&mut self) {
         // clear interrupt, otherwise in an interrupt-driven setting
-        // like RTFM the idle loop will get starved.
+        // like RTIC the idle loop will get starved.
         interrupt::free(|cs| {
             // set device address to 0
             let usb = self.usb_regs.borrow(cs);

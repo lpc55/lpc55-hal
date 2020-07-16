@@ -1,7 +1,6 @@
 use core::convert::TryInto;
 
 use aligned::{A4, Aligned};
-use block_buffer::byteorder::{ByteOrder, BE};
 
 use crate::{
     peripherals::hashcrypt::Hashcrypt,
@@ -169,7 +168,7 @@ impl<'a, Size: KeySize> Aes<'a, Size> {
         }
 
         for i in 0..4 {
-            BE::write_u32_into(&[self.digest0[i].read().bits()], &mut block.as_mut_slice()[4*i..4*i + 4]);
+            block.as_mut_slice()[4*i..4*i + 4].copy_from_slice(&self.digest0[i].read().bits().to_be_bytes());
         }
     }
 }

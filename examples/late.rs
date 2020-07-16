@@ -21,7 +21,7 @@ use heapless::{
 use lpc55_hal as hal;
 use panic_semihosting as _;
 
-#[rtfm::app(device = hal::raw)]
+#[rtic::app(device = hal::raw)]
 const APP: () = {
     // Late resources
     struct Resources {
@@ -46,7 +46,7 @@ const APP: () = {
                 hprintln!("received message: {}", byte).unwrap();
             // cortex_m::asm::wfi();
             } else {
-                rtfm::pend(Interrupt::ADC0);
+                rtic::pend(Interrupt::ADC0);
             }
         }
     }
