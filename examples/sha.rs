@@ -7,7 +7,7 @@ use cortex_m_rt::entry;
 use cortex_m_semihosting::dbg;
 
 use lpc55_hal as hal;
-use hal::traits::digest::{FixedOutput, Input};
+use hal::traits::digest::{FixedOutput, Update};
 
 #[entry]
 fn main() -> ! {
@@ -32,15 +32,15 @@ fn main() -> ! {
 
         let (hw_cyc, hw_result) = hal::count_cycles(|| {
             let mut hw_sha1 = hashcrypt.sha1();
-            hw_sha1.input(msg);
-            hw_sha1.fixed_result()
+            hw_sha1.update(msg);
+            hw_sha1.finalize_fixed()
         });
         hw_cycles = hw_cyc;
 
         let (sw_cyc, sw_result) = hal::count_cycles(|| {
             let mut sw_sha1: sha1::Sha1 = Default::default();
-            sw_sha1.input(msg);
-            sw_sha1.fixed_result()
+            sw_sha1.update(msg);
+            sw_sha1.finalize_fixed()
         });
         sw_cycles = sw_cyc;
         assert_eq!(hw_result, sw_result);
@@ -55,15 +55,15 @@ fn main() -> ! {
 
         let (hw_cyc, hw_result) = hal::count_cycles(|| {
             let mut hw_sha256 = hashcrypt.sha256();
-            hw_sha256.input(msg);
-            hw_sha256.fixed_result()
+            hw_sha256.update(msg);
+            hw_sha256.finalize_fixed()
         });
         hw_cycles = hw_cyc;
 
         let (sw_cyc, sw_result) = hal::count_cycles(|| {
             let mut sw_sha256: sha2::Sha256 = Default::default();
-            sw_sha256.input(msg);
-            sw_sha256.fixed_result()
+            sw_sha256.update(msg);
+            sw_sha256.finalize_fixed()
         });
         sw_cycles = sw_cyc;
 

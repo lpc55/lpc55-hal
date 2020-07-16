@@ -1,12 +1,12 @@
 use core::marker::PhantomData;
 
 use aligned::{A4, Aligned};
-use block_buffer::{byteorder::{ByteOrder, BE}, BlockBuffer};
+use block_buffer::BlockBuffer;
 
 use crate::{
     peripherals::hashcrypt::Hashcrypt,
     traits::{
-        digest::{BlockInput, FixedOutput, Input /*, Reset*/},
+        digest::{BlockInput, FixedOutputDirty, Update /*, Reset*/},
         digest::generic_array::{GenericArray, typenum::{U20, U32, U64}},
     },
     typestates::init_state::Enabled,
@@ -78,36 +78,34 @@ impl<Size: OutputSize> BlockInput for Sha<'_, Size> {
     type BlockSize = BlockSize;
 }
 
-impl<Size: OutputSize> FixedOutput for Sha<'_, Size> {
+impl<Size: OutputSize> FixedOutputDirty for Sha<'_, Size> {
     type OutputSize = Size;
 
-    fn fixed_result(mut self) -> GenericArray<u8, Self::OutputSize> {
+    fn finalize_into_dirty(&mut self, out: &mut GenericArray<u8, Self::OutputSize>) {
         self.finish();
         // cf `hashcrypt_get_data` ~line 315 of `fsl_hashcrypt.c`
-        let mut out = GenericArray::<u8, Self::OutputSize>::default();
         for i in 0..Size::to_usize() / 4 {
-            BE::write_u32_into(&[self.inner.raw.digest0[i].read().bits()], &mut out.as_mut_slice()[4*i..4*i + 4]);
+            out.as_mut_slice()[4*i..4*i + 4].copy_from_slice(&self.inner.raw.digest0[i].read().bits().to_be_bytes());
         }
-        out
     }
 }
 
-impl<Size: OutputSize> Input for Sha<'_, Size> {
-    fn input<B: AsRef<[u8]>>(&mut self, input: B) {
-        self.input(input.as_ref());
+impl<Size: OutputSize> Update for Sha<'_, Size> {
+    fn update(&mut self, data: impl AsRef<[u8]>) {
+        self.update(data.as_ref());
     }
 }
 
 // the actual implementation
 
 impl<Size: OutputSize> Sha<'_, Size> {
-    fn input(&mut self, input: &[u8]) {
+    fn update(&mut self, data: &[u8]) {
         // Assumes that input.len() can be converted to u64 without overflow
-        self.len += (input.len() as u64) << 3;
+        self.len += (data.len() as u64) << 3;
         // need to convince compiler we're using buffer and peripheral
         // independently, and not doing a double &mut
         let peripheral = &mut self.inner;
-        self.buffer.input(input, |input| Self::process_block(peripheral, input));
+        self.buffer.input_block(data, |data| Self::process_block(peripheral, data));
     }
 
     // relevant code is ~line 800 in fsl_hashcrypt.c
@@ -130,7 +128,7 @@ impl<Size: OutputSize> Sha<'_, Size> {
     fn finish(&mut self) {
         let peripheral = &mut self.inner;
         let l = self.len;
-        self.buffer.len64_padding::<BE, _>(l, |block| Self::process_block(peripheral, block));
+        self.buffer.len64_padding_be(l, |block| Self::process_block(peripheral, block));
         while peripheral.raw.status.read().digest().is_not_ready() {
             continue;
         }

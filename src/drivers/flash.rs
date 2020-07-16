@@ -236,6 +236,7 @@ enum FlashCommands {
     ReportEcc= 0xD,
 }
 
+#[cfg(feature = "littlefs")]
 // const BASE_OFFSET: usize = 0x0007_d000;
 const BASE_OFFSET: usize = 0x0008_9800;
 

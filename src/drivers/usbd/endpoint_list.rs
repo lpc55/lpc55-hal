@@ -48,7 +48,7 @@ pub struct Instance {
     pub(crate) _marker: PhantomData<*const EndpointList>,
 }
 
-// #[cfg(feature = "rtfm")]
+// #[cfg(feature = "rtic")]
 unsafe impl Send for Instance {}
 unsafe impl Send for EndpointList {}
 

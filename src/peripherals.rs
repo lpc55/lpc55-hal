@@ -3,7 +3,7 @@
 //! The APIs presented only implement basic functionality.
 //! For more complex things, consult `hal::drivers`.
 //!
-//! In an RTFM setup, RTFM owns Peripherals and CorePeripherals,
+//! In an RTIC setup, RTIC owns Peripherals and CorePeripherals,
 //! so here use
 //! ```
 //! use lpc55_hal as hal;
@@ -11,7 +11,7 @@
 //! let syscon = hal::Syscon::from(device::SYSCON);
 //! ```
 //!
-//! In a non-RTFM setup, to use a fully HAL-driven approach:
+//! In a non-RTIC setup, to use a fully HAL-driven approach:
 //! ```
 //! use lpc55_hal as hal;
 //!
