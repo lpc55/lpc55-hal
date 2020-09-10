@@ -145,3 +145,4 @@ macro_rules! impl_power_control {
 impl_power_control!(raw::USB0, pden_usbfsphy);
 impl_power_control!(raw::USBPHY, pden_usbhsphy, pden_ldousbhs);
 impl_power_control!(raw::ADC0, pden_auxbias);
+impl_power_control!(crate::typestates::ClocksSupport32KhzFroToken, pden_fro32k);
