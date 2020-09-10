@@ -265,6 +265,7 @@ impl_clock_control!(raw::CASPER, casper, ahbclkctrl2);
 // impl_clock_control!(raw::GPIO_SEC, gpio_sec, ahbclkctrl2);
 impl_clock_control!(raw::PUF, puf, ahbclkctrl2);
 impl_clock_control!(raw::RNG, rng, ahbclkctrl2);
+impl_clock_control!(raw::RTC, rtc, ahbclkctrl0);
 
 // GPIO needs a separate implementation
 impl ClockControl for raw::GPIO {

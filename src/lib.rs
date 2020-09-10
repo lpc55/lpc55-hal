@@ -68,6 +68,7 @@ pub use peripherals::{
     pmc::Pmc,
     puf::Puf,
     rng::Rng,
+    rtc::Rtc,
     syscon::Syscon,
     usbfs::Usbfs,
     usbhs::Usbhs,
@@ -161,6 +162,9 @@ pub struct Peripherals {
     /// Random number generator
     pub rng: Rng,
 
+    /// Real time clock
+    pub rtc: Rtc,
+
     /// System configuration
     pub syscon: Syscon,
 
@@ -246,6 +250,7 @@ impl From<(raw::Peripherals, rtic::Peripherals)> for Peripherals {
             pint: Pint::from(p.PINT),
             pmc: Pmc::from(p.PMC),
             rng: Rng::from(p.RNG),
+            rtc: Rtc::from(p.RTC),
             syscon: Syscon::from(p.SYSCON),
             usbfs: Usbfs::from((p.USB0, p.USBFSH)),
             usbhs: Usbhs::from((p.USBPHY, p.USB1, p.USBHSH)),
@@ -306,6 +311,7 @@ impl From<(raw::Peripherals, raw::CorePeripherals)> for Peripherals {
             pint: Pint::from(p.PINT),
             pmc: Pmc::from(p.PMC),
             rng: Rng::from(p.RNG),
+            rtc: Rtc::from(p.RTC),
             syscon: Syscon::from(p.SYSCON),
             usbfs: Usbfs::from((p.USB0, p.USBFSH)),
             usbhs: Usbhs::from((p.USBPHY, p.USB1, p.USBHSH)),

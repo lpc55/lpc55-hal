@@ -110,6 +110,11 @@ pub struct ClocksSupportTouchToken{pub(crate) __: ()}
 #[derive(Copy, Clone)]
 pub struct ClocksSupport1MhzFroToken{pub(crate) __: ()}
 
+/// Application can only obtain this token from
+/// a frozen Clocks (clock-tree configuration)
+#[derive(Copy, Clone)]
+pub struct ClocksSupport32KhzFroToken{pub(crate) __: ()}
+
 pub mod flash_state {
 }
 
