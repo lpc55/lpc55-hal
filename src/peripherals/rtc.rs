@@ -53,9 +53,11 @@ impl Rtc<init_state::Enabled> {
         self.raw.ctrl.write(|w| 
             w
             .rtc_en().set_bit()
-            .rtc_subsec_ena().set_bit()
             .swreset().clear_bit()
             .rtc_osc_pd().clear_bit()
         );
+        // After reset:
+        // This bit can only be set after the RTC_ENA bit (bit 7) is set by a previous write operation.
+        self.raw.ctrl.modify(|_,w| w.rtc_subsec_ena().set_bit() )
     }
 }
