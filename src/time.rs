@@ -91,6 +91,16 @@ impl From<MiliSeconds> for MicroSeconds {
     }
 }
 
+/// Do this more systematically in the future (and maybe use embedded-time).
+/// For now, this is to allow generic drivers using our timers.
+impl From<core::time::Duration> for MicroSeconds {
+    fn from(duration: core::time::Duration) -> Self {
+        let micros: u128 = duration.as_micros();
+        debug_assert!(micros < u32::MAX as _);
+        MicroSeconds(micros as u32)
+    }
+}
+
 impl From<MicroSeconds> for NanoSeconds{
     fn from(us: MicroSeconds) -> Self {
         NanoSeconds(1_000 * us.0)

@@ -12,9 +12,10 @@
 #
 # To revert, set `DEBUGGER_IMAGE` to `CMSIS_DAP_IMAGE` and re-run.
 
-INSTALL_DIR="/usr/local/lpcscrypt-2.1.0_842"
-LPCSCRYPT="${INSTALL_DIR}/bin/lpcscrypt"
-DFU_IMAGE="${INSTALL_DIR}/bin/LPCScrypt_227.bin.hdr"
+# INSTALL_DIR="/usr/local/lpcscrypt-2.1.0_842"
+INSTALL_DIR="/opt/lpcscrypt"
+LPCSCRYPT="${INSTALL_DIR}/bin/lpcscrypt -d /dev/ttyACM0"
+DFU_IMAGE="${INSTALL_DIR}/bin/LPCScrypt_228.bin.hdr"
 
 JLINK_OB_IMAGE="./Firmware_JLink_LPCXpressoV2_20190404.bin"
 CMSIS_DAP_IMAGE="${INSTALL_DIR}/probe_firmware/LPCXpressoV2/LPC432x_IAP_CMSIS_DAP_V5_224.bin"
