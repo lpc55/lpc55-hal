@@ -31,6 +31,7 @@ pub mod gpio;
 pub mod hashcrypt;
 pub mod inputmux;
 pub mod iocon;
+pub mod pfr;
 pub mod pint;
 pub mod pmc;
 pub mod puf;
