@@ -51,8 +51,8 @@ pub struct ClockRequirements {
 
 #[derive(Debug, Copy, Clone)]
 pub struct Clocks {
-    main_clock: MainClock,
-    system_frequency: Hertz,
+    pub(crate) main_clock: MainClock,
+    pub(crate) system_frequency: Hertz,
 }
 
 impl Clocks {

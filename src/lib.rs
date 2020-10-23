@@ -65,6 +65,7 @@ pub use peripherals::{
     inputmux::InputMux,
     iocon::Iocon,
     pint::Pint,
+    pfr::Pfr,
     pmc::Pmc,
     puf::Puf,
     rng::Rng,
@@ -155,6 +156,9 @@ pub struct Peripherals {
 
     /// Pin Interrupt and Pattern Match
     pub pint: Pint,
+
+    /// Protect flash region controller
+    pub pfr: Pfr,
 
     /// Power configuration
     pub pmc: Pmc,
@@ -248,6 +252,7 @@ impl From<(raw::Peripherals, rtic::Peripherals)> for Peripherals {
             inputmux: InputMux::from(p.INPUTMUX),
             iocon: Iocon::from(p.IOCON),
             pint: Pint::from(p.PINT),
+            pfr: Pfr::new(),
             pmc: Pmc::from(p.PMC),
             rng: Rng::from(p.RNG),
             rtc: Rtc::from(p.RTC),
@@ -309,6 +314,7 @@ impl From<(raw::Peripherals, raw::CorePeripherals)> for Peripherals {
             inputmux: InputMux::from(p.INPUTMUX),
             iocon: Iocon::from(p.IOCON),
             pint: Pint::from(p.PINT),
+            pfr: Pfr::new(),
             pmc: Pmc::from(p.PMC),
             rng: Rng::from(p.RNG),
             rtc: Rtc::from(p.RTC),
@@ -393,4 +399,13 @@ pub fn wait_at_least(delay_usecs: u32) {
         while target < get_cycle_count() as u64 { continue; }
     }
     while target > get_cycle_count() as u64 { continue; }
+}
+
+pub fn uuid() -> [u8; 16] {
+    const UUID: *const u8 = 0x0009_FC70 as *const u8;
+    let mut uuid: [u8; 16] = [0; 16];
+    for i in 0..16 {
+        uuid[i] = unsafe { *UUID.offset(i as isize) };
+    }
+    uuid
 }
