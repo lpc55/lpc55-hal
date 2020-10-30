@@ -41,6 +41,8 @@ fn main() -> ! {
         .configure(&mut anactrl, &mut pmc, &mut syscon)
         .unwrap();
 
+    dump_hex!(hal::uuid(), 16);
+    heprintln!("chip revision: {}", hal::chip_revision()).ok();
     let mut pfr = hal.pfr.enabled(&clocks).unwrap();
     let mut cfpa = pfr.read_cfpa( ).unwrap();
     heprintln!("CFPA:").ok();
@@ -48,11 +50,11 @@ fn main() -> ! {
     heprintln!("version = {:08X}", cfpa.version).ok();
     heprintln!("secureVersion = {:08X}", cfpa.secure_fw_version).ok();
     heprintln!("notSecureVersion = {:08X}", cfpa.ns_fw_version).ok();
-    
+
     heprintln!("imageKeyRevoke = {:08X}", cfpa.image_key_revoke).ok();
     heprintln!("rotkhRevoke = {:08X}", cfpa.rotkh_revoke).ok();
     dump_hex!(cfpa.customer_data, 10);
-    
+
 
     heprintln!("Increment the version and write back cfpa!").ok();
     let old_version = cfpa.version;
@@ -71,7 +73,7 @@ fn main() -> ! {
     heprintln!("version = {:08X}", new_cfpa.version).ok();
     heprintln!("secureVersion = {:08X}", new_cfpa.secure_fw_version).ok();
     heprintln!("notSecureVersion = {:08X}", new_cfpa.ns_fw_version).ok();
-    
+
     heprintln!("imageKeyRevoke = {:08X}", new_cfpa.image_key_revoke).ok();
     heprintln!("rotkhRevoke = {:08X}", new_cfpa.rotkh_revoke).ok();
     dump_hex!(cfpa.customer_data, 10);
@@ -113,6 +115,7 @@ fn main() -> ! {
     heprintln!("done.  Must reboot to see CFPA changes take effect.").ok();
 
     loop {
-        // done.
+        // done, insert NOP to avoid optimization weirdness
+        continue;
     }
 }
