@@ -34,6 +34,9 @@ impl Syscon {
     pub fn rev_id(&self) -> u8 {
         self.raw.dieid.read().rev_id().bits()
     }
+    pub fn mco_num_in_die_id(&self) -> u32 {
+        self.raw.dieid.read().mco_num_in_die_id().bits()
+    }
 }
 
 /// The main API for the SYSCON peripheral

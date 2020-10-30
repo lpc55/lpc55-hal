@@ -401,8 +401,22 @@ pub fn wait_at_least(delay_usecs: u32) {
     while target > get_cycle_count() as u64 { continue; }
 }
 
+/// https://community.nxp.com/t5/LPC-Microcontrollers-Knowledge/Understanding-LPC55S6x-Revisions-and-Tools/ta-p/1117604
+///
+/// Note that: EVK A1 = chip 0A, EVK A2 = chip 1B
+pub fn chip_revision() -> &'static str {
+    const DIEID: *const u8 = 0x5000_0FFC as _;
+    let rev_id: u8 = 0xFu8 & unsafe { core::ptr::read_volatile(DIEID) };
+    match rev_id {
+        0 => "0A",
+        1 => "1B",
+        _ => "unknown",
+    }
+
+}
+
 pub fn uuid() -> [u8; 16] {
-    const UUID: *const u8 = 0x0009_FC70 as *const u8;
+    const UUID: *const u8 = 0x0009_FC70 as _;
     let mut uuid: [u8; 16] = [0; 16];
     for i in 0..16 {
         uuid[i] = unsafe { *UUID.offset(i as isize) };
