@@ -253,6 +253,13 @@ impl Pfr <init_state::Enabled> {
         Ok(*cmpa)
     }
 
+    /// Get a readonly static reference to the customer data in CMPA.
+    pub fn cmpa_customer_data(&mut self) -> &'static [u8] {
+        let cmpa_ptr = (0x9E500) as *const u8;
+        let slice = unsafe { core::slice::from_raw_parts(cmpa_ptr, 224) };
+        slice
+    }
+
     /// Keeping here for reference, but this sometimes returns unexpected old versions of the CFPA page that
     /// are not seen on scratch, ping, or pong pages.
     /// Findings:
