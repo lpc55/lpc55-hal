@@ -81,7 +81,7 @@ pub struct Cmpa {
 
 // This compile time guarantees that Cmpa and Cfpa are 512 bytes.
 #[allow(unreachable_code)]
-fn _compile_time_assert() { 
+fn _compile_time_assert() {
     unsafe {
         core::mem::transmute::<Cmpa, [u8; 512]>(panic!());
         core::mem::transmute::<Cfpa, [u8; 512]>(panic!());
@@ -109,7 +109,7 @@ struct BootloaderTree {
 
 #[repr(C)]
 struct FlashDriverInterface {
-    version: u32,  
+    version: u32,
     flash_init: unsafe extern "C" fn(config: &mut FlashConfig) -> u32,
     flash_erase: unsafe extern "C" fn(config: &mut FlashConfig, start: u32, length_in_bytes: u32, key: u32) -> u32,
     flash_program: unsafe extern "C" fn(config: &mut FlashConfig, start: u32, src: *const u8, length_in_bytes: u32) -> u32,
@@ -253,7 +253,14 @@ impl Pfr <init_state::Enabled> {
         Ok(*cmpa)
     }
 
-    pub fn read_cfpa(&mut self) -> Result<Cfpa, u32> {
+    /// Keeping here for reference, but this sometimes returns unexpected old versions of the CFPA page that
+    /// are not seen on scratch, ping, or pong pages.
+    /// Findings:
+    /// - Immediately after CFPA is updated, this method returns the latest CFPA data.
+    /// - After boot/reset, this method will potentially return expected old versions of CFPA.
+    /// - There is a pattern of how to increment VERSION to result in this method returning old CFPA versions or not which is impractical.
+    /// It's almost like there is some other cfpa page storage not documented and this bootrom method mismanages the VERSION.
+    pub fn read_cfpa_with_bootrom(&mut self) -> Result<Cfpa, u32> {
         let mut cfpa_bytes = [0u8; 512];
 
         let ffr_get_customer_infield_data = Self::bootloader_api_tree().flash_driver.ffr_get_customer_infield_data;
@@ -267,11 +274,64 @@ impl Pfr <init_state::Enabled> {
         Ok(*cfpa)
     }
 
+    /// Reads CFPA without use of bootrom.  Appears that the bootrom method sometimes
+    /// returns previous versions of the CFPA page (not seen on scratch, ping, or pong pages).
+    /// This method always returns the most recently updated Cfpa from ping or pong pages.
+    pub fn read_latest_cfpa(&mut self) -> Result<Cfpa, u32> {
+        let mut cfpa_bytes = [0u32; 128];
+
+        let ping_ptr = (0x0009_DE00+512) as *const u32;
+        let pong_ptr = (0x0009_DE00+512+512) as *const u32;
+
+        let ping_version: u32 = unsafe {*(ping_ptr).offset(1)};
+        let pong_version: u32 = unsafe {*(pong_ptr).offset(1)};
+
+        let cfpa_ptr: *const u32 = if ping_version > pong_version {
+            ping_ptr
+        } else {
+            pong_ptr
+        };
+
+        for i in 0..128 {
+            cfpa_bytes[i] = unsafe { *cfpa_ptr.offset(i as isize) };
+        }
+
+        let cfpa: &Cfpa = unsafe{ core::mem::transmute(cfpa_bytes.as_ptr()) };
+
+        Ok(*cfpa)
+    }
+
+    pub fn read_cfpa_ping(&mut self) -> Result<Cfpa, u32> {
+        let mut cfpa_bytes = [0u32; 128];
+
+        const CFPA_PTR: *const u32 = (0x0009_DE00+512) as *const u32;
+        for i in 0..128 {
+            cfpa_bytes[i] = unsafe { *CFPA_PTR.offset(i as isize) };
+        }
+
+        let cfpa: &Cfpa = unsafe{ core::mem::transmute(cfpa_bytes.as_ptr()) };
+
+        Ok(*cfpa)
+    }
+
+    pub fn read_cfpa_pong(&mut self) -> Result<Cfpa, u32> {
+        let mut cfpa_bytes = [0u32; 128];
+
+        const CFPA_PTR: *const u32 = (0x0009_DE00+512+512) as *const u32;
+        for i in 0..128 {
+            cfpa_bytes[i] = unsafe { *CFPA_PTR.offset(i as isize) };
+        }
+
+        let cfpa: &Cfpa = unsafe{ core::mem::transmute(cfpa_bytes.as_ptr()) };
+
+        Ok(*cfpa)
+    }
+
     pub fn write_cfpa(&mut self, cfpa: &Cfpa) -> Result<(), u32> {
 
         let ffr_infield_page_write = Self::bootloader_api_tree().flash_driver.ffr_infield_page_write;
         let cfpa_bytes: *const u8 = unsafe{ core::mem::transmute( cfpa as *const Cfpa)};
-        Self::check_error( 
+        Self::check_error(
             unsafe{ ffr_infield_page_write (&mut self.flash_config, cfpa_bytes, 512) }
         )?;
         Ok(())
@@ -281,7 +341,7 @@ impl Pfr <init_state::Enabled> {
         let mut bytes = [0u8; 52];
         let ffr_keystore_get_kc = Self::bootloader_api_tree().flash_driver.ffr_keystore_get_kc;
 
-        Self::check_error( 
+        Self::check_error(
             unsafe{ ffr_keystore_get_kc(&mut self.flash_config, bytes.as_mut_ptr(), key_type as u32) }
         )?;
 
