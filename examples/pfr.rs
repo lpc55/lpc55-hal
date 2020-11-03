@@ -11,7 +11,7 @@ use cortex_m_rt::entry;
 use lpc55_hal as hal;
 use hal::{
     prelude::*,
-    peripherals::pfr::KeyType,
+    peripherals::pfr::{KeyType, Cfpa},
 };
 
 macro_rules! dump_hex {
@@ -24,6 +24,29 @@ macro_rules! dump_hex {
         heprintln!("").unwrap();
 
     };
+}
+
+
+#[allow(dead_code)]
+fn boot_to_bootrom() -> ! {
+    // Best way to boot into MCUBOOT is to erase the first flash page before rebooting.
+    use hal::traits::flash::WriteErase;
+    let flash = unsafe { hal::peripherals::flash::Flash::steal() }.enabled(
+        &mut unsafe {hal::peripherals::syscon::Syscon::steal()}
+    );
+    hal::drivers::flash::FlashGordon::new(flash).erase_page(0).ok();
+    hal::raw::SCB::sys_reset()
+}
+
+fn dump_cfpa(cfpa: &Cfpa) {
+    heprintln!("header = {:08X}", cfpa.header).ok();
+    heprintln!("version = {:08X}", cfpa.version).ok();
+    heprintln!("secureVersion = {:08X}", cfpa.secure_fw_version).ok();
+    heprintln!("notSecureVersion = {:08X}", cfpa.ns_fw_version).ok();
+
+    heprintln!("imageKeyRevoke = {:08X}", cfpa.image_key_revoke).ok();
+    heprintln!("rotkhRevoke = {:08X}", cfpa.rotkh_revoke).ok();
+    dump_hex!(cfpa.customer_data, 10);
 }
 
 
@@ -44,54 +67,20 @@ fn main() -> ! {
     dump_hex!(hal::uuid(), 16);
     heprintln!("chip revision: {}", hal::chip_revision()).ok();
     let mut pfr = hal.pfr.enabled(&clocks).unwrap();
-    let mut cfpa = pfr.read_cfpa( ).unwrap();
+    let mut cfpa = pfr.read_latest_cfpa( ).unwrap();
     heprintln!("CFPA:").ok();
-    heprintln!("header = {:08X}", cfpa.header).ok();
-    heprintln!("version = {:08X}", cfpa.version).ok();
-    heprintln!("secureVersion = {:08X}", cfpa.secure_fw_version).ok();
-    heprintln!("notSecureVersion = {:08X}", cfpa.ns_fw_version).ok();
-
-    heprintln!("imageKeyRevoke = {:08X}", cfpa.image_key_revoke).ok();
-    heprintln!("rotkhRevoke = {:08X}", cfpa.rotkh_revoke).ok();
-    dump_hex!(cfpa.customer_data, 10);
+    dump_cfpa(&cfpa);
 
 
     heprintln!("Increment the version and write back cfpa!").ok();
-    let old_version = cfpa.version;
     cfpa.version = cfpa.version + 1;
     cfpa.secure_fw_version += 1;
     cfpa.ns_fw_version += 1;
     // increment a byte of customer data (with overflow)
-    let old_data = cfpa.customer_data[0];
     cfpa.customer_data[0] = ((1 + (cfpa.customer_data[0] as u16)) & 0xff) as u8;
     pfr.write_cfpa(&cfpa).unwrap();
 
-    let new_cfpa = pfr.read_cfpa().unwrap();
-    heprintln!("Updated CFPA:").ok();
-    heprintln!("CFPA:").ok();
-    heprintln!("header = {:08X}", new_cfpa.header).ok();
-    heprintln!("version = {:08X}", new_cfpa.version).ok();
-    heprintln!("secureVersion = {:08X}", new_cfpa.secure_fw_version).ok();
-    heprintln!("notSecureVersion = {:08X}", new_cfpa.ns_fw_version).ok();
-
-    heprintln!("imageKeyRevoke = {:08X}", new_cfpa.image_key_revoke).ok();
-    heprintln!("rotkhRevoke = {:08X}", new_cfpa.rotkh_revoke).ok();
-    dump_hex!(cfpa.customer_data, 10);
-
-    heprintln!("ffr block base {:08x}", pfr.flash_config.ffr_config.ffr_block_base).ok();
-    heprintln!("ffr total size {:08x}", pfr.flash_config.ffr_config.ffr_total_size).ok();
-    heprintln!("ffr page size {:08x}", pfr.flash_config.ffr_config.ffr_page_size).ok();
-    heprintln!("ffr page version {:08x}", pfr.flash_config.ffr_config.cfpa_page_version).ok();
-    heprintln!("ffr page offset {:08x}", pfr.flash_config.ffr_config.cfpa_page_offset).ok();
-
-
-    assert!( new_cfpa.version == old_version + 1 );
-    assert!( new_cfpa.secure_fw_version == cfpa.secure_fw_version );
-    assert!( new_cfpa.ns_fw_version == cfpa.ns_fw_version );
-    assert!( new_cfpa.image_key_revoke == cfpa.image_key_revoke );
-    assert!( new_cfpa.rotkh_revoke == cfpa.rotkh_revoke );
-    assert!( new_cfpa.customer_data[0] != old_data );
-
+    heprintln!("Rerun this program and check that Version, firmware versions, and custom data byte all increment.").ok();
 
     let cmpa = pfr.read_cmpa().unwrap();
     heprintln!("\r\nCMPA:").ok();
