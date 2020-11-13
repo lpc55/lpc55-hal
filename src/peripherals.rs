@@ -35,6 +35,7 @@ pub mod pfr;
 pub mod pint;
 pub mod pmc;
 pub mod puf;
+pub mod prince;
 pub mod rng;
 pub mod rtc;
 pub mod syscon;
