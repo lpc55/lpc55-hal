@@ -67,6 +67,7 @@ pub use peripherals::{
     pint::Pint,
     pfr::Pfr,
     pmc::Pmc,
+    prince::Prince,
     puf::Puf,
     rng::Rng,
     rtc::Rtc,
@@ -163,6 +164,9 @@ pub struct Peripherals {
     /// Power configuration
     pub pmc: Pmc,
 
+    // PRINCE
+    pub prince: Prince,
+
     /// Random number generator
     pub rng: Rng,
 
@@ -190,7 +194,6 @@ pub struct Peripherals {
 
     /// Stateful counter/timer (SCTIMER) - not HAL-ified.
     pub SCT0: raw::SCT0,
-
 
     /// CPUID - core peripheral
     pub CPUID: raw::CPUID,
@@ -254,6 +257,7 @@ impl From<(raw::Peripherals, rtic::Peripherals)> for Peripherals {
             pint: Pint::from(p.PINT),
             pfr: Pfr::new(),
             pmc: Pmc::from(p.PMC),
+            prince: Prince::from(p.PRINCE),
             rng: Rng::from(p.RNG),
             rtc: Rtc::from(p.RTC),
             syscon: Syscon::from(p.SYSCON),
@@ -316,6 +320,7 @@ impl From<(raw::Peripherals, raw::CorePeripherals)> for Peripherals {
             pint: Pint::from(p.PINT),
             pfr: Pfr::new(),
             pmc: Pmc::from(p.PMC),
+            prince: Prince::from(p.PRINCE),
             rng: Rng::from(p.RNG),
             rtc: Rtc::from(p.RTC),
             syscon: Syscon::from(p.SYSCON),
