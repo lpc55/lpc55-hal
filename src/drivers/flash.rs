@@ -237,34 +237,47 @@ enum FlashCommands {
 }
 
 #[cfg(feature = "littlefs")]
-// const BASE_OFFSET: usize = 0x0007_d000;
-const BASE_OFFSET: usize = 0x0008_0000;
+#[allow(non_camel_case_types)]
+pub mod littlefs_params {
+    use super::*;
+    pub const BASE_OFFSET: usize = 0x0008_0000;
+    pub const READ_SIZE: usize = 16;
+    pub const WRITE_SIZE: usize = 512;
+    pub const BLOCK_SIZE: usize = 512;
+
+    pub const BLOCK_COUNT: usize = 256;
+    // no wear-leveling for now
+    pub const BLOCK_CYCLES: isize = -1;
+
+    pub type CACHE_SIZE = U512;
+    pub type LOOKAHEADWORDS_SIZE = U16;
+    /// TODO: We can't actually be changed currently
+    pub type FILENAME_MAX_PLUS_ONE = U256;
+    pub type PATH_MAX_PLUS_ONE = U256;
+    pub const FILEBYTES_MAX: usize = littlefs2::ll::LFS_FILE_MAX as _;
+    /// TODO: We can't actually be changed currently
+    pub type ATTRBYTES_MAX = U1022;
+}
 
 #[cfg(feature = "littlefs")]
 impl littlefs2::driver::Storage for FlashGordon {
-    const READ_SIZE: usize = 16;
-    const WRITE_SIZE: usize = 512;
-    const BLOCK_SIZE: usize = 512;
+    const READ_SIZE: usize = littlefs_params::READ_SIZE;
+    const WRITE_SIZE: usize = littlefs_params::WRITE_SIZE;
+    const BLOCK_SIZE: usize = littlefs_params::BLOCK_SIZE;
 
-    // currently: 230K -> 230*2 = 460
-    // const BLOCK_COUNT: usize = 400;
-    // const BLOCK_COUNT: usize = 200;
-    const BLOCK_COUNT: usize = 256;
-    // no wear-leveling for now
-    const BLOCK_CYCLES: isize = -1;
-    // const BASE_OFFSET: usize = 0x0006_4000;
+    const BLOCK_COUNT: usize = littlefs_params::BLOCK_COUNT;
+    const BLOCK_CYCLES: isize = littlefs_params::BLOCK_CYCLES;
 
-    type CACHE_SIZE = U512;
-    type LOOKAHEADWORDS_SIZE = U16;
-    /// TODO: We can't actually be changed currently
-    type FILENAME_MAX_PLUS_ONE = U256;
-    type PATH_MAX_PLUS_ONE = U256;
-    const FILEBYTES_MAX: usize = littlefs2::ll::LFS_FILE_MAX as _;
-    /// TODO: We can't actually be changed currently
-    type ATTRBYTES_MAX = U1022;
+    type CACHE_SIZE = littlefs_params::CACHE_SIZE;
+    type LOOKAHEADWORDS_SIZE = littlefs_params::LOOKAHEADWORDS_SIZE;
+    type FILENAME_MAX_PLUS_ONE = littlefs_params::FILENAME_MAX_PLUS_ONE;
+    type PATH_MAX_PLUS_ONE = littlefs_params::PATH_MAX_PLUS_ONE;
+    const FILEBYTES_MAX: usize = littlefs_params::FILEBYTES_MAX;
+    type ATTRBYTES_MAX = littlefs_params::ATTRBYTES_MAX;
+
 
     fn read(&self, off: usize, buf: &mut [u8]) -> LfsResult<usize> {
-        <Self as Read<U16>>::read(self, BASE_OFFSET + off, buf);
+        <Self as Read<U16>>::read(self, littlefs_params::BASE_OFFSET + off, buf);
         // hprintln!("read {} from {}", buf.len(), off).ok();
         // hprintln!("read {} from {}: {:?}", buf.len(), off, &buf[..16]).ok();
         Ok(buf.len())
@@ -273,7 +286,7 @@ impl littlefs2::driver::Storage for FlashGordon {
     fn write(&mut self, off: usize, data: &[u8]) -> LfsResult<usize> {
         // hprintln!("write {} to {}", data.len(), off).ok();
         // hprintln!("write {} to {}: {:?}", data.len(), off, &data[..16]).ok();
-        let ret = <Self as WriteErase<U512, U512>>::write(self, BASE_OFFSET + off, data);
+        let ret = <Self as WriteErase<U512, U512>>::write(self, littlefs_params::BASE_OFFSET + off, data);
         // if let Err(error) = ret {
         //     panic!("error writing: {:?}", &error);
         // }
@@ -284,7 +297,7 @@ impl littlefs2::driver::Storage for FlashGordon {
 
     fn erase(&mut self, off: usize, len: usize) -> LfsResult<usize> {
         // hprintln!("erase {} from {}", len, off).ok();
-        let first_page = (BASE_OFFSET + off) / 512;
+        let first_page = (littlefs_params::BASE_OFFSET + off) / 512;
         let pages = len / 512;
         for i in 0..pages {
             <Self as WriteErase<U512, U512>>::erase_page(self, first_page + i)
