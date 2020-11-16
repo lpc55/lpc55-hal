@@ -16,7 +16,7 @@ use crate::{
     },
 };
 
-use generic_array::{
+pub use generic_array::{
     GenericArray,
     typenum::{U16, U512},
 };
@@ -218,102 +218,6 @@ impl FlashGordon {
     }
 }
 
-#[allow(dead_code)]
-#[repr(C)]
-enum FlashCommands {
-    Init = 0x0,
-    PowerDown = 0x1,
-    SetReadMode = 0x2,
-    ReadSingleWord = 0x3,
-    EraseRange = 0x4,
-    BlankCheck = 0x5,
-    MarginCheck = 0x6,
-    Checksum = 0x7,
-    Write = 0x8,
-    WriteProgram = 0xA,
-    Program = 0xC,
-    /// report ECC error (correction) count
-    ReportEcc= 0xD,
-}
-
-#[cfg(feature = "littlefs")]
-#[allow(non_camel_case_types)]
-pub mod littlefs_params {
-    use super::*;
-    pub const BASE_OFFSET: usize = 0x0008_0000;
-    pub const READ_SIZE: usize = 16;
-    pub const WRITE_SIZE: usize = 512;
-    pub const BLOCK_SIZE: usize = 512;
-
-    pub const BLOCK_COUNT: usize = 256;
-    // no wear-leveling for now
-    pub const BLOCK_CYCLES: isize = -1;
-
-    pub type CACHE_SIZE = U512;
-    pub type LOOKAHEADWORDS_SIZE = U16;
-    /// TODO: We can't actually be changed currently
-    pub type FILENAME_MAX_PLUS_ONE = U256;
-    pub type PATH_MAX_PLUS_ONE = U256;
-    pub const FILEBYTES_MAX: usize = littlefs2::ll::LFS_FILE_MAX as _;
-    /// TODO: We can't actually be changed currently
-    pub type ATTRBYTES_MAX = U1022;
-}
-
-#[cfg(feature = "littlefs")]
-impl littlefs2::driver::Storage for FlashGordon {
-    const READ_SIZE: usize = littlefs_params::READ_SIZE;
-    const WRITE_SIZE: usize = littlefs_params::WRITE_SIZE;
-    const BLOCK_SIZE: usize = littlefs_params::BLOCK_SIZE;
-
-    const BLOCK_COUNT: usize = littlefs_params::BLOCK_COUNT;
-    const BLOCK_CYCLES: isize = littlefs_params::BLOCK_CYCLES;
-
-    type CACHE_SIZE = littlefs_params::CACHE_SIZE;
-    type LOOKAHEADWORDS_SIZE = littlefs_params::LOOKAHEADWORDS_SIZE;
-    type FILENAME_MAX_PLUS_ONE = littlefs_params::FILENAME_MAX_PLUS_ONE;
-    type PATH_MAX_PLUS_ONE = littlefs_params::PATH_MAX_PLUS_ONE;
-    const FILEBYTES_MAX: usize = littlefs_params::FILEBYTES_MAX;
-    type ATTRBYTES_MAX = littlefs_params::ATTRBYTES_MAX;
-
-
-    fn read(&self, off: usize, buf: &mut [u8]) -> LfsResult<usize> {
-        <Self as Read<U16>>::read(self, littlefs_params::BASE_OFFSET + off, buf);
-        // hprintln!("read {} from {}", buf.len(), off).ok();
-        // hprintln!("read {} from {}: {:?}", buf.len(), off, &buf[..16]).ok();
-        Ok(buf.len())
-    }
-
-    fn write(&mut self, off: usize, data: &[u8]) -> LfsResult<usize> {
-        // hprintln!("write {} to {}", data.len(), off).ok();
-        // hprintln!("write {} to {}: {:?}", data.len(), off, &data[..16]).ok();
-        let ret = <Self as WriteErase<U512, U512>>::write(self, littlefs_params::BASE_OFFSET + off, data);
-        // if let Err(error) = ret {
-        //     panic!("error writing: {:?}", &error);
-        // }
-        ret
-            .map(|_| data.len())
-            .map_err(|_| littlefs2::io::Error::Io)
-    }
-
-    fn erase(&mut self, off: usize, len: usize) -> LfsResult<usize> {
-        // hprintln!("erase {} from {}", len, off).ok();
-        let first_page = (littlefs_params::BASE_OFFSET + off) / 512;
-        let pages = len / 512;
-        for i in 0..pages {
-            <Self as WriteErase<U512, U512>>::erase_page(self, first_page + i)
-                .map_err(|_| littlefs2::io::Error::Io)?;
-        }
-        // if true {
-        //     hprintln!("checking erasure").ok();
-        //     let mut data = [37u8; 16];
-        //     let now = littlefs2::driver::Storage::read(self, off, &mut data);
-        //     hprintln!("-> {:?}", &data).ok();
-        // }
-        Ok(512 * len)
-    }
-
-}
-
 impl Read<U16> for FlashGordon {
     // this reads 16B or one flash word
     // address is in bytes, whereas starta expects address in flash words
@@ -425,3 +329,204 @@ impl WriteErase<U512, U512> for FlashGordon {
 
     }
 }
+
+#[allow(dead_code)]
+#[repr(C)]
+pub enum FlashCommands {
+    Init = 0x0,
+    PowerDown = 0x1,
+    SetReadMode = 0x2,
+    ReadSingleWord = 0x3,
+    EraseRange = 0x4,
+    BlankCheck = 0x5,
+    MarginCheck = 0x6,
+    Checksum = 0x7,
+    Write = 0x8,
+    WriteProgram = 0xA,
+    Program = 0xC,
+    /// report ECC error (correction) count
+    ReportEcc= 0xD,
+}
+
+#[cfg(feature = "littlefs")]
+#[allow(non_camel_case_types)]
+pub mod littlefs_params {
+    use super::*;
+    pub const READ_SIZE: usize = 16;
+    pub const WRITE_SIZE: usize = 512;
+    pub const BLOCK_SIZE: usize = 512;
+
+    pub const BLOCK_COUNT: usize = 256;
+    // no wear-leveling for now
+    pub const BLOCK_CYCLES: isize = -1;
+
+    pub type CACHE_SIZE = U512;
+    pub type LOOKAHEADWORDS_SIZE = U16;
+    /// TODO: We can't actually be changed currently
+    pub type FILENAME_MAX_PLUS_ONE = U256;
+    pub type PATH_MAX_PLUS_ONE = U256;
+    pub const FILEBYTES_MAX: usize = littlefs2::ll::LFS_FILE_MAX as _;
+    /// TODO: We can't actually be changed currently
+    pub type ATTRBYTES_MAX = U1022;
+}
+
+#[cfg(feature = "littlefs")]
+#[macro_export]
+macro_rules! littlefs2_filesystem {
+    ($Name:ident: (
+        $BASE_OFFSET:expr
+    )) => {
+        //
+        pub struct $Name {
+            flash_gordon: $crate::drivers::flash::FlashGordon
+        }
+
+        impl $Name {
+            pub fn new (flash_gordon: $crate::drivers::flash::FlashGordon) -> Self {
+                Self { flash_gordon }
+            }
+        }
+
+        impl littlefs2::driver::Storage for $Name {
+            const READ_SIZE: usize = $crate::drivers::flash::littlefs_params::READ_SIZE;
+            const WRITE_SIZE: usize = $crate::drivers::flash::littlefs_params::WRITE_SIZE;
+            const BLOCK_SIZE: usize = $crate::drivers::flash::littlefs_params::BLOCK_SIZE;
+
+            const BLOCK_COUNT: usize = $crate::drivers::flash::littlefs_params::BLOCK_COUNT;
+            const BLOCK_CYCLES: isize = $crate::drivers::flash::littlefs_params::BLOCK_CYCLES;
+
+            type CACHE_SIZE = $crate::drivers::flash::littlefs_params::CACHE_SIZE;
+            type LOOKAHEADWORDS_SIZE = $crate::drivers::flash::littlefs_params::LOOKAHEADWORDS_SIZE;
+            type FILENAME_MAX_PLUS_ONE = $crate::drivers::flash::littlefs_params::FILENAME_MAX_PLUS_ONE;
+            type PATH_MAX_PLUS_ONE = $crate::drivers::flash::littlefs_params::PATH_MAX_PLUS_ONE;
+            const FILEBYTES_MAX: usize = $crate::drivers::flash::littlefs_params::FILEBYTES_MAX;
+            type ATTRBYTES_MAX = $crate::drivers::flash::littlefs_params::ATTRBYTES_MAX;
+
+
+            fn read(&self, off: usize, buf: &mut [u8]) -> LfsResult<usize> {
+                <$crate::drivers::flash::FlashGordon as $crate::traits::flash::Read<$crate::drivers::flash::U16>>
+                    ::read(&self.flash_gordon, $BASE_OFFSET + off, buf);
+                // hprintln!("read {} from {}", buf.len(), off).ok();
+                // hprintln!("read {} from {}: {:?}", buf.len(), off, &buf[..16]).ok();
+                Ok(buf.len())
+            }
+
+            fn write(&mut self, off: usize, data: &[u8]) -> LfsResult<usize> {
+                // hprintln!("write {} to {}", data.len(), off).ok();
+                // hprintln!("write {} to {}: {:?}", data.len(), off, &data[..16]).ok();
+                let ret = <$crate::drivers::flash::FlashGordon as $crate::traits::flash::WriteErase<$crate::drivers::flash::U512, $crate::drivers::flash::U512>>
+                    ::write(&mut self.flash_gordon, $BASE_OFFSET + off, data);
+                // if let Err(error) = ret {
+                //     panic!("error writing: {:?}", &error);
+                // }
+                ret
+                    .map(|_| data.len())
+                    .map_err(|_| littlefs2::io::Error::Io)
+            }
+
+            fn erase(&mut self, off: usize, len: usize) -> LfsResult<usize> {
+                // hprintln!("erase {} from {}", len, off).ok();
+                let first_page = ($BASE_OFFSET + off) / 512;
+                let pages = len / 512;
+                for i in 0..pages {
+                    <$crate::drivers::flash::FlashGordon as $crate::traits::flash::WriteErase<$crate::drivers::flash::U512, $crate::drivers::flash::U512>>
+                        ::erase_page(&mut self.flash_gordon, first_page + i)
+                        .map_err(|_| littlefs2::io::Error::Io)?;
+                }
+                // if true {
+                //     hprintln!("checking erasure").ok();
+                //     let mut data = [37u8; 16];
+                //     let now = littlefs2::driver::Storage::read(self, off, &mut data);
+                //     hprintln!("-> {:?}", &data).ok();
+                // }
+                Ok(512 * len)
+            }
+
+        }
+    //
+    }
+}
+
+#[cfg(feature = "littlefs")]
+#[macro_export]
+macro_rules! littlefs2_prince_filesystem {
+    ($Name:ident: (
+        $BASE_OFFSET:expr
+    )) => {
+        //
+        pub struct $Name {
+            flash_gordon: $crate::drivers::flash::FlashGordon,
+            prince: $crate::peripherals::prince::Prince<$crate::typestates::init_state::Enabled>,
+        }
+
+        impl $Name {
+            pub fn new (
+                flash_gordon: $crate::drivers::flash::FlashGordon,
+                prince: $crate::peripherals::prince::Prince<$crate::typestates::init_state::Enabled>,
+            ) -> Self {
+                Self { flash_gordon, prince }
+            }
+        }
+
+        impl littlefs2::driver::Storage for $Name {
+            const READ_SIZE: usize = $crate::drivers::flash::littlefs_params::READ_SIZE;
+            const WRITE_SIZE: usize = $crate::drivers::flash::littlefs_params::WRITE_SIZE;
+            const BLOCK_SIZE: usize = $crate::drivers::flash::littlefs_params::BLOCK_SIZE;
+
+            const BLOCK_COUNT: usize = $crate::drivers::flash::littlefs_params::BLOCK_COUNT;
+            const BLOCK_CYCLES: isize = $crate::drivers::flash::littlefs_params::BLOCK_CYCLES;
+
+            type CACHE_SIZE = $crate::drivers::flash::littlefs_params::CACHE_SIZE;
+            type LOOKAHEADWORDS_SIZE = $crate::drivers::flash::littlefs_params::LOOKAHEADWORDS_SIZE;
+            type FILENAME_MAX_PLUS_ONE = $crate::drivers::flash::littlefs_params::FILENAME_MAX_PLUS_ONE;
+            type PATH_MAX_PLUS_ONE = $crate::drivers::flash::littlefs_params::PATH_MAX_PLUS_ONE;
+            const FILEBYTES_MAX: usize = $crate::drivers::flash::littlefs_params::FILEBYTES_MAX;
+            type ATTRBYTES_MAX = $crate::drivers::flash::littlefs_params::ATTRBYTES_MAX;
+
+
+            fn read(&self, off: usize, buf: &mut [u8]) -> LfsResult<usize> {
+                self.prince.enable_all_region_2();
+                let flash: *const u8 = ($BASE_OFFSET + off) as *const u8;
+                for i in 0 .. buf.len() {
+                    buf[i] = unsafe{ *flash.offset(i as isize) };
+                }
+                self.prince.disable_all_region_2();
+                Ok(buf.len())
+            }
+
+            fn write(&mut self, off: usize, data: &[u8]) -> LfsResult<usize> {
+                self.prince.enable_all_region_2();
+                unsafe { self.prince.enable_encrypted_write() };
+                let ret = <$crate::drivers::flash::FlashGordon as
+                    $crate::traits::flash::WriteErase<$crate::drivers::flash::U512, $crate::drivers::flash::U512>>
+                    ::write(&mut self.flash_gordon, $BASE_OFFSET + off, data);
+                self.prince.disable_encrypted_write();
+                self.prince.disable_all_region_2();
+                ret
+                    .map(|_| data.len())
+                    .map_err(|_| littlefs2::io::Error::Io)
+            }
+
+            fn erase(&mut self, off: usize, len: usize) -> LfsResult<usize> {
+                let first_page = ($BASE_OFFSET + off) / 512;
+                let pages = len / 512;
+                for i in 0..pages {
+                    <$crate::drivers::flash::FlashGordon as
+                        $crate::traits::flash::WriteErase<$crate::drivers::flash::U512, $crate::drivers::flash::U512>>
+                        ::erase_page(&mut self.flash_gordon, first_page + i)
+                        .map_err(|_| littlefs2::io::Error::Io)?;
+                }
+                Ok(512 * len)
+            }
+
+        }
+    //
+    }
+}
+
+// default/example implementations using 0x8_0000 boundary to separate code and data.
+// This leaves 128KB for data and is covered by the last prince region (region 2)
+#[cfg(feature = "littlefs")]
+littlefs2_filesystem!(FilesystemGordon: (0x8_0000));
+#[cfg(feature = "littlefs")]
+littlefs2_filesystem!(PrinceFilesystemGordon: (0x8_0000));
