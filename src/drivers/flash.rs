@@ -24,9 +24,6 @@ pub use generic_array::{
 #[cfg(feature = "littlefs")]
 use generic_array::typenum::{U256, U1022};
 
-#[cfg(feature = "littlefs")]
-use littlefs2::io::Result as LfsResult;
-
 // one physical word of Flash consists of 128 bits (or 4 u32, or 16 bytes)
 // one page is 32 physical words, or 128 u32s, or 512 bytes)
 
@@ -382,6 +379,7 @@ macro_rules! littlefs2_filesystem {
         }
 
         impl $Name {
+            const BASE_OFFSET: usize = $BASE_OFFSET;
             pub fn new (flash_gordon: $crate::drivers::flash::FlashGordon) -> Self {
                 Self { flash_gordon }
             }
@@ -405,40 +403,26 @@ macro_rules! littlefs2_filesystem {
 
             fn read(&self, off: usize, buf: &mut [u8]) -> LfsResult<usize> {
                 <$crate::drivers::flash::FlashGordon as $crate::traits::flash::Read<$crate::drivers::flash::U16>>
-                    ::read(&self.flash_gordon, $BASE_OFFSET + off, buf);
-                // hprintln!("read {} from {}", buf.len(), off).ok();
-                // hprintln!("read {} from {}: {:?}", buf.len(), off, &buf[..16]).ok();
+                    ::read(&self.flash_gordon, Self::BASE_OFFSET + off, buf);
                 Ok(buf.len())
             }
 
             fn write(&mut self, off: usize, data: &[u8]) -> LfsResult<usize> {
-                // hprintln!("write {} to {}", data.len(), off).ok();
-                // hprintln!("write {} to {}: {:?}", data.len(), off, &data[..16]).ok();
                 let ret = <$crate::drivers::flash::FlashGordon as $crate::traits::flash::WriteErase<$crate::drivers::flash::U512, $crate::drivers::flash::U512>>
-                    ::write(&mut self.flash_gordon, $BASE_OFFSET + off, data);
-                // if let Err(error) = ret {
-                //     panic!("error writing: {:?}", &error);
-                // }
+                    ::write(&mut self.flash_gordon, Self::BASE_OFFSET + off, data);
                 ret
                     .map(|_| data.len())
                     .map_err(|_| littlefs2::io::Error::Io)
             }
 
             fn erase(&mut self, off: usize, len: usize) -> LfsResult<usize> {
-                // hprintln!("erase {} from {}", len, off).ok();
-                let first_page = ($BASE_OFFSET + off) / 512;
+                let first_page = (Self::BASE_OFFSET + off) / 512;
                 let pages = len / 512;
                 for i in 0..pages {
                     <$crate::drivers::flash::FlashGordon as $crate::traits::flash::WriteErase<$crate::drivers::flash::U512, $crate::drivers::flash::U512>>
                         ::erase_page(&mut self.flash_gordon, first_page + i)
                         .map_err(|_| littlefs2::io::Error::Io)?;
                 }
-                // if true {
-                //     hprintln!("checking erasure").ok();
-                //     let mut data = [37u8; 16];
-                //     let now = littlefs2::driver::Storage::read(self, off, &mut data);
-                //     hprintln!("-> {:?}", &data).ok();
-                // }
                 Ok(512 * len)
             }
 
@@ -460,6 +444,7 @@ macro_rules! littlefs2_prince_filesystem {
         }
 
         impl $Name {
+            const BASE_OFFSET: usize = $BASE_OFFSET;
             pub fn new (
                 flash_gordon: $crate::drivers::flash::FlashGordon,
                 prince: $crate::peripherals::prince::Prince<$crate::typestates::init_state::Enabled>,
@@ -486,7 +471,7 @@ macro_rules! littlefs2_prince_filesystem {
 
             fn read(&self, off: usize, buf: &mut [u8]) -> LfsResult<usize> {
                 self.prince.enable_all_region_2();
-                let flash: *const u8 = ($BASE_OFFSET + off) as *const u8;
+                let flash: *const u8 = (Self::BASE_OFFSET + off) as *const u8;
                 for i in 0 .. buf.len() {
                     buf[i] = unsafe{ *flash.offset(i as isize) };
                 }
@@ -495,20 +480,22 @@ macro_rules! littlefs2_prince_filesystem {
             }
 
             fn write(&mut self, off: usize, data: &[u8]) -> LfsResult<usize> {
-                self.prince.enable_all_region_2();
-                unsafe { self.prince.enable_encrypted_write() };
-                let ret = <$crate::drivers::flash::FlashGordon as
-                    $crate::traits::flash::WriteErase<$crate::drivers::flash::U512, $crate::drivers::flash::U512>>
-                    ::write(&mut self.flash_gordon, $BASE_OFFSET + off, data);
-                self.prince.disable_encrypted_write();
-                self.prince.disable_all_region_2();
+                let prince = &mut self.prince;
+                let flash_gordon = &mut self.flash_gordon;
+                prince.enable_all_region_2();
+                let ret = prince.write_encrypted(|| {
+                    <$crate::drivers::flash::FlashGordon as
+                        $crate::traits::flash::WriteErase<$crate::drivers::flash::U512, $crate::drivers::flash::U512>>
+                        ::write(flash_gordon, Self::BASE_OFFSET + off, data)
+                });
+                prince.disable_all_region_2();
                 ret
                     .map(|_| data.len())
                     .map_err(|_| littlefs2::io::Error::Io)
             }
 
             fn erase(&mut self, off: usize, len: usize) -> LfsResult<usize> {
-                let first_page = ($BASE_OFFSET + off) / 512;
+                let first_page = (Self::BASE_OFFSET + off) / 512;
                 let pages = len / 512;
                 for i in 0..pages {
                     <$crate::drivers::flash::FlashGordon as
@@ -524,9 +511,8 @@ macro_rules! littlefs2_prince_filesystem {
     }
 }
 
-// default/example implementations using 0x8_0000 boundary to separate code and data.
-// This leaves 128KB for data and is covered by the last prince region (region 2)
-#[cfg(feature = "littlefs")]
-littlefs2_filesystem!(FilesystemGordon: (0x8_0000));
-#[cfg(feature = "littlefs")]
-littlefs2_filesystem!(PrinceFilesystemGordon: (0x8_0000));
+// Example implementations using 0x8_0000 boundary to separate code and data.
+// This leaves 128KB for data and is covered by the last prince region (region 2).
+// ```
+// littlefs2_filesystem!(FilesystemGordon: (0x8_0000));
+// ```
