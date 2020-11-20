@@ -42,6 +42,9 @@ impl Prince {
         self.raw.mask_lsb.write(|w| unsafe {w.bits( rng.get_random_u32() )});
         self.raw.mask_msb.write(|w| unsafe {w.bits( rng.get_random_u32() )});
 
+        // Disable encrypted writes
+        self.raw.enc_enable.write(|w| w.en().clear_bit());
+
         self.raw.base_addr2.write(|w| unsafe{w.bits(0x80000)});
         self.raw.base_addr1.write(|w| unsafe{w.bits(0x40000)});
 
@@ -88,25 +91,24 @@ impl Prince<init_state::Enabled> {
         };
     }
 
-    pub fn encrypted_write(&mut self, f: impl FnOnce() -> ()) {
+    pub fn write_encrypted<R>(&mut self, f: impl FnOnce() -> R) -> R {
         // Immediately prior to flash programming, set the ENC_ENABLE.EN bit
-        self.raw.enc_enable.write(|w| w.en().set_bit());
+        self.enable_encrypted_write();
 
-        f();
+        let result = f();
 
         // After completion of flash programming clear ENC_ENABLE.EN, to prevent
         // unintended PRINCE encryption of writes
-        self.raw.enc_enable.write(|w| w.en().clear_bit());
+        self.disable_encrypted_write();
+        result
     }
 
-    /// This is marked unsafe because it is on the programmer to ensure that
-    /// encrypted writes are disabled following the flash operation.
-    pub unsafe fn enable_encrypted_write(&mut self) {
+    fn enable_encrypted_write(&mut self) {
         // Immediately prior to flash programming, set the ENC_ENABLE.EN bit
         self.raw.enc_enable.write(|w| w.en().set_bit());
     }
 
-    pub fn disable_encrypted_write(&mut self) {
+    fn disable_encrypted_write(&mut self) {
         // After completion of flash programming clear ENC_ENABLE.EN, to prevent
         // unintended PRINCE encryption of writes
         self.raw.enc_enable.write(|w| w.en().clear_bit());
