@@ -23,7 +23,7 @@ pub enum KeyType {
 #[repr(C)]
 struct IvCodePrinceRegion {
     keycode_header: u32,
-    reserved: [u8; 52],
+    iv: [u8; 52],
 }
 
 #[derive(Copy,Clone)]
@@ -53,6 +53,27 @@ pub struct Cfpa {
     reserved2: [u8; 40],
     pub customer_data: [u8; 224],
     sha256: [u8; 32]
+}
+
+impl Cfpa {
+    /// Check if everything has been done to set up a particular HW key.
+    pub fn key_provisioned (&self, key_type: KeyType) -> bool {
+        match key_type {
+            // If there is a nonzero PRINCE IV in CFPA, then it must have provisioned.
+            KeyType::PrinceRegion0 | KeyType::PrinceRegion1 | KeyType::PrinceRegion2 => {
+                let mut iv_or = 0;
+                let index = (key_type as usize) - (KeyType::PrinceRegion0 as usize);
+                for i in 0 .. self.iv_code_prince_region[index].iv.len() {
+                    iv_or |= self.iv_code_prince_region[index].iv[i];
+                }
+
+                iv_or != 0
+
+            },
+            // Not handling the other key types currently.
+            _ => false
+        }
+    }
 }
 
 #[derive(Copy,Clone)]
