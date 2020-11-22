@@ -157,28 +157,22 @@ where
         }
         Ok(())
     }
-}
 
-impl<PIO1, PIO2, I2C, PINS> Write for I2cMaster<PIO1, PIO2, I2C, PINS>
-where
-    PIO1: PinId,
-    PIO2: PinId,
-    I2C: I2c,
-    PINS: I2cPins<PIO1, PIO2, I2C>,
-{
-    type Error = Error;
-
-    fn write(&mut self, addr: u8, bytes: &[u8]) -> Result<()> {
+    fn write_without_stop(&mut self, addr: u8, bytes: &[u8]) -> Result<()> {
         // use cortex_m_semihosting::dbg;
         self.return_on_error()?;
 
         // Write the slave address with the RW bit set to 0 to the master data register MSTDAT.
-        self.i2c.mstdat.modify(|_, w| unsafe { w.data().bits(addr << 1) } );
+        self.i2c
+            .mstdat
+            .modify(|_, w| unsafe { w.data().bits(addr << 1) });
         // Start the transmission by setting the MSTSTART bit to 1 in the master control register.
         self.i2c.mstctl.write(|w| w.mststart().start());
         // Wait for the pending status to be set (MSTPENDING = 1) by polling the STAT register
         // TODO: Consider implementing a timeout (loop at most N times...) :TODO
-        while self.i2c.stat.read().mstpending().is_in_progress() { continue; }
+        while self.i2c.stat.read().mstpending().is_in_progress() {
+            continue;
+        }
 
         self.return_on_error()?;
         if !self.i2c.stat.read().mststate().is_transmit_ready() {
@@ -203,6 +197,11 @@ where
             }
         }
 
+        // Fallthrough is success
+        Ok(())
+    }
+
+    fn stop(&mut self) -> Result<()> {
         // Stop the transmission by setting the MSTSTOP bit to 1 in the master control register.
         self.i2c.mstctl.write(|w| w.mststop().stop());
         // Wait for the pending status to be set (MSTPENDING = 1) by polling the STAT register
@@ -216,6 +215,21 @@ where
 
         // Fallthrough is success
         Ok(())
+    }
+}
+
+impl<PIO1, PIO2, I2C, PINS> Write for I2cMaster<PIO1, PIO2, I2C, PINS>
+where
+    PIO1: PinId,
+    PIO2: PinId,
+    I2C: I2c,
+    PINS: I2cPins<PIO1, PIO2, I2C>,
+{
+    type Error = Error;
+
+    fn write(&mut self, addr: u8, bytes: &[u8]) -> Result<()> {
+        self.write_without_stop(addr, bytes)?;
+        self.stop()
     }
 }
 
@@ -263,17 +277,7 @@ where
             // Read last byte
             *last = self.i2c.mstdat.read().data().bits();
 
-            // Stop the transmission by setting the MSTSTOP bit to 1 in the master control register.
-            self.i2c.mstctl.write(|w| w.mststop().stop());
-
-            // Wait for the pending status to be set (MSTPENDING = 1) by polling the STAT register
-            while self.i2c.stat.read().mstpending().is_in_progress() {}
-
-            self.return_on_error()?;
-            if !self.i2c.stat.read().mststate().is_idle() {
-                return Err(Error::Bus);
-            }
-
+            self.stop()?;
         }
 
         // Fallthrough is success
@@ -291,7 +295,7 @@ where
     type Error = Error;
 
     fn write_read(&mut self, addr: u8, bytes: &[u8], buffer: &mut [u8]) -> Result<()> {
-        self.write(addr, bytes)?;
+        self.write_without_stop(addr, bytes)?;
         self.read(addr, buffer)?;
 
         Ok(())
