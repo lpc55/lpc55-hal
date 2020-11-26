@@ -45,6 +45,9 @@ build-examples-verbosely:
 	cargo build --verbose --examples
 	cargo build --verbose --examples --release
 
+build-all-features:
+	cargo build --verbose --all-features
+
 #
 # For running examples
 #
