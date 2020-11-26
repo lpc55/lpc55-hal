@@ -195,6 +195,9 @@ pub struct Peripherals {
     /// Stateful counter/timer (SCTIMER) - not HAL-ified.
     pub SCT0: raw::SCT0,
 
+    /// SAU - not HAL-ified.
+    pub SAU: raw::SAU,
+
     /// CPUID - core peripheral
     pub CPUID: raw::CPUID,
 
@@ -259,7 +262,7 @@ impl From<(raw::Peripherals, rtic::Peripherals)> for Peripherals {
             pmc: Pmc::from(p.PMC),
             prince: Prince::from(p.PRINCE),
             rng: Rng::from(p.RNG),
-            rtc: Rtc::from(p.RTC),
+            sau: Sau::from(p.SAU),
             syscon: Syscon::from(p.SYSCON),
             usbfs: Usbfs::from((p.USB0, p.USBFSH)),
             usbhs: Usbhs::from((p.USBPHY, p.USB1, p.USBHSH)),
@@ -269,6 +272,7 @@ impl From<(raw::Peripherals, rtic::Peripherals)> for Peripherals {
             CRC_ENGINE: p.CRC_ENGINE,
             FLASH_CMPA: p.FLASH_CMPA,
             FLASH_CFPA0: p.FLASH_CFPA0,
+            SAU: p.SAU,
             SCT0: p.SCT0,
 
             // Core peripherals
@@ -332,6 +336,7 @@ impl From<(raw::Peripherals, raw::CorePeripherals)> for Peripherals {
             CRC_ENGINE: p.CRC_ENGINE,
             FLASH_CMPA: p.FLASH_CMPA,
             FLASH_CFPA0: p.FLASH_CFPA0,
+            SAU: p.SAU,
             SCT0: p.SCT0,
 
             // Core peripherals
