@@ -198,6 +198,9 @@ pub struct Peripherals {
     /// SAU - not HAL-ified.
     pub SAU: raw::SAU,
 
+    /// AHB_SECURE_CTRL - not HAL-ified.
+    pub AHB_SECURE_CTRL: raw::AHB_SECURE_CTRL,
+
     /// CPUID - core peripheral
     pub CPUID: raw::CPUID,
 
@@ -269,6 +272,7 @@ impl From<(raw::Peripherals, rtic::Peripherals)> for Peripherals {
             utick: Utick::from(p.UTICK0),
 
             // Raw peripherals
+            AHB_SECURE_CTRL: p.AHB_SECURE_CTRL,
             CRC_ENGINE: p.CRC_ENGINE,
             FLASH_CMPA: p.FLASH_CMPA,
             FLASH_CFPA0: p.FLASH_CFPA0,
@@ -333,6 +337,7 @@ impl From<(raw::Peripherals, raw::CorePeripherals)> for Peripherals {
             utick: Utick::from(p.UTICK0),
 
             // Raw peripherals
+            AHB_SECURE_CTRL: p.AHB_SECURE_CTRL,
             CRC_ENGINE: p.CRC_ENGINE,
             FLASH_CMPA: p.FLASH_CMPA,
             FLASH_CFPA0: p.FLASH_CFPA0,
