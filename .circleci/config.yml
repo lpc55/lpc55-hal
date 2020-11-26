@@ -18,6 +18,10 @@ jobs:
           name: Build the examples
           command: make build-examples-verbosely
 
+      - run:
+          name: Build crate with all features turned on
+          command: make build-all-features
+
       - save_cache:
           key: project-cache
           paths:
