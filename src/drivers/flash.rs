@@ -353,7 +353,6 @@ pub mod littlefs_params {
     pub const WRITE_SIZE: usize = 512;
     pub const BLOCK_SIZE: usize = 512;
 
-    pub const BLOCK_COUNT: usize = 256;
     // no wear-leveling for now
     pub const BLOCK_CYCLES: isize = -1;
 
@@ -373,13 +372,32 @@ macro_rules! littlefs2_filesystem {
     ($Name:ident: (
         $BASE_OFFSET:expr
     )) => {
+        littlefs2_filesystem!(
+            $Name: (
+                $BASE_OFFSET,
+                //     631.5KB
+                ((631 * 1024 + 512) - $BASE_OFFSET) / 512
+            )
+        );
+    };
+    ($Name:ident: (
+        $BASE_OFFSET:expr,
+        $BLOCK_COUNT:expr
+    )) => {
         //
+        // Compile time assertion that $BASE_OFFSET is 512 byte aligned.
+        const _ZERO_SIZED_CHECK: usize = ((core::mem::size_of::<[u8; ($BASE_OFFSET % 512)]>() == 0) as usize) - 1;
+        // Compile time assertion that flash region does NOT spill over the 631.5KB boundary.
+        const _OVERFLOW_SIZE_CHECK: usize = ((
+            core::mem::size_of::<[u8; (($BASE_OFFSET + $BLOCK_COUNT * 512) <= (631 * 1024 + 512)) as usize]>() == 1) as usize) - 1;
+
         pub struct $Name {
             flash_gordon: $crate::drivers::flash::FlashGordon
         }
 
         impl $Name {
             const BASE_OFFSET: usize = $BASE_OFFSET;
+
             pub fn new (flash_gordon: $crate::drivers::flash::FlashGordon) -> Self {
                 Self { flash_gordon }
             }
@@ -390,7 +408,7 @@ macro_rules! littlefs2_filesystem {
             const WRITE_SIZE: usize = $crate::drivers::flash::littlefs_params::WRITE_SIZE;
             const BLOCK_SIZE: usize = $crate::drivers::flash::littlefs_params::BLOCK_SIZE;
 
-            const BLOCK_COUNT: usize = $crate::drivers::flash::littlefs_params::BLOCK_COUNT;
+            const BLOCK_COUNT: usize = $BLOCK_COUNT;
             const BLOCK_CYCLES: isize = $crate::drivers::flash::littlefs_params::BLOCK_CYCLES;
 
             type CACHE_SIZE = $crate::drivers::flash::littlefs_params::CACHE_SIZE;
@@ -437,7 +455,26 @@ macro_rules! littlefs2_prince_filesystem {
     ($Name:ident: (
         $BASE_OFFSET:expr
     )) => {
+        littlefs2_prince_filesystem!(
+            $Name: (
+                $BASE_OFFSET,
+                //     631.5KB
+                ((631 * 1024 + 512) - $BASE_OFFSET) / 512
+            )
+        );
+    };
+    ($Name:ident: (
+        $BASE_OFFSET:expr,
+        $BLOCK_COUNT:expr
+    )) => {
         //
+        // Compile time assertion that $BASE_OFFSET is 512 byte aligned.
+        const _ZERO_SIZED_CHECK_0: usize = ((core::mem::size_of::<[u8; ($BASE_OFFSET % 512)]>() == 0) as usize) - 1;
+        // Compile time assertion that flash region does NOT spill over the 631.5KB boundary.
+        const _OVERFLOW_SIZE_CHECK_0: usize = ((
+            core::mem::size_of::<[u8; (($BASE_OFFSET + $BLOCK_COUNT * 512) <= (631 * 1024 + 512)) as usize]>() == 1) as usize) - 1;
+
+
         pub struct $Name {
             flash_gordon: $crate::drivers::flash::FlashGordon,
             prince: $crate::peripherals::prince::Prince<$crate::typestates::init_state::Enabled>,
@@ -445,6 +482,7 @@ macro_rules! littlefs2_prince_filesystem {
 
         impl $Name {
             const BASE_OFFSET: usize = $BASE_OFFSET;
+
             pub fn new (
                 flash_gordon: $crate::drivers::flash::FlashGordon,
                 prince: $crate::peripherals::prince::Prince<$crate::typestates::init_state::Enabled>,
@@ -458,7 +496,7 @@ macro_rules! littlefs2_prince_filesystem {
             const WRITE_SIZE: usize = $crate::drivers::flash::littlefs_params::WRITE_SIZE;
             const BLOCK_SIZE: usize = $crate::drivers::flash::littlefs_params::BLOCK_SIZE;
 
-            const BLOCK_COUNT: usize = $crate::drivers::flash::littlefs_params::BLOCK_COUNT;
+            const BLOCK_COUNT: usize = $BLOCK_COUNT;
             const BLOCK_CYCLES: isize = $crate::drivers::flash::littlefs_params::BLOCK_CYCLES;
 
             type CACHE_SIZE = $crate::drivers::flash::littlefs_params::CACHE_SIZE;
@@ -470,25 +508,25 @@ macro_rules! littlefs2_prince_filesystem {
 
 
             fn read(&self, off: usize, buf: &mut [u8]) -> LfsResult<usize> {
-                self.prince.enable_all_region_2();
-                let flash: *const u8 = (Self::BASE_OFFSET + off) as *const u8;
-                for i in 0 .. buf.len() {
-                    buf[i] = unsafe{ *flash.offset(i as isize) };
-                }
-                self.prince.disable_all_region_2();
+                self.prince.enable_region_2_for(||{
+                    let flash: *const u8 = (Self::BASE_OFFSET + off) as *const u8;
+                    for i in 0 .. buf.len() {
+                        buf[i] = unsafe{ *flash.offset(i as isize) };
+                    }
+                });
                 Ok(buf.len())
             }
 
             fn write(&mut self, off: usize, data: &[u8]) -> LfsResult<usize> {
                 let prince = &mut self.prince;
                 let flash_gordon = &mut self.flash_gordon;
-                prince.enable_all_region_2();
-                let ret = prince.write_encrypted(|| {
-                    <$crate::drivers::flash::FlashGordon as
-                        $crate::traits::flash::WriteErase<$crate::drivers::flash::U512, $crate::drivers::flash::U512>>
-                        ::write(flash_gordon, Self::BASE_OFFSET + off, data)
+                let ret = prince.write_encrypted(|prince| {
+                    prince.enable_region_2_for(||{
+                        <$crate::drivers::flash::FlashGordon as
+                            $crate::traits::flash::WriteErase<$crate::drivers::flash::U512, $crate::drivers::flash::U512>>
+                            ::write(flash_gordon, Self::BASE_OFFSET + off, data)
+                    })
                 });
-                prince.disable_all_region_2();
                 ret
                     .map(|_| data.len())
                     .map_err(|_| littlefs2::io::Error::Io)
