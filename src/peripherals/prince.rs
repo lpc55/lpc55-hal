@@ -60,24 +60,51 @@ impl Prince {
 
 impl Prince<init_state::Enabled> {
 
+    #[inline]
     pub fn enable_all_region_2(&self) {
         self.raw.sr_enable2.write(|w| unsafe{w.bits(0xffffffff)});
     }
+    #[inline]
     pub fn enable_all_region_1(&self) {
         self.raw.sr_enable1.write(|w| unsafe{w.bits(0xffffffff)});
     }
+    #[inline]
     pub fn enable_all_region_0(&self) {
         self.raw.sr_enable0.write(|w| unsafe{w.bits(0xffffffff)});
     }
 
+    #[inline]
     pub fn disable_all_region_2(&self) {
         self.raw.sr_enable2.write(|w| unsafe{w.bits(0x0)});
     }
+    #[inline]
     pub fn disable_all_region_1(&self) {
         self.raw.sr_enable1.write(|w| unsafe{w.bits(0x0)});
     }
+    #[inline]
     pub fn disable_all_region_0(&self) {
         self.raw.sr_enable0.write(|w| unsafe{w.bits(0x0)});
+    }
+
+    pub fn enable_region_2_for<R>(&self, f: impl FnOnce() -> R) -> R {
+        self.enable_all_region_2();
+        let result = f();
+        self.disable_all_region_2();
+        result
+    }
+
+    pub fn enable_region_1_for<R>(&self, f: impl FnOnce() -> R) -> R {
+        self.enable_all_region_1();
+        let result = f();
+        self.disable_all_region_1();
+        result
+    }
+
+    pub fn enable_region_0_for<R>(&self, f: impl FnOnce() -> R) -> R {
+        self.enable_all_region_0();
+        let result = f();
+        self.disable_all_region_0();
+        result
     }
 
     pub fn set_region_enable(&self, region: Region, enable: u32) {
@@ -91,11 +118,11 @@ impl Prince<init_state::Enabled> {
         };
     }
 
-    pub fn write_encrypted<R>(&mut self, f: impl FnOnce() -> R) -> R {
+    pub fn write_encrypted<R>(&mut self, f: impl FnOnce(&mut Self) -> R) -> R {
         // Immediately prior to flash programming, set the ENC_ENABLE.EN bit
         self.enable_encrypted_write();
 
-        let result = f();
+        let result = f(self);
 
         // After completion of flash programming clear ENC_ENABLE.EN, to prevent
         // unintended PRINCE encryption of writes
