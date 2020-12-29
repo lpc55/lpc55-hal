@@ -1,8 +1,7 @@
 use core::convert::TryInto;
 
-use aligned::{A4, Aligned};
-
 use crate::{
+    helpers::aligned::{A4, Aligned},
     peripherals::hashcrypt::Hashcrypt,
     traits::{
         block_cipher::{Block, BlockCipher},
@@ -136,7 +135,7 @@ impl<'a, Size: KeySize> Aes<'a, Size> {
                 while self.status.read().bits() == 0 {
                     continue;
                 }
-                cortex_m_semihosting::dbg!(self.status.read().bits());
+                // cortex_m_semihosting::dbg!(self.status.read().bits());
                 // assert!(self.status.needkey().is_not_need());
             }
 

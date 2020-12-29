@@ -42,6 +42,7 @@ pub mod prelude;
 // #[macro_use]
 pub mod macros;
 
+pub mod helpers;
 pub mod time;
 pub mod traits;
 

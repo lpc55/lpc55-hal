@@ -1,6 +1,3 @@
-#[allow(unused_imports)]
-use cortex_m_semihosting::{dbg, hprint, hprintln};
-
 use core::ops::Deref;
 
 use crate::{

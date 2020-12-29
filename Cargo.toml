@@ -1,6 +1,6 @@
 [package]
 name = "lpc55-hal"
-version = "0.0.3"
+version = "0.1.0"
 edition = "2018"
 description   = "Hardware Abstraction Layer (HAL) for the NXP LPC55S6x ARM Cortex-33 microcontrollers"
 repository = "https://github.com/nickray/lpc55-hal"
@@ -13,62 +13,46 @@ authors = ["Nicolas Stalder <n@stalder.io>", "Conor Patrick <conorpp94@gmail.com
 build = "build.rs"
 
 [badges]
-circle-ci = { repository = "nickray/lpc55-hal" }
+maintenance = { status = "actively-developed" }
 
 [dependencies]
 bare-metal = "1"
 block-buffer = "0.9.0"
 block-cipher = "0.8.0"
-cortex-m = "0.6"
-cortex-m-semihosting = "0.3"
+cortex-m = "0.7"
 digest = "0.9.0"
 embedded-hal = { version = "0.2", features = ["unproven"] }
 generic-array = "0.14.3"
-lpc55-pac = "0.1.0"
+lpc55-pac = "0.1.1"
 
 nb = "1"
 # no-panic = "0.1.12"
-# nom = { version = "^5", default-features = false }
-cortex-m-funnel = { version = "0.1.0-alpha.1", optional = true }
-cortex-m-rtic = { version = "0.5.1", optional = true }
+cortex-m-rtic = { version = "0.6.0-alpha.0", optional = true }
 # littlefs2 = { path = "../littlefs2", optional = true }
 littlefs2 = { git = "https://github.com/nickray/littlefs2", branch = "closures-instead-of-ub", optional = true }
-ufmt = { version = "0.1.0", optional = true }
 usb-device = "0.2.3"
 usbd-serial = "0.1.0"
 vcell = "0.1.2"
 void = { version = "1", default-features = false }
-aligned = "0.3.2"
+# aligned = "0.3.2"
 # enum_dispatch = { git = "https://gitlab.com/antonok/enum_dispatch" }
 # salty = { path = "../salty", features = ["haase"] }
 
 [dev-dependencies]
 aes-soft = "0.4"
 cortex-m-rt = "0.6"
-cortex-m-rtic = "0.5.1"
+cortex-m-rtic = "0.6.0-alpha.0"
 cortex-m-semihosting = "0.3"
-# ga14 = { package = "generic-array", version = "0.14" }
-# digest = { version = "0.8", default-features = false }
 heapless = "0.5"
 panic-halt  = "0.2"
 panic-semihosting = { version = "0.5", features = ["jlink-quirks"] }
-# salty = { path = "../salty", features = ["haase"] }
-# salty = { path = "../salty", features = ["tweetnacl"] }
 sha2 = { version = "0.9.1", default-features = false }
 ssd1306 = "0.3.0-alpha.2"
 sha-1 = { version = "0.9.1", default-features = false }
-# ssd1306 = { git = "https://github.com/jamwaffles/ssd1306.git", branch = "70x42-ish" }
-# ssd1306 = { path = "../ssd1306-tiny" }
-
-# generic-array = "0.13.2"
-# aead = { version = "0.2.0", default-features = false }
-# aead = { path = "../RustCrypto/traits/aead", default-features = false, features = ["heapless"] }
-# chacha20poly1305 = { version = "0.3.0", default-features = false, features = ["heapless", "xchacha20poly1305"] }
 
 [features]
 default = ["rt"]
 littlefs = ["littlefs2"]
-logging = ["cortex-m-funnel", "ufmt"]
 rt = ["lpc55-pac/rt"]
 rtic-peripherals = ["cortex-m-rtic"]
 # no longer a HAL feature, just for the usb examples
@@ -84,7 +68,5 @@ lto = true
 opt-level = "z"
 
 [patch.crates-io]
-cortex-m-funnel = { git = "https://github.com/conorpp/cortex-m-funnel" }
-# ufmt = { path = "../ufmt" }
-ufmt = { git = "https://github.com/nickray/ufmt", branch = "nickray-derive-empty-enums" }
-ufmt-macros = { git = "https://github.com/nickray/ufmt", branch = "nickray-derive-empty-enums" }
+cortex-m-rtic = { git = "https://github.com/nickray/cortex-m-rtic", branch = "bump-cortex-m" }
+

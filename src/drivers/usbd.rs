@@ -19,8 +19,6 @@ pub mod endpoint_registers;
 // move this into a submodule `bus` again?
 
 use core::mem;
-#[cfg(feature = "logging")]
-use funnel::info;
 
 use cortex_m::interrupt::{
     self,

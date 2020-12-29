@@ -1,9 +1,9 @@
 use core::marker::PhantomData;
 
-use aligned::{A4, Aligned};
 use block_buffer::BlockBuffer;
 
 use crate::{
+    helpers::aligned::{A4, Aligned},
     peripherals::hashcrypt::Hashcrypt,
     traits::{
         digest::{BlockInput, FixedOutputDirty, Update /*, Reset*/},

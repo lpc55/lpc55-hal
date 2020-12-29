@@ -8,6 +8,12 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - Add INPUTMUX and PINT peripherals
 - Add example using PINT + INPUTMUX to make an external interrupt on a pin
 
+## Unreleased
+
+- export `AHB_SECURE_CTRL`, `SAU` @samueltardieu
+- remove ufmt/funnel
+- update dependencies
+
 ## [v0.0.3] - 2019-11-09
 Rename to `lpc55-hal`.
 
