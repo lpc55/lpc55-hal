@@ -19,18 +19,19 @@ circle-ci = { repository = "nickray/lpc55-hal" }
 bare-metal = "1"
 block-buffer = "0.9.0"
 block-cipher = "0.8.0"
-cortex-m = "0.6"
+cortex-m = "0.7"
 cortex-m-semihosting = "0.3"
 digest = "0.9.0"
 embedded-hal = { version = "0.2", features = ["unproven"] }
 generic-array = "0.14.3"
 # incompatibility of cortex-m 0.7 (in pac 0.1.1) with RTIC
-lpc55-pac = "=0.1.0"
+lpc55-pac = "0.2.0"
 
 nb = "1"
 # no-panic = "0.1.12"
 # nom = { version = "^5", default-features = false }
-cortex-m-rtic = { version = "0.5.1", optional = true }
+# cortex-m-rtic = { version = "0.5.1", optional = true }
+cortex-m-rtic = { version = "0.6.0-alpha.0", optional = true }
 # littlefs2 = { path = "../littlefs2", optional = true }
 littlefs2 = { git = "https://github.com/nickray/littlefs2", branch = "closures-instead-of-ub", optional = true }
 usb-device = "0.2.3"
@@ -44,7 +45,8 @@ aligned = "0.3.2"
 [dev-dependencies]
 aes-soft = "0.4"
 cortex-m-rt = "0.6"
-cortex-m-rtic = "0.5.1"
+# cortex-m-rtic = "0.5.1"
+cortex-m-rtic = "0.6.0-alpha.0"
 cortex-m-semihosting = "0.3"
 # ga14 = { package = "generic-array", version = "0.14" }
 # digest = { version = "0.8", default-features = false }
@@ -80,4 +82,7 @@ codegen-units = 1
 debug = true
 lto = true
 opt-level = "z"
+
+[patch.crates-io]
+cortex-m-rtic = { git = "https://github.com/nickray/cortex-m-rtic", branch = "bump-cortex-m" }
 

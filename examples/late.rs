@@ -11,19 +11,21 @@
 #![no_main]
 #![no_std]
 
-use cortex_m_semihosting::hprintln;
-use hal::raw::Interrupt;
-use heapless::{
-    consts::*,
-    i,
-    spsc::{Consumer, Producer, Queue},
-};
 use lpc55_hal as hal;
 use panic_semihosting as _;
 
 #[rtic::app(device = hal::raw)]
-const APP: () = {
-    // Late resources
+mod app {
+    use super::hal;
+    use cortex_m_semihosting::hprintln;
+    use hal::raw::Interrupt;
+    use heapless::{
+        consts::*,
+        i,
+        spsc::{Consumer, Producer, Queue},
+    };
+
+    #[resources]
     struct Resources {
         p: Producer<'static, u32, U4>,
         c: Consumer<'static, u32, U4>,
@@ -40,11 +42,10 @@ const APP: () = {
     }
 
     #[idle(resources = [c])]
-    fn idle(c: idle::Context) -> ! {
+    fn idle(mut cx: idle::Context) -> ! {
         loop {
-            if let Some(byte) = c.resources.c.dequeue() {
+            if let Some(byte) = cx.resources.c.lock(|c| c.dequeue()) {
                 hprintln!("received message: {}", byte).unwrap();
-            // cortex_m::asm::wfi();
             } else {
                 rtic::pend(Interrupt::ADC0);
             }
@@ -52,7 +53,7 @@ const APP: () = {
     }
 
     #[task(binds = ADC0, resources = [p])]
-    fn adc0(c: adc0::Context) {
-        c.resources.p.enqueue(42).unwrap();
+    fn adc0(mut cx: adc0::Context) {
+        cx.resources.p.lock(|p| p.enqueue(42).unwrap());
     }
-};
+}
