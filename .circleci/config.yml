@@ -19,6 +19,10 @@ jobs:
           command: make build-examples-verbosely
 
       - run:
+          name: Install arm-none-eabi-gcc for all-features build
+          command: sudo apt-get update && sudo apt-get install gcc-arm-none-eabi
+
+      - run:
           name: Build crate with all features turned on
           command: make build-all-features
 
