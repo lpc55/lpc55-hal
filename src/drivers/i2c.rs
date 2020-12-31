@@ -159,7 +159,6 @@ where
     }
 
     fn write_without_stop(&mut self, addr: u8, bytes: &[u8]) -> Result<()> {
-        // use cortex_m_semihosting::dbg;
         self.return_on_error()?;
 
         // Write the slave address with the RW bit set to 0 to the master data register MSTDAT.
