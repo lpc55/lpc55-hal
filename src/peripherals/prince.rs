@@ -120,22 +120,24 @@ impl Prince<init_state::Enabled> {
 
     pub fn write_encrypted<R>(&mut self, f: impl FnOnce(&mut Self) -> R) -> R {
         // Immediately prior to flash programming, set the ENC_ENABLE.EN bit
-        self.enable_encrypted_write();
+        unsafe { self.enable_encrypted_write(); }
 
         let result = f(self);
 
         // After completion of flash programming clear ENC_ENABLE.EN, to prevent
         // unintended PRINCE encryption of writes
-        self.disable_encrypted_write();
+        unsafe { self.disable_encrypted_write(); }
         result
     }
 
-    fn enable_encrypted_write(&mut self) {
+    /// marked unsafe to discourage unpaired use; prefer `write_encrypted`
+    pub unsafe fn enable_encrypted_write(&mut self) {
         // Immediately prior to flash programming, set the ENC_ENABLE.EN bit
         self.raw.enc_enable.write(|w| w.en().set_bit());
     }
 
-    fn disable_encrypted_write(&mut self) {
+    /// marked unsafe to discourage unpaired use; prefer `write_encrypted`
+    pub unsafe fn disable_encrypted_write(&mut self) {
         // After completion of flash programming clear ENC_ENABLE.EN, to prevent
         // unintended PRINCE encryption of writes
         self.raw.enc_enable.write(|w| w.en().clear_bit());
