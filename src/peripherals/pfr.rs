@@ -21,9 +21,9 @@ pub enum KeyType {
 
 #[derive(Copy,Clone)]
 #[repr(C)]
-struct IvCodePrinceRegion {
-    keycode_header: u32,
-    iv: [u8; 52],
+pub struct IvCodePrinceRegion {
+    pub keycode_header: u32,
+    pub iv: [u8; 52],
 }
 
 #[derive(Copy,Clone)]
@@ -47,7 +47,7 @@ pub struct Cfpa {
     // 12 * 4
 
     // + (4 + 52) * 3
-    iv_code_prince_region: [IvCodePrinceRegion; 3],
+    pub iv_code_prince_region: [IvCodePrinceRegion; 3],
 
     // + 40 + 224 + 32
     reserved2: [u8; 40],
