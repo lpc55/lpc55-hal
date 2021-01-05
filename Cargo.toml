@@ -33,6 +33,7 @@ nb = "1"
 cortex-m-rtic = { version = "0.5.1", optional = true }
 # littlefs2 = { path = "../littlefs2", optional = true }
 littlefs2 = { git = "https://github.com/nickray/littlefs2", branch = "closures-instead-of-ub", optional = true }
+rand_core = "0.5.1"
 usb-device = "0.2.3"
 usbd-serial = "0.1.0"
 vcell = "0.1.2"
