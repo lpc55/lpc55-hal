@@ -6,8 +6,8 @@ use cortex_m::asm;
 use cortex_m_rt::entry;
 use cortex_m_semihosting::dbg;
 
-use embedded_hal::blocking::rng::Read;
 use lpc55_hal as hal;
+use hal::traits::rand_core::RngCore;
 
 #[entry]
 fn main() -> ! {
@@ -43,7 +43,7 @@ fn main() -> ! {
     // HAL access
     let mut rng = hal::Rng::from(dp.RNG).enabled(&mut syscon);
     let mut random_bytes = [0u8; 5];
-    rng.read(&mut random_bytes).expect("RNG failure");
+    rng.fill_bytes(&mut random_bytes);
     dbg!(random_bytes);
 
     dbg!(rng.module_id());
