@@ -8,29 +8,8 @@ use cortex_m_semihosting::{dbg, hprintln};
 use lpc55_hal as hal;
 use hal::prelude::*;
 
-macro_rules! dbgx {
-    () => {
-        $crate::hprintln!("[{}:{}]", file!(), line!()).unwrap();
-    };
-    ($val:expr) => {
-        // Use of `match` here is intentional because it affects the lifetimes
-        // of temporaries - https://stackoverflow.com/a/48732525/1063961
-        match $val {
-            tmp => {
-                $crate::hprintln!("[{}:{}] {} = {:#x}",
-                    file!(), line!(), stringify!($val), &tmp).unwrap();
-                tmp
-            }
-        }
-    };
-    // Trailing comma with single argument is ignored
-    ($val:expr,) => { $crate::dbg!($val) };
-    ($($val:expr),+ $(,)?) => {
-        ($($crate::dbg!($val)),+,)
-    };
-}
-
 #[repr(C)]
+#[allow(dead_code)]
 enum FlashCommands {
     Init = 0x0,
     PowerDown = 0x1,
@@ -62,7 +41,7 @@ fn main() -> ! {
     let mut pmc = hal.pmc;
     let mut syscon = hal.syscon;
 
-    let clocks = hal::ClockRequirements::default()
+    hal::ClockRequirements::default()
         .system_frequency(12.mhz())
         .configure(&mut anactrl, &mut pmc, &mut syscon)
         .unwrap();
@@ -169,7 +148,7 @@ fn main() -> ! {
     hprintln!("{:#034x}", flash.read_u128(0x4_0000)).ok();
 
     dbg!("after writing");
-    flash.write_u32(WHERE, 0x1234_5678);
+    flash.write_u32(WHERE, 0x1234_5678).unwrap();
     hprintln!("{:#034x}", flash.read_u128(0x4_0000)).ok();
 
     dbg!("after erasing again");
@@ -177,7 +156,7 @@ fn main() -> ! {
     hprintln!("{:#034x}", flash.read_u128(0x4_0000)).ok();
 
     dbg!("after writing with offset 4");
-    flash.write_u32(WHERE + 4, 0x1234_5678);
+    flash.write_u32(WHERE + 4, 0x1234_5678).unwrap();
     hprintln!("{:#034x}", flash.read_u128(0x4_0000)).ok();
 
     hprintln!("{:#034x}", flash.read_u128(0x4_0010)).ok();

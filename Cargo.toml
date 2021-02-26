@@ -1,6 +1,6 @@
 [package]
 name = "lpc55-hal"
-version = "0.0.4"
+version = "0.1.0"
 edition = "2018"
 description   = "Hardware Abstraction Layer (HAL) for the NXP LPC55S6x ARM Cortex-33 microcontrollers"
 repository = "https://github.com/nickray/lpc55-hal"
@@ -16,53 +16,35 @@ build = "build.rs"
 targets = []
 
 [dependencies]
-bare-metal = "1"
-block-buffer = "0.9.0"
-block-cipher = "0.8.0"
-cortex-m = "0.6"
-cortex-m-semihosting = "0.3"
-digest = "0.9.0"
+block-buffer = "0.9"
+cipher = "0.2"
+cortex-m = "0.7"
+digest = "0.9"
 embedded-hal = { version = "0.2", features = ["unproven"] }
-generic-array = "0.14.3"
-# incompatibility of cortex-m 0.7 (in pac 0.1.1) with RTIC
-lpc55-pac = "=0.1.0"
-
+generic-array = "0.14.2"
+lpc55-pac = "0.3"
 nb = "1"
-# no-panic = "0.1.12"
-# nom = { version = "^5", default-features = false }
-cortex-m-rtic = { version = "0.5.1", optional = true }
-littlefs2 = { version = "0.1.0", optional = true }
-rand_core = "0.5.1"
-usb-device = "0.2.3"
-usbd-serial = "0.1.0"
-vcell = "0.1.2"
+rand_core = "0.6"
+usb-device = "0.2"
+vcell = "0.1"
 void = { version = "1", default-features = false }
-aligned = "0.3.2"
-# enum_dispatch = { git = "https://gitlab.com/antonok/enum_dispatch" }
-# salty = { path = "../salty", features = ["haase"] }
+
+# optional dependencies
+cortex-m-rtic = { version = "0.5", optional = true }
+littlefs2 = { version = "0.2.1", optional = true }
 
 [dev-dependencies]
-aes-soft = "0.4"
+aes-soft = "0.6"
 cortex-m-rt = "0.6"
-cortex-m-rtic = "0.5.1"
+cortex-m-rtic = "0.5"
 cortex-m-semihosting = "0.3"
-# ga14 = { package = "generic-array", version = "0.14" }
-# digest = { version = "0.8", default-features = false }
-heapless = "0.5"
+heapless = "0.6"
 panic-halt  = "0.2"
 panic-semihosting = { version = "0.5", features = ["jlink-quirks"] }
-# salty = { path = "../salty", features = ["haase"] }
-# salty = { path = "../salty", features = ["tweetnacl"] }
-sha2 = { version = "0.9.1", default-features = false }
-ssd1306 = "0.3.0-alpha.2"
-sha-1 = { version = "0.9.1", default-features = false }
-# ssd1306 = { git = "https://github.com/jamwaffles/ssd1306.git", branch = "70x42-ish" }
-# ssd1306 = { path = "../ssd1306-tiny" }
-
-# generic-array = "0.13.2"
-# aead = { version = "0.2.0", default-features = false }
-# aead = { path = "../RustCrypto/traits/aead", default-features = false, features = ["heapless"] }
-# chacha20poly1305 = { version = "0.3.0", default-features = false, features = ["heapless", "xchacha20poly1305"] }
+sha2 = { version = "0.9", default-features = false }
+ssd1306 = "0.3"
+sha-1 = { version = "0.9", default-features = false }
+usbd-serial = "0.1"
 
 [features]
 default = ["rt"]
@@ -71,9 +53,6 @@ rt = ["lpc55-pac/rt"]
 rtic-peripherals = ["cortex-m-rtic"]
 # no longer a HAL feature, just for the usb examples
 highspeed-usb-example = []
-# # Boards
-# lpcxpresso55s69 = []
-# solo = []
 
 [profile.release]
 codegen-units = 1

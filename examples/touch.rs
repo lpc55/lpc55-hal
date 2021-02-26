@@ -17,7 +17,6 @@ use hal::{
     drivers::{
         Pins,
         Timer,
-        timer::Lap,
         touch::{
             TouchSensorChannel,
             TouchSensor,
@@ -27,9 +26,8 @@ use hal::{
         }
     },
 };
+use hal::drivers::pins::Level;
 pub use hal::typestates::pin::state;
-
-use hal::{drivers::pins::Level, prelude::*};
 
 
 #[entry]
@@ -95,8 +93,8 @@ fn main() -> ! {
         profile_touch_sensing(&mut touch_sensor, &mut delay_timer, &mut results, &mut times );
         for i in 0 .. 125 {
             let src = (results[i] & (0xf << 24)) >> 24;
-            let sample_num = (times[i] - 1196)/802;
-            let button_sample_num = (times[i] - 1192)/(802* 3);
+            let _sample_num = (times[i] - 1196)/802;
+            let _button_sample_num = (times[i] - 1192)/(802* 3);
             // heprintln!("{}",src).unwrap();
             // heprintln!("{}\t{}\t{}\t{}\t{}\t{}",times[i], i, sample_num,src, counts[(src-3) as usize], button_sample_num).unwrap();
 

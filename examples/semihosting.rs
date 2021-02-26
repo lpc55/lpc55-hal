@@ -67,16 +67,7 @@ fn main() -> ! {
     let DIEID: *mut u32 = 0x4000_0ffc as *mut u32;
     hprintln!("{:x?}", unsafe { DIEID.read_volatile() }).unwrap();
 
-    dbg!(peripherals.SYSCON.device_id0.read().flash_size().bits());
-    dbg!(peripherals
-        .SYSCON
-        .device_id0
-        .read()
-        .modelnum_extention()
-        .bits());
-    dbg!(peripherals.SYSCON.device_id0.read().partconfig().bits());
     dbg!(peripherals.SYSCON.device_id0.read().rom_rev_minor().bits());
-    dbg!(peripherals.SYSCON.device_id0.read().sram_size().bits());
 
     dbg!("Entering the endless loop...");
     loop {

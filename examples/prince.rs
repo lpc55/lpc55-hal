@@ -54,7 +54,7 @@ fn main() -> ! {
     flash.erase_page((DATA_ADDR/512) + 0).unwrap();
     flash.erase_page((DATA_ADDR/512) + 1).unwrap();
 
-    prince.write_encrypted(|prince| {
+    prince.write_encrypted(|_prince| {
         let vector = [0xAA; 1024];
         flash.write(DATA_ADDR, &vector).unwrap();
     });
