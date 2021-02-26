@@ -2,7 +2,7 @@
 Hardware Abstraction Layer (HAL) for [NXP LPC55][nxp-lpc55] series [Cortex-M33][cortex-m33] microcontrollers,
 written in Rust.
 
-[![Build Status][build-image]][build-link]
+[![Build Status][github-action-image]][github-action-link]
 [![crates.io][crates-image]][crates-link]
 ![LICENSE][license-image]
 [![Documentation][docs-image]][docs-link]
@@ -104,8 +104,8 @@ from the various [STM32 HALs][stm32-rs].
 
 [crates-image]: https://img.shields.io/crates/v/lpc55-hal.svg?style=flat-square
 [crates-link]: https://crates.io/crates/lpc55-hal
-[build-image]: https://img.shields.io/circleci/build/github/nickray/lpc55-hal/main.svg?style=flat-square
-[build-link]: https://circleci.com/gh/nickray/lpc55-hal/tree/main
+[github-action-image]: https://github.com/lpc55/lpc55-hal/workflows/build/badge.svg?branch=main
+[github-action-link]: https://github.com/lpc55/lpc55-hal/actions
 [docs-image]: https://docs.rs/lpc55-hal/badge.svg?style=flat-square
 [docs-link]: https://docs.rs/lpc55-hal
 [docs-master-image]: https://img.shields.io/badge/docs-master-blue?style=flat-square

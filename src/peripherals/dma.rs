@@ -11,6 +11,7 @@ use crate::{
 };
 
 #[repr(align(16))]
+#[allow(dead_code)]
 struct Descriptor{
     transfer_config: u32,
     source_end_addr: u32,
@@ -84,7 +85,7 @@ impl<State> Dma<State> {
     pub fn configure_adc(&mut self, adc: &mut Adc<init_state::Enabled>, timer: &mut impl Ctimer<init_state::Enabled>, recv_buf: &mut [u32]) {
         assert!(recv_buf.len() < 0x3FF);
 
-        // channel 21 is ADC FIFO 0 
+        // channel 21 is ADC FIFO 0
         self.raw.channel21.cfg.write(|w| unsafe{
             w
             .periphreqen().set_bit()        // DMA blocks until ADC FIFO is ready
@@ -112,7 +113,7 @@ impl<State> Dma<State> {
 
         self.raw.channel22.cfg.write(|w| unsafe{
             w
-            .periphreqen().clear_bit()      
+            .periphreqen().clear_bit()
             .hwtrigen().clear_bit()         // Will software trigger
             .trigpol().clear_bit()          // falling edge
             .trigtype().clear_bit()         // edge sensitive
@@ -176,9 +177,9 @@ impl<State> Dma<State> {
             DESCRIPTORS.23.next = ((&DESCRIPTORS.22) as *const Descriptor) as u32;
         }
 
-        adc.de.write(|w| { 
+        adc.de.write(|w| {
             w.fwmde0().set_bit() // Enable FIFO A dma
-        });  
+        });
 
 
         adc.fctrl[0].modify(|_,w| unsafe {
