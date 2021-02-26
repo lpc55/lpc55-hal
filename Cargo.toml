@@ -30,13 +30,15 @@ vcell = "0.1"
 void = { version = "1", default-features = false }
 
 # optional dependencies
-cortex-m-rtic = { version = "0.5", optional = true }
+# cortex-m-rtic = { version = "0.5", optional = true }
+lpc55-rtic = { version = "0.5", optional = true }
 littlefs2 = { version = "0.2.1", optional = true }
 
 [dev-dependencies]
 aes-soft = "0.6"
 cortex-m-rt = "0.6"
-cortex-m-rtic = "0.5"
+# cortex-m-rtic = "0.5"
+lpc55-rtic = "0.5"
 cortex-m-semihosting = "0.3"
 heapless = "0.6"
 panic-halt  = "0.2"
@@ -50,7 +52,7 @@ usbd-serial = "0.1"
 default = ["rt"]
 littlefs = ["littlefs2"]
 rt = ["lpc55-pac/rt"]
-rtic-peripherals = ["cortex-m-rtic"]
+rtic-peripherals = ["lpc55-rtic"]
 # no longer a HAL feature, just for the usb examples
 highspeed-usb-example = []
 
