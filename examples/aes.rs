@@ -14,9 +14,8 @@ use hal::prelude::*;
 #[allow(unused_imports)]
 use lpc55_hal as hal;
 
-use aes_soft::block_cipher::{BlockCipher, NewBlockCipher};
+use aes_soft::cipher::{BlockCipher, NewBlockCipher};
 
-use block_cipher::BlockCipher as _;
 use generic_array::GenericArray;
 
 use cortex_m_semihosting::{dbg, hprintln};

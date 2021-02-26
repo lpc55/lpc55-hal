@@ -4,7 +4,7 @@
 extern crate panic_semihosting;
 use cortex_m::iprintln;
 use cortex_m_rt::entry;
-use cortex_m_semihosting::{dbg, hprintln};
+use cortex_m_semihosting::hprintln;
 
 use hal::prelude::*;
 use lpc55_hal as hal;
@@ -56,20 +56,20 @@ fn main() -> ! {
         .into_gpio_pin(&mut iocon, &mut gpio)
         .into_output(hal::drivers::pins::Level::High); // start turned off
 
-    let clocks = hal::ClockRequirements::default()
+    hal::ClockRequirements::default()
         // .support_usbfs()
         .system_frequency(12.mhz())
         .configure(&mut anactrl, &mut pmc, &mut syscon)
         .unwrap();
 
     loop {
-        for i in 0..10_000 {
+        for _ in 0..10_000 {
             red.set_low().unwrap();
         }
         iprintln!(stim, "led on");
         // hprintln!("printed led on");
 
-        for i in 0..10_000 {
+        for _ in 0..10_000 {
             red.set_high().unwrap();
         }
         iprintln!(stim, "led off");

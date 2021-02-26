@@ -1,6 +1,6 @@
 use core::ops::Deref;
 
-pub use block_cipher;
+pub use cipher;
 pub use digest;
 
 // TODO: is this renaming confusing?
@@ -63,6 +63,7 @@ pub mod reg_proxy {
 pub trait Gint: Deref<Target = crate::raw::gint0::RegisterBlock> {}
 
 
+pub mod aligned;
 pub mod flash;
 pub mod usb;
 

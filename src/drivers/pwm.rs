@@ -20,10 +20,10 @@ where
 impl <TIMER> Pwm <TIMER>
 where TIMER: Ctimer<init_state::Enabled> {
 
-    pub fn new(timer: TIMER) -> Self{
+    pub fn new(timer: TIMER) -> Self {
 
         // Match should reset and stop timer, and generate interrupt.
-        timer.mcr.modify(|_,w| {
+        timer.mcr.modify(|_, w| {
             w
             .mr3i().set_bit()
             .mr3r().set_bit()
@@ -83,8 +83,8 @@ where TIMER: Ctimer<init_state::Enabled> {
     }
 
     /// Increase maximum value for the duty cycle.
-    pub fn scale_max_duty_by(&mut self,duty:u32) {
-        self.timer.mr[3].write(|w| unsafe { w.bits(0xff* duty) });
+    pub fn scale_max_duty_by(&mut self, duty: u32) {
+        self.timer.mr[3].write(|w| unsafe { w.bits(0xff * duty) });
     }
 
 }

@@ -1,6 +1,6 @@
 use core::marker::PhantomData;
 
-use aligned::{A4, Aligned};
+use crate::traits::aligned::{A4, Aligned};
 use block_buffer::BlockBuffer;
 
 use crate::{

@@ -49,3 +49,5 @@ impl rand_core::RngCore for Rng<init_state::Enabled> {
         Ok(self.fill_bytes(dest))
     }
 }
+
+impl rand_core::CryptoRng for Rng<init_state::Enabled> {}
