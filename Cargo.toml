@@ -25,6 +25,7 @@ generic-array = "0.14.2"
 lpc55-pac = "0.3"
 nb = "1"
 rand_core = "0.6"
+rand_core_5 = { package = "rand_core", version = "0.5" }
 usb-device = "0.2"
 vcell = "0.1"
 void = { version = "1", default-features = false }
