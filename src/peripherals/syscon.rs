@@ -62,6 +62,83 @@ impl Syscon {
         peripheral.clear_reset(self);
     }
 
+    /// Steals syscon and asserts reset to all peripherals that won't immediately cause a crash.
+    /// Flash, Fmc, and AnalogCtrl are not reset.
+    pub unsafe fn reset_all_noncritical_peripherals() -> Syscon {
+
+        let syscon = Syscon::steal().release();
+        syscon.presetctrl0.write(|w| w
+            // .flash_rst().asserted()  // crash
+            // .fmc_rst().asserted()    // crash
+            .sram_ctrl1_rst().asserted()
+            .sram_ctrl2_rst().asserted()
+            .sram_ctrl3_rst().asserted()
+            .sram_ctrl4_rst().asserted()
+            .mux_rst().asserted()
+            .iocon_rst().asserted()
+            .gpio0_rst().asserted()
+            .gpio1_rst().asserted()
+            .pint_rst().asserted()
+            .gint_rst().asserted()
+            .dma0_rst().asserted()
+            .crcgen_rst().asserted()
+            .wwdt_rst().asserted()
+            .rtc_rst().asserted()
+            .mailbox_rst().asserted()
+            .adc_rst().asserted()
+        );
+        syscon.presetctrl1.write(|w| w
+            .mrt_rst().asserted()
+            .ostimer_rst().asserted()
+            .sct_rst().asserted()
+            .utick_rst().asserted()
+            .fc0_rst().asserted()
+            .fc1_rst().asserted()
+            .fc2_rst().asserted()
+            .fc3_rst().asserted()
+            .fc4_rst().asserted()
+            .fc5_rst().asserted()
+            .fc6_rst().asserted()
+            .fc7_rst().asserted()
+            .timer2_rst().asserted()
+            .usb0_dev_rst().asserted()
+            .timer0_rst().asserted()
+            .timer1_rst().asserted()
+        );
+        syscon.presetctrl2.write(|w| w
+            .dma1_rst().asserted()
+            .comp_rst().asserted()
+            .sdio_rst().asserted()
+            .usb1_host_rst().asserted()
+            .usb1_dev_rst().asserted()
+            .usb1_ram_rst().asserted()
+            .usb1_phy_rst().asserted()
+            .freqme_rst().asserted()
+            .rng_rst().asserted()
+            .sysctl_rst().asserted()
+            .usb0_hostm_rst().asserted()
+            .usb0_hosts_rst().asserted()
+            .hash_aes_rst().asserted()
+            .pq_rst().asserted()
+            .plulut_rst().asserted()
+            .timer3_rst().asserted()
+            .timer4_rst().asserted()
+            .puf_rst().asserted()
+            .casper_rst().asserted()
+            // .analog_ctrl_rst().asserted()  // crash
+            .hs_lspi_rst().asserted()
+            .gpio_sec_rst().asserted()
+            .gpio_sec_int_rst().asserted()
+        );
+
+        // Release everything from reset.
+        syscon.presetctrl0.write(|w| { w.bits(0x0) });
+        syscon.presetctrl1.write(|w| { w.bits(0x0) });
+        syscon.presetctrl2.write(|w| { w.bits(0x0) });
+
+        Syscon::from(syscon)
+    }
+
 }
 
 /// TODO: do this systematically
