@@ -233,7 +233,7 @@ where
             usb.devcmdstat.modify(|_, w| w.dev_en().set_bit().dcon().set_bit());
 
             // HERE TOO?
-            usb.inten.modify(|r, w| unsafe { w.bits(r.bits() | ((1 << 11) - 1)) } );
+            usb.inten.modify(|r, w| unsafe { w.bits(r.bits() | ((1 << 12) - 1)) } );
             usb.inten.modify(|r, w| unsafe { w.bits(r.bits() | (1 << 31)) } );
         });
     }
@@ -328,11 +328,10 @@ where
 
             // First handle endpoint 0 (the only control endpoint)
             if intstat_r.ep0out().bit_is_set() {
-                if devcmdstat.read().setup().bit_is_set() {
-                    ep_setup |= bit;
-                } else {
-                    ep_out |= bit;
-                }
+                ep_out |= bit;
+            }
+            if devcmdstat.read().setup().bit_is_set() {
+                ep_setup |= bit;
             }
 
             if intstat_r.ep0in().bit_is_set() {
