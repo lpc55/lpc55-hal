@@ -5,7 +5,7 @@ use crate::traits::aligned::{A4, Aligned};
 use crate::{
     peripherals::hashcrypt::Hashcrypt,
     traits::{
-        cipher::{block::Block, BlockCipher},
+        cipher::{Block, BlockCipher, BlockDecrypt, BlockEncrypt},
         digest::generic_array::{GenericArray, typenum::{U1, U16, U24, U32}},
     },
     typestates::init_state::Enabled,
@@ -176,7 +176,9 @@ impl<'a, Size: KeySize> Aes<'a, Size> {
 impl<'a, Size: KeySize> BlockCipher for Aes<'a, Size> {
     type BlockSize = U16;
     type ParBlocks = U1;
+}
 
+impl<'a, Size: KeySize> BlockEncrypt for Aes<'a, Size> {
     fn encrypt_block(&self, block: &mut Block<Self>) {
         // unfortunate implementation detail
         if self.cryptcfg.read().aesdecrypt().is_decrypt() {
@@ -184,7 +186,9 @@ impl<'a, Size: KeySize> BlockCipher for Aes<'a, Size> {
         }
         self.one_block(block);
     }
+}
 
+impl<'a, Size: KeySize> BlockDecrypt for Aes<'a, Size> {
     fn decrypt_block(&self, block: &mut Block<Self>) {
         // unfortunate implementation detail
         if self.cryptcfg.read().aesdecrypt().is_encrypt() {
@@ -192,7 +196,6 @@ impl<'a, Size: KeySize> BlockCipher for Aes<'a, Size> {
         }
         self.one_block(block);
     }
-
 }
 
 impl<Size: KeySize> core::ops::Deref for Aes<'_, Size> {

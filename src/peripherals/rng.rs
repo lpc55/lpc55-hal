@@ -108,7 +108,7 @@ impl Rng<init_state::Enabled> {
 
     pub fn get_random_u32(&self) -> u32 {
         for _ in 0..32 {
-            while self.raw.counter_val.read().refresh_cnt() == 0 {
+            while self.raw.counter_val.read().refresh_cnt().bits() == 0 {
                 // dbg!("was not zero");
             }
         }

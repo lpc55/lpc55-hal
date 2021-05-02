@@ -3,9 +3,7 @@ use crate::traits::{
     wg::blocking::rng,
 };
 
-use crate::typestates::{
-    init_state,
-};
+use crate::typestates::init_state;
 
 use crate::Rng;
 
@@ -50,23 +48,4 @@ impl rand_core::RngCore for Rng<init_state::Enabled> {
     }
 }
 
-impl rand_core_5::RngCore for Rng<init_state::Enabled> {
-    fn next_u32(&mut self) -> u32 {
-        self.get_random_u32()
-    }
-
-    fn next_u64(&mut self) -> u64 {
-        rand_core_5::impls::next_u64_via_u32(self)
-    }
-
-    fn fill_bytes(&mut self, dest: &mut [u8]) {
-        rand_core_5::impls::fill_bytes_via_next(self, dest)
-    }
-
-    fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), rand_core_5::Error> {
-        Ok(self.fill_bytes(dest))
-    }
-}
-
 impl rand_core::CryptoRng for Rng<init_state::Enabled> {}
-impl rand_core_5::CryptoRng for Rng<init_state::Enabled> {}
