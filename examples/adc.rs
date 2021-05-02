@@ -50,7 +50,7 @@ fn main() -> ! {
     let mut hal = hal::new();
 
     let _clocks = hal::ClockRequirements::default()
-        .system_frequency(12.mhz())
+        .system_frequency(12.MHz())
         .configure(&mut hal.anactrl, &mut hal.pmc, &mut hal.syscon)
         .unwrap();
 

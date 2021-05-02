@@ -58,7 +58,7 @@ fn main() -> ! {
 
     hal::ClockRequirements::default()
         // .support_usbfs()
-        .system_frequency(12.mhz())
+        .system_frequency(12.MHz())
         .configure(&mut anactrl, &mut pmc, &mut syscon)
         .unwrap();
 

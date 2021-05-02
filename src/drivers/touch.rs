@@ -1,6 +1,6 @@
 use core::ops::{Deref, DerefMut};
-// use cortex_m_semihosting::dbg;
-// use cortex_m_semihosting::heprintln;
+use embedded_time::duration::Extensions;
+
 use crate::traits::wg::timer::CountDown;
 use crate::{
     typestates::{
@@ -23,7 +23,6 @@ use crate::{
         ctimer,
         dma::Dma,
     },
-    time::*,
 };
 
 /// This driver supports 3 touch sensing channels and this enum maps to the physical ADC channel.
@@ -420,7 +419,7 @@ pub fn profile_touch_sensing(touch_sensor: &mut TouchSensor<impl PinId, impl Pin
     let start = delay_timer.lap().0;
     let results = touch_sensor.get_results();
 
-    delay_timer.start(300.ms());
+    delay_timer.start(300_000.microseconds());
 
     loop {
         let mut has_zero = false;

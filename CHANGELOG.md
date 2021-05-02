@@ -8,6 +8,10 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - Add INPUTMUX and PINT peripherals
 - Add example using PINT + INPUTMUX to make an external interrupt on a pin
 
+## [v0.2.0] - 2021-05-02
+Bump lpc55-pac and cipher
+Replace homegrown "time" with embedded-time
+
 ## [v0.1.1] - 2021-04-23
 USB fix
 

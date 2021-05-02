@@ -5,8 +5,8 @@ pub use crate::traits::wg::prelude::*;
 pub use crate::traits::wg::digital::v2::OutputPin as _;
 pub use crate::traits::wg::digital::v2::StatefulOutputPin as _;
 
-// pub use crate::time::Sleep as _lpc55s6x_hal_time_Sleep;
-pub use crate::time::U32Ext as _;
+pub use crate::time::DurationExtensions as _;
+pub use crate::time::RateExtensions as _;
 
 pub use crate::traits::flash::Read as _;
 pub use crate::traits::flash::WriteErase as _;

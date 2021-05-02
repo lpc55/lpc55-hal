@@ -15,6 +15,7 @@ use hal::prelude::*;
 use lpc55_hal as hal;
 
 use aes_soft::cipher::{BlockCipher, NewBlockCipher};
+use hal::traits::cipher::{BlockDecrypt, BlockEncrypt};
 
 use generic_array::GenericArray;
 

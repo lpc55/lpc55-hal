@@ -1,13 +1,8 @@
-use crate::traits::wg;
-
-use crate::peripherals::ctimer::{
-    Ctimer
-};
-use crate::time::{
-    MicroSeconds
-};
-use crate::typestates::{
-    init_state,
+use crate::{
+    peripherals::ctimer::Ctimer,
+    time::Microseconds,
+    traits::wg,
+    typestates::init_state,
 };
 
 pub struct Pwm <TIMER>
@@ -94,7 +89,7 @@ impl<TIMER> wg::Pwm for Pwm<TIMER>
 where TIMER: Ctimer<init_state::Enabled>
 {
     type Channel = u8;
-    type Time = MicroSeconds;
+    type Time = Microseconds;
     type Duty = u16;
 
     fn enable(&mut self, channel: Self::Channel) {
@@ -153,7 +148,7 @@ where TIMER: Ctimer<init_state::Enabled>
     }
 
     fn get_period(&self) -> Self::Time {
-        MicroSeconds(1_000_000 / self.get_max_duty() as u32)
+        Microseconds(1_000_000 / self.get_max_duty() as u32)
     }
 
     fn set_period<P>(&mut self, _period: P)

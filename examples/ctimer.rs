@@ -29,7 +29,7 @@ fn main() -> ! {
     let mut hal = hal::new();
 
     let clocks = hal::ClockRequirements::default()
-        .system_frequency(12.mhz())
+        .system_frequency(12.MHz())
         .configure(&mut hal.anactrl, &mut hal.pmc, &mut hal.syscon)
         .unwrap();
 
@@ -39,7 +39,7 @@ fn main() -> ! {
     heprintln!("looping 1 Hz").unwrap();
     let mut c = 0;
     loop {
-        cdriver.start(1.s());
+        cdriver.start(1_000_000.microseconds());
         dbg!(c * 1_000_000);
         dbg!(cdriver.lap().0);
         c += 1;

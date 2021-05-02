@@ -5,7 +5,8 @@
 ///!
 ///! It is currently used to prepare for using the USBFSD and
 ///! Flexcomm peripherals.
-use core::cmp::min;
+use core::{cmp::min, convert::TryFrom};
+use embedded_time::rate::Extensions;
 
 use crate::typestates::{
     main_clock::MainClock,
@@ -24,11 +25,7 @@ use crate::{
         pmc::Pmc,
         syscon::Syscon,
     },
-    time::{
-        Hertz,
-        Megahertz,
-        U32Ext,
-    },
+    time::{Hertz, Megahertz},
 };
 
 // #[allow(unused_imports)]
@@ -61,7 +58,7 @@ impl Clocks {
     }
 
     pub fn support_usbfs_token(&self) -> Option<ClocksSupportUsbfsToken> {
-        let fast_enough = self.system_frequency >= MIN_USBFS_FREQ.into();
+        let fast_enough = self.system_frequency >= Hertz::from(MIN_USBFS_FREQ);
         let can_latch_sof = self.main_clock == MainClock::Fro96Mhz;
 
         if fast_enough && can_latch_sof {
@@ -72,7 +69,7 @@ impl Clocks {
     }
 
     pub fn support_usbhs_token(&self) -> Option<ClocksSupportUsbhsToken> {
-        let fast_enough = self.system_frequency >= MIN_USBHS_FREQ.into();
+        let fast_enough = self.system_frequency >= Hertz::from(MIN_USBHS_FREQ);
         if fast_enough {
             Some(ClocksSupportUsbhsToken{__: ()})
         } else {
@@ -245,10 +242,10 @@ impl ClockRequirements {
 
     fn get_clock_source_and_div_for_freq(freq: Megahertz, pmc: &mut Pmc, syscon: &mut Syscon) -> (MainClock, u8) {
         let (main_clock, sys_divider) = match freq {
-            freq if freq <= 12.mhz() && 12 % freq.0 == 0 => {
+            freq if freq <= 12_u32.MHz() && 12 % freq.0 == 0 => {
                 (MainClock::Fro12Mhz, 12 / freq.0)
             },
-            freq if freq <= 96.mhz() && 96 % freq.0 == 0 => {
+            freq if freq <= 96_u32.MHz() && 96 % freq.0 == 0 => {
                 (MainClock::Fro96Mhz, 96 / freq.0)
             },
             // For reference: how to get 150 MHz using 16Mhz external crystal
@@ -279,7 +276,7 @@ impl ClockRequirements {
             //     (MainClock::Pll0, 1)
             // }
             // Get 150 MHz using internal FRO12
-            freq if freq == 150.mhz() => {
+            freq if freq == 150_u32.MHz() => {
                 syscon.raw.pll0clksel.write(|w| { w.sel().enum_0x0() /* FRO 12 MHz input */ });
                 Self::configure_pll0(Pll {
                     n: 8,
@@ -379,7 +376,7 @@ impl ClockRequirements {
 
         Ok(Clocks {
             main_clock,
-            system_frequency: freq.into(),
+            system_frequency: Hertz::try_from(freq).unwrap(),
         })
     }
 
@@ -395,7 +392,7 @@ impl ClockRequirements {
 
         Clocks {
             main_clock,
-            system_frequency: freq.into(),
+            system_frequency: Hertz::try_from(freq).unwrap(),
         }
     }
 }

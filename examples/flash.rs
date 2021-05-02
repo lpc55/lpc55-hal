@@ -42,7 +42,7 @@ fn main() -> ! {
     let mut syscon = hal.syscon;
 
     hal::ClockRequirements::default()
-        .system_frequency(12.mhz())
+        .system_frequency(12.MHz())
         .configure(&mut anactrl, &mut pmc, &mut syscon)
         .unwrap();
 
