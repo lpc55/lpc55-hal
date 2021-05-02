@@ -40,7 +40,7 @@ fn main() -> ! {
     let mut syscon = hal.syscon;
 
     let clocks = hal::ClockRequirements::default()
-        .system_frequency(150.mhz())
+        .system_frequency(150.MHz())
         .configure(&mut anactrl, &mut pmc, &mut syscon)
         .unwrap();
 
@@ -50,7 +50,7 @@ fn main() -> ! {
 
     loop {
 
-        timer.start(1.s());
+        timer.start(1_000_000.microseconds());
 
         delay_cycles(10_000_000);
 

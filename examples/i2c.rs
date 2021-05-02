@@ -1,6 +1,7 @@
 #![no_main]
 #![no_std]
 
+use core::convert::TryFrom;
 // extern crate panic_semihosting;
 extern crate panic_halt;
 use cortex_m_rt::entry;
@@ -14,6 +15,7 @@ use hal::{
         Pins,
         I2cMaster,
     },
+    time::Hertz,
 };
 
 use ssd1306;
@@ -31,7 +33,7 @@ fn main() -> ! {
     let mut iocon = hal.iocon.enabled(&mut syscon);
 
     let clocks = hal::ClockRequirements::default()
-        .system_frequency(50.mhz())
+        .system_frequency(50.MHz())
         // .support_flexcomm()
         .configure(&mut anactrl, &mut pmc, &mut syscon)
         .unwrap();
@@ -47,7 +49,7 @@ fn main() -> ! {
     let sda = pins.pio1_21.into_i2c4_sda_pin(&mut iocon);
 
     // let i2c = I2cMaster::new(i2c, (scl, sda), 400.khz());
-    let i2c = I2cMaster::new(i2c, (scl, sda), 1.mhz());
+    let i2c = I2cMaster::new(i2c, (scl, sda), Hertz::try_from(1_u32.MHz()).unwrap());
 
     // OLED
     let mut display: TerminalMode<_> = ssd1306::Builder::new()

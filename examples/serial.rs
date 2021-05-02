@@ -31,7 +31,7 @@ fn main() -> ! {
     let mut iocon = hal.iocon.enabled(&mut syscon);
 
     let clocks = hal::ClockRequirements::default()
-        .system_frequency(50.mhz())
+        .system_frequency(50.MHz())
         // .support_flexcomm()
         .configure(&mut anactrl, &mut pmc, &mut syscon)
         .unwrap();
@@ -48,7 +48,7 @@ fn main() -> ! {
     let rx = pins.pio1_24.into_usart2_rx_pin(&mut iocon);
 
     let config = hal::drivers::serial::config::Config::default()
-        .speed(19_200.hz());
+        .speed(19_200.Hz());
     hprintln!("config = {:?}", config).ok();
 
     let serial = Serial::new(usart, (tx, rx), config);

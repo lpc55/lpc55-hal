@@ -4,9 +4,8 @@
 // extern crate panic_semihosting;
 extern crate panic_halt;
 use cortex_m_rt::entry;
-use core::fmt::Write;
+use core::{convert::TryFrom, fmt::Write};
 
-use hal::prelude::*;
 use lpc55_hal as hal;
 
 use hal::{
@@ -20,6 +19,7 @@ use hal::{
             NoCs,
         },
     },
+    time::{Hertz, RateExtensions},
     traits::wg::spi::{
         Mode,
         Phase,
@@ -74,7 +74,7 @@ fn main() -> ! {
         phase: Phase::CaptureOnFirstTransition,
     };
 
-    let spi = SpiMaster::new(spi, spi_pins, 100.khz(), spi_mode);
+    let spi = SpiMaster::new(spi, spi_pins, Hertz::try_from(100_u32.kHz()).unwrap(), spi_mode);
 
     let dc = pins.pio1_5.into_gpio_pin(&mut iocon, &mut gpio).into_output_high();
 

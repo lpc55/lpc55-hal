@@ -1,4 +1,6 @@
 use core::ops::Deref;
+use embedded_time::duration::Extensions;
+
 use crate::raw;
 use crate::traits::wg::timer::CountDown;
 use crate::drivers::timer;
@@ -20,8 +22,6 @@ use crate::traits::usb::{
     Usb,
     UsbSpeed,
 };
-
-use crate::time::*;
 
 // Main struct
 pub struct Usbhs<State: init_state::InitState = init_state::Unknown, Mode: usbhs_mode::UsbhsMode = usbhs_mode::Unknown> {
@@ -100,7 +100,7 @@ impl<State: init_state::InitState, Mode: usbhs_mode::UsbhsMode> Usbhs<State, Mod
         pmc.power_on(&mut self.raw_phy);
 
         // Give long delay for PHY to be ready
-        timer.start(5.ms());
+        timer.start(5000_u32.microseconds());
         nb::block!(timer.wait()).ok();
 
         syscon.enable_clock(&mut self.raw_phy);
@@ -123,7 +123,7 @@ impl<State: init_state::InitState, Mode: usbhs_mode::UsbhsMode> Usbhs<State, Mod
         });
 
         // Must wait at least 15 us for pll-reg to stabilize
-        timer.start(15.us());
+        timer.start(15.microseconds());
         nb::block!(timer.wait()).ok();
 
         self.raw_phy.pll_sic.modify(|_,w| {

@@ -1,18 +1,13 @@
 use core::convert::Infallible;
-use crate::traits::wg::timer;
+
 use nb;
 use void::Void;
 
-use crate::peripherals::ctimer::{
-    Ctimer
-};
-use crate::time::{
-    MicroSeconds
-};
 use crate::{
-    typestates::{
-        init_state,
-    }
+    traits::wg::timer,
+    peripherals::ctimer::Ctimer,
+    time::Microseconds,
+    typestates::init_state,
 };
 
 /// Return the current time elapsed for the timer.
@@ -43,12 +38,12 @@ where TIMER: Ctimer<init_state::Enabled> {
 
 }
 
-type TimeUnits = MicroSeconds;
+type TimeUnits = Microseconds;
 
 impl <TIMER> Lap<TimeUnits> for Timer<TIMER>
 where TIMER: Ctimer<init_state::Enabled> {
     fn lap(&self) -> TimeUnits{
-        MicroSeconds(self.timer.tc.read().bits())
+        Microseconds(self.timer.tc.read().bits())
     }
 }
 

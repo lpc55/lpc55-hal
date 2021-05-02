@@ -36,7 +36,7 @@ fn main() -> ! {
     let mut hal = hal::new();
 
     let clocks = hal::ClockRequirements::default()
-        .system_frequency(96.mhz())
+        .system_frequency(96.MHz())
         .configure(&mut hal.anactrl, &mut hal.pmc, &mut hal.syscon)
         .unwrap();
     let fro_token = clocks.support_1mhz_fro_token().unwrap();
@@ -102,7 +102,7 @@ fn main() -> ! {
         }
     }
 
-    delay_timer.start(300.ms());
+    delay_timer.start(300_000.microseconds());
     block!(delay_timer.wait()).unwrap();
 
     loop {

@@ -11,8 +11,6 @@ use hal::prelude::*;
 #[allow(unused_imports)]
 use lpc55_hal as hal;
 
-// use hal::{reg_read, reg_modify};
-
 use usbd_serial::{CdcAcmClass, /*SerialPort*/};
 use usb_device::device::{UsbDeviceBuilder, UsbVidPid};
 use hal::drivers::{
@@ -46,7 +44,7 @@ fn main() -> ! {
     let clocks = hal::ClockRequirements::default()
         // .system_frequency(24.mhz())
         // .system_frequency(72.mhz())
-        .system_frequency(96.mhz())
+        .system_frequency(96.MHz())
         .configure(&mut anactrl, &mut pmc, &mut syscon)
         .unwrap();
 

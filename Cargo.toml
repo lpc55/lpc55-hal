@@ -21,6 +21,7 @@ cipher = "0.3"
 cortex-m = "0.7"
 digest = "0.9"
 embedded-hal = { version = "0.2", features = ["unproven"] }
+embedded-time = "0.10.1"
 generic-array = "0.14.2"
 lpc55-pac = "0.4"
 nb = "1"
@@ -43,6 +44,7 @@ cortex-m-semihosting = "0.3"
 heapless = "0.6"
 panic-halt  = "0.2"
 panic-semihosting = { version = "0.5", features = ["jlink-quirks"] }
+rtt-target = { version = "0.3", features = ["cortex-m"] }
 sha2 = { version = "0.9", default-features = false }
 ssd1306 = "0.3"
 sha-1 = { version = "0.9", default-features = false }

@@ -35,7 +35,7 @@ fn main() -> ! {
     const DATA_ADDR: usize = 0x00080000 + 0;
 
     let _clocks = hal::ClockRequirements::default()
-        .system_frequency(12.mhz())
+        .system_frequency(12.MHz())
         .configure(&mut anactrl, &mut pmc, &mut syscon)
         .unwrap();
 
