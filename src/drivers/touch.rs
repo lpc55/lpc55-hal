@@ -17,7 +17,7 @@ use crate::{
         Pin,
         pins,
         timer,
-        timer::Lap,
+        timer::Elapsed,
     },
     peripherals::{
         ctimer,
@@ -416,7 +416,7 @@ pub fn profile_touch_sensing(touch_sensor: &mut TouchSensor<impl PinId, impl Pin
                             times: &mut [u32],
                             ){
 
-    let start = delay_timer.lap().0;
+    let start = delay_timer.elapsed().0;
     let results = touch_sensor.get_results();
 
     delay_timer.start(300_000.microseconds());
@@ -426,7 +426,7 @@ pub fn profile_touch_sensing(touch_sensor: &mut TouchSensor<impl PinId, impl Pin
         for i in 0 .. 125 {
             if results[i] != 0 {
                 if times[i] == 0 {
-                    times[i] = delay_timer.lap().0 - start;
+                    times[i] = delay_timer.elapsed().0 - start;
                     copy[i] = results[i];
                 }
             }
