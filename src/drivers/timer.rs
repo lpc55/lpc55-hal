@@ -12,8 +12,8 @@ use crate::{
 
 /// Return the current time elapsed for the timer.
 /// If the timer has not started or stopped, this unit may not be accurate.
-pub trait Lap <Unit>{
-    fn lap(&self) -> Unit;
+pub trait Elapsed: timer::CountDown {
+    fn elapsed(&self) -> Self::Time;
 }
 
 pub struct Timer<TIMER>
@@ -40,9 +40,9 @@ where TIMER: Ctimer<init_state::Enabled> {
 
 type TimeUnits = Microseconds;
 
-impl <TIMER> Lap<TimeUnits> for Timer<TIMER>
+impl <TIMER> Elapsed for Timer<TIMER>
 where TIMER: Ctimer<init_state::Enabled> {
-    fn lap(&self) -> TimeUnits{
+    fn elapsed(&self) -> Microseconds {
         Microseconds(self.timer.tc.read().bits())
     }
 }

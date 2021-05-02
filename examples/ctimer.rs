@@ -11,7 +11,7 @@ use cortex_m_semihosting::heprintln;
 use lpc55_hal as hal;
 use hal::prelude::*;
 
-use hal::drivers::timer::Lap;
+use hal::drivers::timer::Elapsed;
 
 #[macro_use(block)]
 extern crate nb;
@@ -41,7 +41,7 @@ fn main() -> ! {
     loop {
         cdriver.start(1_000_000.microseconds());
         dbg!(c * 1_000_000);
-        dbg!(cdriver.lap().0);
+        dbg!(cdriver.elapsed().0);
         c += 1;
         block!(cdriver.wait()).unwrap(); // blocks for 1 second
     }

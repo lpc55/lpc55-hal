@@ -14,7 +14,7 @@ use lpc55_hal as hal;
 use hal::{
     drivers::{
         Timer,
-        timer::Lap,
+        timer::Elapsed,
     },
     prelude::*,
 };
@@ -54,7 +54,7 @@ fn main() -> ! {
 
         delay_cycles(10_000_000);
 
-        let us = timer.lap().0;
+        let us = timer.elapsed().0;
         timer.cancel().ok();
 
         heprintln!("{} MHz", 10_000_000 / us).ok();
