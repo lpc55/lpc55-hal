@@ -180,6 +180,8 @@ impl EnabledUsbhsDevice {
     }
 
     pub fn disable_high_speed(&mut self) {
+        // Note: Application Note https://www.nxp.com/docs/en/application-note/TN00071.zip
+        // states that devcmdstat.force_fs (bit 21) might also be used.
         self.raw_phy.pwd_set.write(|w| unsafe { w.bits(1<<12) /* TXPWDV2I */} );
     }
 }
