@@ -445,6 +445,10 @@ pub fn uuid() -> [u8; 16] {
 /// 1. Resets all peripherals & disconnect all interrupts (like in a soft reset)
 /// 2. Enable Iocon and set the INVERT attribute for Pio0_5 (ISP pin).
 /// 3. Jump to bootrom, which will think ISP pin is asserted.
+///
+/// Other prerequisites for this to work:
+/// - Must not be called from an interrupt handler.
+/// - TrustZone must not be disabled (unless you can find a way to re-enable it here).
 pub fn boot_to_bootrom() -> ! {
 
 
