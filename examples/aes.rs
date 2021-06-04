@@ -14,7 +14,7 @@ use hal::prelude::*;
 #[allow(unused_imports)]
 use lpc55_hal as hal;
 
-use aes_soft::cipher::{BlockCipher, NewBlockCipher};
+use aes::cipher::NewBlockCipher;
 use hal::traits::cipher::{BlockDecrypt, BlockEncrypt};
 
 use generic_array::GenericArray;
@@ -37,7 +37,7 @@ fn main() -> ! {
     // via software
     //
     let mut sw_block = block.clone();
-    let cipher = aes_soft::Aes256::new(&key);
+    let cipher = aes::Aes256::new(&key);
 
     let (sw_cyc_enc, _) = hal::count_cycles(|| {
         cipher.encrypt_block(&mut sw_block);
