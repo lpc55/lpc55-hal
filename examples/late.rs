@@ -14,8 +14,6 @@
 use cortex_m_semihosting::hprintln;
 use hal::raw::Interrupt;
 use heapless::{
-    consts::*,
-    i,
     spsc::{Consumer, Producer, Queue},
 };
 use lpc55_hal as hal;
@@ -25,13 +23,13 @@ use panic_semihosting as _;
 const APP: () = {
     // Late resources
     struct Resources {
-        p: Producer<'static, u32, U4>,
-        c: Consumer<'static, u32, U4>,
+        p: Producer<'static, u32, 4>,
+        c: Consumer<'static, u32, 4>,
     }
 
     #[init]
     fn init(_: init::Context) -> init::LateResources {
-        static mut Q: Queue<u32, U4> = Queue(i::Queue::new());
+        static mut Q: Queue<u32, 4> = Queue::new();
 
         let (p, c) = Q.split();
 
