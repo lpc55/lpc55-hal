@@ -2,17 +2,13 @@ use core::convert::TryInto;
 // use cortex_m_semihosting::hprintln;
 
 use crate::{
-    peripherals::{
-        flash::Flash,
-    },
+    peripherals::flash::Flash,
     typestates::init_state::Enabled,
-    traits::{
-        flash::{
-            Error,
-            Result,
-            Read,
-            WriteErase,
-        },
+    traits::flash::{
+        Error,
+        Result,
+        Read,
+        WriteErase,
     },
 };
 
@@ -20,9 +16,6 @@ pub use generic_array::{
     GenericArray,
     typenum::{U16, U512},
 };
-
-#[cfg(feature = "littlefs")]
-use generic_array::typenum::{U256, U1022};
 
 // one physical word of Flash consists of 128 bits (or 4 u32, or 16 bytes)
 // one page is 32 physical words, or 128 u32s, or 512 bytes)
@@ -358,12 +351,6 @@ pub mod littlefs_params {
 
     pub type CACHE_SIZE = U512;
     pub type LOOKAHEADWORDS_SIZE = U16;
-    /// TODO: We can't actually be changed currently
-    pub type FILENAME_MAX_PLUS_ONE = U256;
-    pub type PATH_MAX_PLUS_ONE = U256;
-    pub const FILEBYTES_MAX: usize = littlefs2::ll::LFS_FILE_MAX as _;
-    /// TODO: We can't actually be changed currently
-    pub type ATTRBYTES_MAX = U1022;
 }
 
 #[cfg(feature = "littlefs")]
@@ -413,10 +400,6 @@ macro_rules! littlefs2_filesystem {
 
             type CACHE_SIZE = $crate::drivers::flash::littlefs_params::CACHE_SIZE;
             type LOOKAHEADWORDS_SIZE = $crate::drivers::flash::littlefs_params::LOOKAHEADWORDS_SIZE;
-            type FILENAME_MAX_PLUS_ONE = $crate::drivers::flash::littlefs_params::FILENAME_MAX_PLUS_ONE;
-            type PATH_MAX_PLUS_ONE = $crate::drivers::flash::littlefs_params::PATH_MAX_PLUS_ONE;
-            const FILEBYTES_MAX: usize = $crate::drivers::flash::littlefs_params::FILEBYTES_MAX;
-            type ATTRBYTES_MAX = $crate::drivers::flash::littlefs_params::ATTRBYTES_MAX;
 
 
             fn read(&self, off: usize, buf: &mut [u8]) -> LfsResult<usize> {
@@ -501,10 +484,6 @@ macro_rules! littlefs2_prince_filesystem {
 
             type CACHE_SIZE = $crate::drivers::flash::littlefs_params::CACHE_SIZE;
             type LOOKAHEADWORDS_SIZE = $crate::drivers::flash::littlefs_params::LOOKAHEADWORDS_SIZE;
-            type FILENAME_MAX_PLUS_ONE = $crate::drivers::flash::littlefs_params::FILENAME_MAX_PLUS_ONE;
-            type PATH_MAX_PLUS_ONE = $crate::drivers::flash::littlefs_params::PATH_MAX_PLUS_ONE;
-            const FILEBYTES_MAX: usize = $crate::drivers::flash::littlefs_params::FILEBYTES_MAX;
-            type ATTRBYTES_MAX = $crate::drivers::flash::littlefs_params::ATTRBYTES_MAX;
 
 
             fn read(&self, off: usize, buf: &mut [u8]) -> LfsResult<usize> {
