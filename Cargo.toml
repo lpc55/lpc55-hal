@@ -33,7 +33,7 @@ void = { version = "1", default-features = false }
 # optional dependencies
 # cortex-m-rtic = { version = "0.5", optional = true }
 lpc55-rtic = { version = "0.5.7", optional = true }
-littlefs2 = { version = "0.3.1", optional = true }
+littlefs2 = { version = "0.4", optional = true }
 
 [dev-dependencies]
 aes = "0.7"
