@@ -25,6 +25,8 @@ impl PufStates for Enrolled {}
 /// PUF error
 #[derive(Debug)]
 pub enum Error {
+    /// PUF initialization failed.
+    InitializationFailed,
     /// PUF Command could not start
     CommandFailedToStart,
     /// PUF Command could not complete
@@ -45,16 +47,18 @@ pub enum KeyDestination {
 crate::wrap_stateful_peripheral!(Puf, PUF);
 
 impl<State> Puf<State> {
-    pub fn enabled(mut self, syscon: &mut Syscon) -> Puf<init_state::Enabled> {
+    pub fn enabled(mut self, syscon: &mut Syscon) -> Result<Puf<init_state::Enabled>> {
         syscon.enable_clock(&mut self.raw);
         self.raw.pwrctrl.write(|w| {w.ramon().set_bit()});
-        while self.raw.stat.read().busy().bit_is_set()
-        {
-        }
-
-        Puf {
-            raw: self.raw,
-            _state: init_state::Enabled(()),
+        while self.raw.stat.read().busy().bit_is_set() {}
+        let stat = self.raw.stat.read();
+        if stat.error().bit_is_set() || stat.success().bit_is_clear() {
+            Err(Error::InitializationFailed)
+        } else {
+            Ok(Puf {
+                raw: self.raw,
+                _state: init_state::Enabled(()),
+            })
         }
     }
 
