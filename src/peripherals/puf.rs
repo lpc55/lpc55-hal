@@ -181,11 +181,7 @@ impl Puf<init_state::Enabled>
         })
     }
 
-    pub fn start(self, ac_buffer: &[u8; 1192]) -> Result< Puf<init_state::Enabled<Started>> >{
-        if self.raw.allow.read().allowstart().bit_is_clear() {
-            return Err(Error::NotAllowed);
-        }
-
+    fn do_start(&mut self, ac_buffer: &[u8; 1192]) -> Result<()> {
         self.raw.ctrl.write(|w| { w.start().set_bit() } );
 
         self.wait_for_cmd()?;
@@ -201,14 +197,38 @@ impl Puf<init_state::Enabled>
             }
         }
 
-        self.check_success()?;
+        self.check_success()
+    }
 
+    /// Starts the PUF using the activation code.
+    ///
+    /// Fails if the PUF has already been started, e. g. by the ROM.
+    pub fn start(mut self, ac_buffer: &[u8; 1192]) -> Result<Puf<init_state::Enabled<Started>>> {
+        if self.raw.allow.read().allowstart().bit_is_clear() {
+            Err(Error::NotAllowed)
+        } else {
+            self.do_start(ac_buffer)?;
+
+            Ok(Puf{
+                raw: self.raw,
+                _state: init_state::Enabled(Started),
+            })
+        }
+    }
+
+    /// Starts the PUF using the activiation code or assumes that it has already been started.
+    ///
+    /// If the PUF has already been started, e. g. by the ROM, the start command is no longer
+    /// allowed.  In this case, we assume that the PUF has been started.
+    pub fn try_start(mut self, ac_buffer: &[u8; 1192]) -> Result<Puf<init_state::Enabled<Started>>> {
+        if self.raw.allow.read().allowstart().bit_is_set() {
+            self.do_start(ac_buffer)?;
+        }
         Ok(Puf{
             raw: self.raw,
             _state: init_state::Enabled(Started),
         })
     }
-
 }
 
 impl Puf<init_state::Enabled<Started>> {
