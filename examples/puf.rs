@@ -45,7 +45,7 @@ fn main() -> ! {
     let mut syscon = hal::Syscon::from(dp.SYSCON);
 
     // Acquire PUF in an enabled state
-    let puf = hal::Puf::from(dp.PUF).enabled(&mut syscon);
+    let puf = hal::Puf::from(dp.PUF).enabled(&mut syscon).unwrap();
 
     let flash = hal::Flash::from(dp.FLASH).enabled(&mut syscon);
     let mut flash = hal::FlashGordon::new(flash);
