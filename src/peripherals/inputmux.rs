@@ -1,12 +1,4 @@
-use crate::{
-    raw,
-    peripherals::{
-        syscon,
-    },
-    typestates::{
-        init_state,
-    }
-};
+use crate::{peripherals::syscon, raw, typestates::init_state};
 
 crate::wrap_stateful_peripheral!(InputMux, INPUTMUX);
 
@@ -28,6 +20,4 @@ impl<State> InputMux<State> {
             _state: init_state::Disabled,
         }
     }
-
 }
-

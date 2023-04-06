@@ -3,18 +3,13 @@ use core::convert::TryInto;
 
 use crate::{
     peripherals::flash::Flash,
+    traits::flash::{Error, Read, Result, WriteErase},
     typestates::init_state::Enabled,
-    traits::flash::{
-        Error,
-        Result,
-        Read,
-        WriteErase,
-    },
 };
 
 pub use generic_array::{
-    GenericArray,
     typenum::{U16, U512, U8},
+    GenericArray,
 };
 
 // one physical word of Flash consists of 128 bits (or 4 u32, or 16 bytes)
@@ -33,7 +28,6 @@ pub struct FlashGordon {
 
 impl FlashGordon {
     pub fn new(flash: Flash<Enabled>) -> Self {
-
         flash.raw.event.write(|w| w.rst().set_bit());
         // seems immediate
         while flash.raw.int_status.read().done().bit_is_clear() {}
@@ -43,19 +37,20 @@ impl FlashGordon {
         // first thing to check! legal command failed
         debug_assert!(flash.raw.int_status.read().fail().bit_is_clear());
 
-        FlashGordon {
-            flash,
-        }
+        FlashGordon { flash }
     }
 
     fn clear_status(&self) {
-        self.flash.raw.int_clr_status.write(|w| w
-            .done().set_bit()
-            .ecc_err().set_bit()
-            .err().set_bit()
-            .fail().set_bit()
-        );
-
+        self.flash.raw.int_clr_status.write(|w| {
+            w.done()
+                .set_bit()
+                .ecc_err()
+                .set_bit()
+                .err()
+                .set_bit()
+                .fail()
+                .set_bit()
+        });
     }
 
     fn status(&self) -> Result {
@@ -76,11 +71,7 @@ impl FlashGordon {
         Ok(())
     }
 
-    pub fn just_program_at(
-        &mut self,
-        address: usize,
-    ) -> Result {
-
+    pub fn just_program_at(&mut self, address: usize) -> Result {
         let flash = &self.flash.raw;
         assert!(flash.int_status.read().done().bit_is_set());
         self.clear_status();
@@ -91,15 +82,18 @@ impl FlashGordon {
         self.status()?;
         self.clear_status();
 
-        flash.starta.write(|w| unsafe { w.starta().bits((address >> 4) as u32) } );
-        flash.cmd.write(|w| unsafe { w.bits(FlashCommands::Program as u32) });
+        flash
+            .starta
+            .write(|w| unsafe { w.starta().bits((address >> 4) as u32) });
+        flash
+            .cmd
+            .write(|w| unsafe { w.bits(FlashCommands::Program as u32) });
         while flash.int_status.read().done().bit_is_clear() {}
         debug_assert!(flash.int_status.read().err().bit_is_clear());
         debug_assert!(flash.int_status.read().fail().bit_is_clear());
         self.status()?;
 
         Ok(())
-
     }
 
     pub fn clear_page_register(&mut self) {
@@ -111,8 +105,10 @@ impl FlashGordon {
             for j in 0..4 {
                 flash.dataw[j].write(|w| unsafe { w.bits(0x0) });
             }
-            flash.starta.write(|w| unsafe { w.starta().bits(i as u32) } );
-            flash.cmd.write(|w| unsafe { w.bits(FlashCommands::Write as u32) });
+            flash.starta.write(|w| unsafe { w.starta().bits(i as u32) });
+            flash
+                .cmd
+                .write(|w| unsafe { w.bits(FlashCommands::Write as u32) });
 
             while flash.int_status.read().done().bit_is_clear() {}
             debug_assert!(flash.int_status.read().err().bit_is_clear());
@@ -133,16 +129,24 @@ impl FlashGordon {
             flash.dataw[j].write(|w| unsafe { w.bits(0) });
         }
         flash.dataw[(address >> 2) % 4].write(|w| unsafe { w.bits(u32::from_ne_bytes(word)) });
-        flash.starta.write(|w| unsafe { w.starta().bits(page_register_column as u32) } );
+        flash
+            .starta
+            .write(|w| unsafe { w.starta().bits(page_register_column as u32) });
         self.clear_status();
-        flash.cmd.write(|w| unsafe { w.bits(FlashCommands::Write as u32) });
+        flash
+            .cmd
+            .write(|w| unsafe { w.bits(FlashCommands::Write as u32) });
         while flash.int_status.read().done().bit_is_clear() {}
         self.status()?;
 
         self.clear_status();
         // self.just_program_at(address & !(512 - 1));
-        flash.starta.write(|w| unsafe { w.starta().bits((address >> 4) as u32) } );
-        flash.cmd.write(|w| unsafe { w.bits(FlashCommands::Program as u32) });
+        flash
+            .starta
+            .write(|w| unsafe { w.starta().bits((address >> 4) as u32) });
+        flash
+            .cmd
+            .write(|w| unsafe { w.bits(FlashCommands::Program as u32) });
         while flash.int_status.read().done().bit_is_clear() {}
         self.status()?;
         Ok(())
@@ -159,16 +163,24 @@ impl FlashGordon {
             flash.dataw[j].write(|w| unsafe { w.bits(0) });
         }
         flash.dataw[(address >> 2) % 4].write(|w| unsafe { w.bits(word) });
-        flash.starta.write(|w| unsafe { w.starta().bits(page_register_column as u32) } );
+        flash
+            .starta
+            .write(|w| unsafe { w.starta().bits(page_register_column as u32) });
         self.clear_status();
-        flash.cmd.write(|w| unsafe { w.bits(FlashCommands::Write as u32) });
+        flash
+            .cmd
+            .write(|w| unsafe { w.bits(FlashCommands::Write as u32) });
         while flash.int_status.read().done().bit_is_clear() {}
         self.status()?;
 
         self.clear_status();
         // self.just_program_at(address & !(512 - 1));
-        flash.starta.write(|w| unsafe { w.starta().bits((address >> 4) as u32) } );
-        flash.cmd.write(|w| unsafe { w.bits(FlashCommands::Program as u32) });
+        flash
+            .starta
+            .write(|w| unsafe { w.starta().bits((address >> 4) as u32) });
+        flash
+            .cmd
+            .write(|w| unsafe { w.bits(FlashCommands::Program as u32) });
         while flash.int_status.read().done().bit_is_clear() {}
         self.status()?;
 
@@ -183,18 +195,27 @@ impl FlashGordon {
         let buf: [u8; 16] = data.to_ne_bytes();
 
         for (i, chunk) in buf.chunks(4).enumerate() {
-            flash.dataw[i].write(|w| unsafe { w.bits(u32::from_ne_bytes(chunk.try_into().unwrap())) } );
+            flash.dataw[i]
+                .write(|w| unsafe { w.bits(u32::from_ne_bytes(chunk.try_into().unwrap())) });
         }
-        flash.starta.write(|w| unsafe { w.starta().bits((address >> 4) as u32) } );
+        flash
+            .starta
+            .write(|w| unsafe { w.starta().bits((address >> 4) as u32) });
         self.clear_status();
-        flash.cmd.write(|w| unsafe { w.bits(FlashCommands::Write as u32) });
+        flash
+            .cmd
+            .write(|w| unsafe { w.bits(FlashCommands::Write as u32) });
         while flash.int_status.read().done().bit_is_clear() {}
         self.status()?;
 
         self.clear_status();
         // self.just_program_at(address & !(512 - 1));
-        flash.starta.write(|w| unsafe { w.starta().bits((address >> 4) as u32) } );
-        flash.cmd.write(|w| unsafe { w.bits(FlashCommands::Program as u32) });
+        flash
+            .starta
+            .write(|w| unsafe { w.starta().bits((address >> 4) as u32) });
+        flash
+            .cmd
+            .write(|w| unsafe { w.bits(FlashCommands::Program as u32) });
         while flash.int_status.read().done().bit_is_clear() {}
         self.status()?;
 
@@ -227,11 +248,17 @@ impl Read<U16> for FlashGordon {
         let addr = address as u32;
         debug_assert!(addr & (READ_SIZE as u32 - 1) == 0);
 
-        flash.starta.write(|w| unsafe { w.starta().bits(addr >> 4) } );
+        flash
+            .starta
+            .write(|w| unsafe { w.starta().bits(addr >> 4) });
         // want to have normal reads
-        flash.dataw[0].write(|w| unsafe { w.bits(0) } );
-        flash.cmd.write(|w| unsafe { w.bits(FlashCommands::ReadSingleWord as u32) });
-        while flash.int_status.read().done().bit_is_clear() { continue; }
+        flash.dataw[0].write(|w| unsafe { w.bits(0) });
+        flash
+            .cmd
+            .write(|w| unsafe { w.bits(FlashCommands::ReadSingleWord as u32) });
+        while flash.int_status.read().done().bit_is_clear() {
+            continue;
+        }
 
         assert!(flash.int_status.read().err().bit_is_clear());
         debug_assert!(flash.int_status.read().fail().bit_is_clear());
@@ -244,7 +271,6 @@ impl Read<U16> for FlashGordon {
 }
 
 impl WriteErase<U512, U512> for FlashGordon {
-
     fn status(&self) -> Result {
         self.status()
     }
@@ -260,9 +286,15 @@ impl WriteErase<U512, U512> for FlashGordon {
         self.clear_status();
         assert!(flash.int_status.read().done().bit_is_clear());
 
-        flash.starta.write(|w| unsafe { w.starta().bits(starta as u32) } );
-        flash.stopa.write(|w| unsafe { w.stopa().bits(starta as u32) } );
-        flash.cmd.write(|w| unsafe { w.bits(FlashCommands::EraseRange as u32) });
+        flash
+            .starta
+            .write(|w| unsafe { w.starta().bits(starta as u32) });
+        flash
+            .stopa
+            .write(|w| unsafe { w.stopa().bits(starta as u32) });
+        flash
+            .cmd
+            .write(|w| unsafe { w.bits(FlashCommands::EraseRange as u32) });
         while flash.int_status.read().done().bit_is_clear() {}
 
         debug_assert!(flash.int_status.read().err().bit_is_clear());
@@ -279,7 +311,6 @@ impl WriteErase<U512, U512> for FlashGordon {
         array: &GenericArray<u8, U512>,
         // cs: &CriticalSection,
     ) -> Result {
-
         // hprintln!("native write to {} of {:?} (first 16)", address, &array[..16]).ok();
         let flash = &self.flash.raw;
         assert!(flash.int_status.read().done().bit_is_set());
@@ -290,15 +321,18 @@ impl WriteErase<U512, U512> for FlashGordon {
         // write one physical word (16 bytes) at a time
         for (i, chunk) in array.chunks(16).enumerate() {
             let starta = (address >> 4) + i;
-            flash.starta.write(|w| unsafe { w.starta().bits(starta as u32) } );
+            flash
+                .starta
+                .write(|w| unsafe { w.starta().bits(starta as u32) });
 
             for (j, word) in chunk.chunks(4).enumerate() {
-                flash.dataw[j].write(|w| unsafe { w.bits(
-                    u32::from_ne_bytes(word.try_into().unwrap())
-                ) } );
+                flash.dataw[j]
+                    .write(|w| unsafe { w.bits(u32::from_ne_bytes(word.try_into().unwrap())) });
             }
 
-            flash.cmd.write(|w| unsafe { w.bits(FlashCommands::Write as u32) });
+            flash
+                .cmd
+                .write(|w| unsafe { w.bits(FlashCommands::Write as u32) });
             // flash.cmd.write(|w| unsafe { w.bits(FlashCommands::WriteProgram as u32) });
             while flash.int_status.read().done().bit_is_clear() {}
             debug_assert!(flash.int_status.read().err().bit_is_clear());
@@ -308,15 +342,18 @@ impl WriteErase<U512, U512> for FlashGordon {
         self.clear_status();
 
         let starta = address >> 4;
-        flash.starta.write(|w| unsafe { w.starta().bits(starta as u32) } );
-        flash.cmd.write(|w| unsafe { w.bits(FlashCommands::Program as u32) });
+        flash
+            .starta
+            .write(|w| unsafe { w.starta().bits(starta as u32) });
+        flash
+            .cmd
+            .write(|w| unsafe { w.bits(FlashCommands::Program as u32) });
         while flash.int_status.read().done().bit_is_clear() {}
         debug_assert!(flash.int_status.read().err().bit_is_clear());
         debug_assert!(flash.int_status.read().fail().bit_is_clear());
         self.status()?;
 
         Ok(())
-
     }
 }
 
@@ -335,7 +372,7 @@ pub enum FlashCommands {
     WriteProgram = 0xA,
     Program = 0xC,
     /// report ECC error (correction) count
-    ReportEcc= 0xD,
+    ReportEcc = 0xD,
 }
 
 #[cfg(feature = "littlefs")]

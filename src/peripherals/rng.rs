@@ -1,12 +1,4 @@
-use crate::{
-    raw,
-    peripherals::{
-        syscon::Syscon,
-    },
-    typestates::{
-        init_state,
-    }
-};
+use crate::{peripherals::syscon::Syscon, raw, typestates::init_state};
 
 crate::wrap_stateful_peripheral!(Rng, RNG);
 
@@ -25,8 +17,7 @@ pub struct ModuleId {
     aperture: u8,
 }
 
-impl Rng {
-}
+impl Rng {}
 
 impl<State> Rng<State> {
     pub fn enabled(mut self, syscon: &mut Syscon) -> Rng<init_state::Enabled> {
@@ -46,7 +37,6 @@ impl<State> Rng<State> {
             _state: init_state::Disabled,
         }
     }
-
 }
 
 impl Rng<init_state::Enabled> {
@@ -125,4 +115,3 @@ impl Rng<init_state::Enabled> {
         }
     }
 }
-

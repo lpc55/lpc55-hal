@@ -65,80 +65,133 @@ impl Syscon {
     /// Steals syscon and asserts reset to all peripherals that won't immediately cause a crash.
     /// Flash, Fmc, and AnalogCtrl are not reset.
     pub unsafe fn reset_all_noncritical_peripherals() -> Syscon {
-
         let syscon = Syscon::steal().release();
-        syscon.presetctrl0.write(|w| w
-            // .flash_rst().asserted()  // crash
-            // .fmc_rst().asserted()    // crash
-            .sram_ctrl1_rst().asserted()
-            .sram_ctrl2_rst().asserted()
-            .sram_ctrl3_rst().asserted()
-            .sram_ctrl4_rst().asserted()
-            .mux_rst().asserted()
-            .iocon_rst().asserted()
-            .gpio0_rst().asserted()
-            .gpio1_rst().asserted()
-            .pint_rst().asserted()
-            .gint_rst().asserted()
-            .dma0_rst().asserted()
-            .crcgen_rst().asserted()
-            .wwdt_rst().asserted()
-            .rtc_rst().asserted()
-            .mailbox_rst().asserted()
-            .adc_rst().asserted()
-        );
-        syscon.presetctrl1.write(|w| w
-            .mrt_rst().asserted()
-            .ostimer_rst().asserted()
-            .sct_rst().asserted()
-            .utick_rst().asserted()
-            .fc0_rst().asserted()
-            .fc1_rst().asserted()
-            .fc2_rst().asserted()
-            .fc3_rst().asserted()
-            .fc4_rst().asserted()
-            .fc5_rst().asserted()
-            .fc6_rst().asserted()
-            .fc7_rst().asserted()
-            .timer2_rst().asserted()
-            .usb0_dev_rst().asserted()
-            .timer0_rst().asserted()
-            .timer1_rst().asserted()
-        );
-        syscon.presetctrl2.write(|w| w
-            .dma1_rst().asserted()
-            .comp_rst().asserted()
-            .sdio_rst().asserted()
-            .usb1_host_rst().asserted()
-            .usb1_dev_rst().asserted()
-            .usb1_ram_rst().asserted()
-            .usb1_phy_rst().asserted()
-            .freqme_rst().asserted()
-            .rng_rst().asserted()
-            .sysctl_rst().asserted()
-            .usb0_hostm_rst().asserted()
-            .usb0_hosts_rst().asserted()
-            .hash_aes_rst().asserted()
-            .pq_rst().asserted()
-            .plulut_rst().asserted()
-            .timer3_rst().asserted()
-            .timer4_rst().asserted()
-            .puf_rst().asserted()
-            .casper_rst().asserted()
-            // .analog_ctrl_rst().asserted()  // crash
-            .hs_lspi_rst().asserted()
-            .gpio_sec_rst().asserted()
-            .gpio_sec_int_rst().asserted()
-        );
+        syscon.presetctrl0.write(|w| {
+            w
+                // .flash_rst().asserted()  // crash
+                // .fmc_rst().asserted()    // crash
+                .sram_ctrl1_rst()
+                .asserted()
+                .sram_ctrl2_rst()
+                .asserted()
+                .sram_ctrl3_rst()
+                .asserted()
+                .sram_ctrl4_rst()
+                .asserted()
+                .mux_rst()
+                .asserted()
+                .iocon_rst()
+                .asserted()
+                .gpio0_rst()
+                .asserted()
+                .gpio1_rst()
+                .asserted()
+                .pint_rst()
+                .asserted()
+                .gint_rst()
+                .asserted()
+                .dma0_rst()
+                .asserted()
+                .crcgen_rst()
+                .asserted()
+                .wwdt_rst()
+                .asserted()
+                .rtc_rst()
+                .asserted()
+                .mailbox_rst()
+                .asserted()
+                .adc_rst()
+                .asserted()
+        });
+        syscon.presetctrl1.write(|w| {
+            w.mrt_rst()
+                .asserted()
+                .ostimer_rst()
+                .asserted()
+                .sct_rst()
+                .asserted()
+                .utick_rst()
+                .asserted()
+                .fc0_rst()
+                .asserted()
+                .fc1_rst()
+                .asserted()
+                .fc2_rst()
+                .asserted()
+                .fc3_rst()
+                .asserted()
+                .fc4_rst()
+                .asserted()
+                .fc5_rst()
+                .asserted()
+                .fc6_rst()
+                .asserted()
+                .fc7_rst()
+                .asserted()
+                .timer2_rst()
+                .asserted()
+                .usb0_dev_rst()
+                .asserted()
+                .timer0_rst()
+                .asserted()
+                .timer1_rst()
+                .asserted()
+        });
+        syscon.presetctrl2.write(|w| {
+            w.dma1_rst()
+                .asserted()
+                .comp_rst()
+                .asserted()
+                .sdio_rst()
+                .asserted()
+                .usb1_host_rst()
+                .asserted()
+                .usb1_dev_rst()
+                .asserted()
+                .usb1_ram_rst()
+                .asserted()
+                .usb1_phy_rst()
+                .asserted()
+                .freqme_rst()
+                .asserted()
+                .rng_rst()
+                .asserted()
+                .sysctl_rst()
+                .asserted()
+                .usb0_hostm_rst()
+                .asserted()
+                .usb0_hosts_rst()
+                .asserted()
+                .hash_aes_rst()
+                .asserted()
+                .pq_rst()
+                .asserted()
+                .plulut_rst()
+                .asserted()
+                .timer3_rst()
+                .asserted()
+                .timer4_rst()
+                .asserted()
+                .puf_rst()
+                .asserted()
+                .casper_rst()
+                .asserted()
+                // .analog_ctrl_rst().asserted()  // crash
+                .hs_lspi_rst()
+                .asserted()
+                .gpio_sec_rst()
+                .asserted()
+                .gpio_sec_int_rst()
+                .asserted()
+        });
 
         // Release everything from reset.
-        syscon.presetctrl0.write(|w| { w.bits(0x0) });
-        syscon.presetctrl1.write(|w| { w.bits(0x0) });
-        syscon.presetctrl2.write(|w| { w.bits(0x0) });
+        syscon.presetctrl0.write(|w| w.bits(0x0));
+        syscon.presetctrl1.write(|w| w.bits(0x0));
+        syscon.presetctrl2.write(|w| w.bits(0x0));
 
         Syscon::from(syscon)
     }
-
 }
 
 /// TODO: do this systematically
@@ -302,8 +355,8 @@ macro_rules! impl_clock_control {
             }
 
             fn is_clock_enabled(&self, s: &Syscon) -> bool {
-                s.raw.$register.read().$clock1().is_enable() &&
-                s.raw.$register.read().$clock2().is_enable()
+                s.raw.$register.read().$clock1().is_enable()
+                    && s.raw.$register.read().$clock2().is_enable()
             }
         }
     };
@@ -335,7 +388,7 @@ impl_clock_control!(raw::PINT, pint, ahbclkctrl0);
 impl_clock_control!(raw::USB0, usb0_dev, ahbclkctrl1);
 impl_clock_control!(raw::USBPHY, usb1_phy, ahbclkctrl2);
 impl_clock_control!(raw::USB1, usb1_dev, usb1_ram, ahbclkctrl2);
-impl_clock_control!(raw::USBFSH, usb0_hosts, ahbclkctrl2);  // well what about usb0_hostm?
+impl_clock_control!(raw::USBFSH, usb0_hosts, ahbclkctrl2); // well what about usb0_hostm?
 impl_clock_control!(raw::USBHSH, usb1_host, ahbclkctrl2);
 impl_clock_control!(raw::UTICK0, utick, ahbclkctrl1);
 
@@ -432,4 +485,3 @@ impl_reset_control!(raw::UTICK0, utick_rst, presetctrl1);
 
 impl_reset_control!(raw::USBFSH, usb0_hostm_rst, usb0_hosts_rst, presetctrl2);
 impl_reset_control!(raw::USB1, usb1_dev_rst, usb1_ram_rst, presetctrl2);
-

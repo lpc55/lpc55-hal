@@ -1,12 +1,6 @@
-use core::{
-    marker::PhantomData,
-    ops::Deref,
-};
+use core::{marker::PhantomData, ops::Deref};
 
-use crate::traits::reg_proxy::{
-    Reg,
-    RegCluster,
-};
+use crate::traits::reg_proxy::{Reg, RegCluster};
 
 pub struct RegProxy<T: Reg> {
     _marker: PhantomData<*const T>,

@@ -1,40 +1,37 @@
 #![no_main]
 #![no_std]
 /// Simple example to measure the core clock frequency
+extern crate panic_semihosting; // 4004 bytes
+                                // extern crate panic_halt; // 672 bytes
 
-extern crate panic_semihosting;  // 4004 bytes
-// extern crate panic_halt; // 672 bytes
-
-use cortex_m_semihosting::{heprint,heprintln};
 use cortex_m_rt::entry;
+use cortex_m_semihosting::{heprint, heprintln};
 
-use lpc55_hal as hal;
 use hal::{
+    peripherals::pfr::{Cfpa, KeyType},
     prelude::*,
-    peripherals::pfr::{KeyType, Cfpa},
 };
+use lpc55_hal as hal;
 
 macro_rules! dump_hex {
     ($array:expr, $length:expr ) => {
-
         heprint!("{:?} = ", stringify!($array)).unwrap();
         for i in 0..$length {
             heprint!("{:02X}", $array[i]).unwrap();
         }
         heprintln!("").unwrap();
-
     };
 }
-
 
 #[allow(dead_code)]
 fn boot_to_bootrom() -> ! {
     // Best way to boot into MCUBOOT is to erase the first flash page before rebooting.
     use hal::traits::flash::WriteErase;
-    let flash = unsafe { hal::peripherals::flash::Flash::steal() }.enabled(
-        &mut unsafe {hal::peripherals::syscon::Syscon::steal()}
-    );
-    hal::drivers::flash::FlashGordon::new(flash).erase_page(0).ok();
+    let flash = unsafe { hal::peripherals::flash::Flash::steal() }
+        .enabled(&mut unsafe { hal::peripherals::syscon::Syscon::steal() });
+    hal::drivers::flash::FlashGordon::new(flash)
+        .erase_page(0)
+        .ok();
     hal::raw::SCB::sys_reset()
 }
 
@@ -49,7 +46,6 @@ fn dump_cfpa(cfpa: &Cfpa) {
     dump_hex!(cfpa.customer_data, 10);
 }
 
-
 #[entry]
 fn main() -> ! {
     let hal = hal::new();
@@ -57,7 +53,6 @@ fn main() -> ! {
     let mut anactrl = hal.anactrl;
     let mut pmc = hal.pmc;
     let mut syscon = hal.syscon;
-
 
     let clocks = hal::ClockRequirements::default()
         .system_frequency(96.MHz())
@@ -67,10 +62,9 @@ fn main() -> ! {
     dump_hex!(hal::uuid(), 16);
     heprintln!("chip revision: {}", hal::chip_revision()).ok();
     let mut pfr = hal.pfr.enabled(&clocks).unwrap();
-    let mut cfpa = pfr.read_latest_cfpa( ).unwrap();
+    let mut cfpa = pfr.read_latest_cfpa().unwrap();
     heprintln!("CFPA:").ok();
     dump_cfpa(&cfpa);
-
 
     heprintln!("Increment the version and write back cfpa!").ok();
     cfpa.version = cfpa.version + 1;

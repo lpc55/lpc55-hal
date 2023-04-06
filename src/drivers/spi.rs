@@ -8,29 +8,22 @@
 ///
 use core::marker::PhantomData;
 
-pub use crate::traits::wg::spi::{
-    FullDuplex,
-    Mode,
-    Phase,
-    Polarity,
-};
+use crate::time::Hertz;
+pub use crate::traits::wg::spi::{FullDuplex, Mode, Phase, Polarity};
 use crate::typestates::pin::{
     flexcomm::{
+        ChipSelect,
         // Trait marking I2C peripherals and pins
         Spi,
         SpiPins,
-        ChipSelect,
     },
     PinId,
 };
-use crate::time::{
-    Hertz,
-};
 
 pub mod prelude {
-    pub use super::SpiMaster;
     pub use super::Error as SpiError;
     pub use super::Result as SpiResult;
+    pub use super::SpiMaster;
 }
 
 /// SPI error
@@ -82,24 +75,31 @@ where
         let speed: Hertz = speed.into();
         let speed: u32 = speed.0;
 
-        while spi.stat.read().mstidle().bit_is_clear() { continue; }
+        while spi.stat.read().mstidle().bit_is_clear() {
+            continue;
+        }
 
-        spi.fifocfg.modify(|_, w| w
-            .enabletx().disabled()
-            .enablerx().disabled()
-        );
-        spi.cfg.modify(|_, w| w
-            .enable().disabled()
-            .master().master_mode()
-            .lsbf().standard() // MSB first
-            .cpha().bit(mode.phase == Phase::CaptureOnSecondTransition)
-            .cpol().bit(mode.polarity == Polarity::IdleHigh)
-            .loop_().disabled()
-        );
+        spi.fifocfg
+            .modify(|_, w| w.enabletx().disabled().enablerx().disabled());
+        spi.cfg.modify(|_, w| {
+            w.enable()
+                .disabled()
+                .master()
+                .master_mode()
+                .lsbf()
+                .standard() // MSB first
+                .cpha()
+                .bit(mode.phase == Phase::CaptureOnSecondTransition)
+                .cpol()
+                .bit(mode.polarity == Polarity::IdleHigh)
+                .loop_()
+                .disabled()
+        });
 
         let div: u32 = 12_000_000 / speed - 1;
         debug_assert!(div <= 0xFFFF);
-        spi.div.modify(|_, w| unsafe { w.divval().bits(div as u16) } );
+        spi.div
+            .modify(|_, w| unsafe { w.divval().bits(div as u16) });
 
         // spi.raw.fifowr.write(|w| w
         //     .rxignore().ignore() // otherwise transmit halts if FIFORD buffer is full
@@ -108,13 +108,9 @@ where
         //     .enabletx().enabled()
         //     .enablerx().enabled()
         // );
-        spi.fifocfg.modify(|_, w| w
-            .enabletx().enabled()
-            .enablerx().enabled()
-        );
-        spi.cfg.modify(|_, w| w
-            .enable().enabled()
-        );
+        spi.fifocfg
+            .modify(|_, w| w.enabletx().enabled().enablerx().enabled());
+        spi.cfg.modify(|_, w| w.enable().enabled());
         // match pins.3.CS {
         //     0...3 => {},
         //     _ => { panic!() },
@@ -140,7 +136,6 @@ where
         // TODO: error readout
         Ok(())
     }
-
 }
 
 impl<SCK, MOSI, MISO, CS, SPI, PINS> FullDuplex<u8> for SpiMaster<SCK, MOSI, MISO, CS, SPI, PINS>
@@ -168,7 +163,6 @@ where
     }
 
     fn send(&mut self, byte: u8) -> Result<()> {
-
         // NB: UM says "Do not read-modify-write the register."
         // - writing 0 to upper-half word means: keep previous control settings
 
@@ -178,50 +172,69 @@ where
             // We could probably repeat this here
             use ChipSelect::*;
             match self.cs {
-                Chip0 =>  {
-                    self.spi.fifowr.write(|w| unsafe { w
-                        // control
-                        .len().bits(7) // 8 bits
-                        .txssel0_n().asserted()
-                        // data
-                        .txdata().bits(byte as u16)
+                Chip0 => {
+                    self.spi.fifowr.write(|w| unsafe {
+                        w
+                            // control
+                            .len()
+                            .bits(7) // 8 bits
+                            .txssel0_n()
+                            .asserted()
+                            // data
+                            .txdata()
+                            .bits(byte as u16)
                     });
-                },
-                Chip1 =>  {
-                    self.spi.fifowr.write(|w| unsafe { w
-                        // control
-                        .len().bits(7) // 8 bits
-                        .txssel1_n().asserted()
-                        // data
-                        .txdata().bits(byte as u16)
+                }
+                Chip1 => {
+                    self.spi.fifowr.write(|w| unsafe {
+                        w
+                            // control
+                            .len()
+                            .bits(7) // 8 bits
+                            .txssel1_n()
+                            .asserted()
+                            // data
+                            .txdata()
+                            .bits(byte as u16)
                     });
-                },
-                Chip2 =>  {
-                    self.spi.fifowr.write(|w| unsafe { w
-                        // control
-                        .len().bits(7) // 8 bits
-                        .txssel2_n().asserted()
-                        // data
-                        .txdata().bits(byte as u16)
+                }
+                Chip2 => {
+                    self.spi.fifowr.write(|w| unsafe {
+                        w
+                            // control
+                            .len()
+                            .bits(7) // 8 bits
+                            .txssel2_n()
+                            .asserted()
+                            // data
+                            .txdata()
+                            .bits(byte as u16)
                     });
-                },
-                Chip3 =>  {
-                    self.spi.fifowr.write(|w| unsafe { w
-                        // control
-                        .len().bits(7) // 8 bits
-                        .txssel3_n().asserted()
-                        // data
-                        .txdata().bits(byte as u16)
+                }
+                Chip3 => {
+                    self.spi.fifowr.write(|w| unsafe {
+                        w
+                            // control
+                            .len()
+                            .bits(7) // 8 bits
+                            .txssel3_n()
+                            .asserted()
+                            // data
+                            .txdata()
+                            .bits(byte as u16)
                     });
-                },
-                NoChips =>  {
-                    self.spi.fifowr.write(|w| unsafe { w
-                        // control
-                        .len().bits(7) // 8 bits
-                        // data
-                        .txdata().bits(byte as u16)
+                }
+                NoChips => {
+                    self.spi.fifowr.write(|w| unsafe {
+                        w
+                            // control
+                            .len()
+                            .bits(7) // 8 bits
+                            // data
+                            .txdata()
+                            .bits(byte as u16)
                     });
-                },
+                }
             }
             Ok(())
         } else {
@@ -231,8 +244,7 @@ where
 }
 
 impl<SCK, MOSI, MISO, CS, SPI, PINS> crate::traits::wg::blocking::spi::transfer::Default<u8>
-for
-    SpiMaster<SCK, MOSI, MISO, CS, SPI, PINS>
+    for SpiMaster<SCK, MOSI, MISO, CS, SPI, PINS>
 where
     SCK: PinId,
     MOSI: PinId,
@@ -240,11 +252,11 @@ where
     CS: PinId,
     SPI: Spi,
     PINS: SpiPins<SCK, MOSI, MISO, CS, SPI>,
-{}
+{
+}
 
 impl<SCK, MOSI, MISO, CS, SPI, PINS> crate::traits::wg::blocking::spi::write::Default<u8>
-for
-    SpiMaster<SCK, MOSI, MISO, CS, SPI, PINS>
+    for SpiMaster<SCK, MOSI, MISO, CS, SPI, PINS>
 where
     SCK: PinId,
     MOSI: PinId,
@@ -252,7 +264,8 @@ where
     CS: PinId,
     SPI: Spi,
     PINS: SpiPins<SCK, MOSI, MISO, CS, SPI>,
-{}
+{
+}
 
 // impl<SPI, PINS> crate::traits::wg::blocking::spi::transfer::Default<u8> for SpiMaster<SPI, PINS>
 // where
@@ -263,4 +276,3 @@ where
 // where
 //     SPI: Deref<Target = spi1::RegisterBlock>,
 // {}
-

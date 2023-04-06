@@ -23,8 +23,16 @@ fn main() -> ! {
 
     hprintln!("traceclksel = {:x?}", dp.SYSCON.traceclksel.read().bits()).ok();
     hprintln!("traceclkdiv = {:x?}", dp.SYSCON.traceclkdiv.read().bits()).ok();
-    hprintln!("traceclkdiv.div = {:x?}", dp.SYSCON.traceclkdiv.read().div().bits()).ok();
-    hprintln!("traceclkdiv.halt = {:x?}", dp.SYSCON.traceclkdiv.read().halt().bits()).ok();
+    hprintln!(
+        "traceclkdiv.div = {:x?}",
+        dp.SYSCON.traceclkdiv.read().div().bits()
+    )
+    .ok();
+    hprintln!(
+        "traceclkdiv.halt = {:x?}",
+        dp.SYSCON.traceclkdiv.read().halt().bits()
+    )
+    .ok();
     // unsafe { dp.SYSCON.traceclksel.write(|w| w.sel().bits(0)); }
     // unsafe { dp.SYSCON.traceclkdiv.write(|w| w.div().bits(1)); }
 

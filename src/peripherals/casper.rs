@@ -1,20 +1,9 @@
-use crate::{
-    raw,
-    peripherals::{
-        syscon,
-    },
-    typestates::{
-        init_state,
-    }
-};
+use crate::{peripherals::syscon, raw, typestates::init_state};
 
 crate::wrap_stateful_peripheral!(Casper, CASPER);
 
 impl<State> Casper<State> {
-    pub fn enabled(
-        mut self,
-        syscon: &mut syscon::Syscon,
-    ) -> Casper<init_state::Enabled> {
+    pub fn enabled(mut self, syscon: &mut syscon::Syscon) -> Casper<init_state::Enabled> {
         syscon.enable_clock(&mut self.raw);
         syscon.reset(&mut self.raw);
         Casper {
@@ -23,10 +12,7 @@ impl<State> Casper<State> {
         }
     }
 
-    pub fn disabled(
-        mut self,
-        syscon: &mut syscon::Syscon,
-    ) -> Casper<init_state::Disabled> {
+    pub fn disabled(mut self, syscon: &mut syscon::Syscon) -> Casper<init_state::Disabled> {
         syscon.disable_clock(&mut self.raw);
         Casper {
             raw: self.raw,

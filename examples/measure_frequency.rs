@@ -1,24 +1,19 @@
 #![no_main]
 #![no_std]
 /// Simple example to measure the core clock frequency
+extern crate panic_semihosting; // 4004 bytes
+                                // extern crate panic_halt; // 672 bytes
 
-extern crate panic_semihosting;  // 4004 bytes
-// extern crate panic_halt; // 672 bytes
-
-use cortex_m_semihosting::{heprintln};
 use cortex_m_rt::entry;
+use cortex_m_semihosting::heprintln;
 
 use hal::traits::wg::timer::Cancel;
 
-use lpc55_hal as hal;
 use hal::{
-    drivers::{
-        Timer,
-        timer::Elapsed,
-    },
+    drivers::{timer::Elapsed, Timer},
     prelude::*,
 };
-
+use lpc55_hal as hal;
 
 pub fn delay_cycles(delay: u64) {
     let current = hal::get_cycle_count() as u64;
@@ -26,9 +21,13 @@ pub fn delay_cycles(delay: u64) {
     if target > 0xFFFF_FFFF {
         // wait for wraparound
         target -= 0xFFFF_FFFF;
-        while target < hal::get_cycle_count() as u64 { continue; }
+        while target < hal::get_cycle_count() as u64 {
+            continue;
+        }
     }
-    while target > hal::get_cycle_count() as u64 { continue; }
+    while target > hal::get_cycle_count() as u64 {
+        continue;
+    }
 }
 
 #[entry]
@@ -44,12 +43,15 @@ fn main() -> ! {
         .configure(&mut anactrl, &mut pmc, &mut syscon)
         .unwrap();
 
-    let mut timer = Timer::new(hal.ctimer.0.enabled(&mut syscon, clocks.support_1mhz_fro_token().unwrap()));
+    let mut timer = Timer::new(
+        hal.ctimer
+            .0
+            .enabled(&mut syscon, clocks.support_1mhz_fro_token().unwrap()),
+    );
 
     hal::enable_cycle_counter();
 
     loop {
-
         timer.start(1_000_000.microseconds());
 
         delay_cycles(10_000_000);

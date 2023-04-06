@@ -1,17 +1,14 @@
 #![no_main]
 #![no_std]
 /// Simple demo of the real time clock peripheral.
+extern crate panic_semihosting; // 4004 bytes
+                                // extern crate panic_halt; // 672 bytes
 
-extern crate panic_semihosting;  // 4004 bytes
-// extern crate panic_halt; // 672 bytes
-
-use cortex_m_semihosting::{heprintln};
 use cortex_m_rt::entry;
+use cortex_m_semihosting::heprintln;
 
+use hal::prelude::*;
 use lpc55_hal as hal;
-use hal::{
-    prelude::*,
-};
 
 pub fn delay_cycles(delay: u64) {
     let current = hal::get_cycle_count() as u64;
@@ -19,9 +16,13 @@ pub fn delay_cycles(delay: u64) {
     if target > 0xFFFF_FFFF {
         // wait for wraparound
         target -= 0xFFFF_FFFF;
-        while target < hal::get_cycle_count() as u64 { continue; }
+        while target < hal::get_cycle_count() as u64 {
+            continue;
+        }
     }
-    while target > hal::get_cycle_count() as u64 { continue; }
+    while target > hal::get_cycle_count() as u64 {
+        continue;
+    }
 }
 
 #[entry]

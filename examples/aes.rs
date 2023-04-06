@@ -85,7 +85,6 @@ fn main() -> ! {
     // check hw decrypt⚬encrypt = id
     assert_eq!(hw_block, block);
 
-
     // // Finally, PUF key
     // let cipher = hashcrypt.puf_aes();
     // dbg!(hw_block);
@@ -94,5 +93,7 @@ fn main() -> ! {
 
     // DONE
     dbg!("all done");
-    loop { continue; }
+    loop {
+        continue;
+    }
 }

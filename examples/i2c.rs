@@ -4,27 +4,22 @@
 use core::convert::TryFrom;
 // extern crate panic_semihosting;
 extern crate panic_halt;
-use cortex_m_rt::entry;
 use core::fmt::Write;
+use cortex_m_rt::entry;
 
 use hal::prelude::*;
 use lpc55_hal as hal;
 
 use hal::{
-    drivers::{
-        Pins,
-        I2cMaster,
-    },
+    drivers::{I2cMaster, Pins},
     time::Hertz,
 };
 
 use ssd1306;
 use ssd1306::prelude::*;
 
-
 #[entry]
 fn main() -> ! {
-
     let hal = hal::new();
 
     let mut anactrl = hal.anactrl;
@@ -56,7 +51,8 @@ fn main() -> ! {
         .size(DisplaySize::Display128x32)
         // .size(DisplaySize::Display70x40)  // <-- TODO
         .with_i2c_addr(0x3c)
-        .connect_i2c(i2c).into();
+        .connect_i2c(i2c)
+        .into();
 
     display.init().ok();
     display.clear().ok();

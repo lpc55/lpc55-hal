@@ -1,10 +1,7 @@
 use crate::{
     drivers::pins::Pin,
     traits::Gint,
-    typestates::pin::{
-        self,
-        PinId,
-    }
+    typestates::pin::{self, PinId},
 };
 
 pub trait Mode {}
@@ -69,10 +66,10 @@ where
         match trigger {
             Trigger::Edge => {
                 gint.ctrl.modify(|_, w| w.trig().edge_triggered());
-            },
+            }
             Trigger::Level => {
                 gint.ctrl.modify(|_, w| w.trig().level_triggered());
-            },
+            }
         };
 
         Self {
@@ -83,17 +80,13 @@ where
     }
 }
 
-
 impl<GINT, MODE> GroupInterrupt<GINT, MODE>
 where
     GINT: Gint,
     MODE: Mode,
     MODE: NotAnd,
 {
-    pub fn or(
-        self,
-    ) -> GroupInterrupt<GINT, Or> {
-
+    pub fn or(self) -> GroupInterrupt<GINT, Or> {
         self.gint.ctrl.modify(|_, w| w.comb().or());
 
         GroupInterrupt {
@@ -110,10 +103,7 @@ where
     MODE: Mode,
     MODE: NotOr,
 {
-    pub fn and(
-        self,
-    ) -> GroupInterrupt<GINT, And> {
-
+    pub fn and(self) -> GroupInterrupt<GINT, And> {
         self.gint.ctrl.modify(|_, w| w.comb().and());
 
         GroupInterrupt {
@@ -130,29 +120,24 @@ where
     MODE: Mode,
     MODE: Set,
 {
-
     pub fn on<PIO: PinId>(
         self,
         _pin: &Pin<PIO, pin::state::Gpio<pin::gpio::direction::Input>>,
         active: Active,
     ) -> GroupInterrupt<GINT, MODE> {
-
         match active {
-            Active::Low =>  {
-                self.gint.port_pol[PIO::PORT].modify(|r, w| unsafe {
-                    w.pol().bits(r.pol().bits() & !PIO::MASK)
-                });
-            },
-            Active::High =>  {
-                self.gint.port_pol[PIO::PORT].modify(|r, w| unsafe {
-                    w.pol().bits(r.pol().bits() | PIO::MASK)
-                });
-            },
+            Active::Low => {
+                self.gint.port_pol[PIO::PORT]
+                    .modify(|r, w| unsafe { w.pol().bits(r.pol().bits() & !PIO::MASK) });
+            }
+            Active::High => {
+                self.gint.port_pol[PIO::PORT]
+                    .modify(|r, w| unsafe { w.pol().bits(r.pol().bits() | PIO::MASK) });
+            }
         };
 
-        self.gint.port_ena[PIO::PORT].modify(|r, w| unsafe {
-            w.ena().bits(r.ena().bits() | PIO::MASK)
-        });
+        self.gint.port_ena[PIO::PORT]
+            .modify(|r, w| unsafe { w.ena().bits(r.ena().bits() | PIO::MASK) });
 
         GroupInterrupt {
             gint: self.gint,
@@ -178,7 +163,6 @@ where
     pub fn clear_interrupt(&self) {
         self.gint.ctrl.modify(|_, w| w.int().set_bit());
     }
-
 }
 
 impl<GINT, MODE> GroupInterrupt<GINT, MODE>
@@ -192,7 +176,6 @@ where
         pin: &Pin<PIO, pin::state::Gpio<pin::gpio::direction::Input>>,
         active: Active,
     ) -> GroupInterrupt<GINT, Or> {
-
         self.or().on(pin, active)
     }
 
@@ -209,7 +192,6 @@ where
     ) -> GroupInterrupt<GINT, Or> {
         self.or_on(pin, Active::Low)
     }
-
 }
 
 impl<GINT, MODE> GroupInterrupt<GINT, MODE>
@@ -223,7 +205,6 @@ where
         pin: &Pin<PIO, pin::state::Gpio<pin::gpio::direction::Input>>,
         active: Active,
     ) -> GroupInterrupt<GINT, And> {
-
         self.and().on(pin, active)
     }
 
@@ -240,6 +221,4 @@ where
     ) -> GroupInterrupt<GINT, And> {
         self.and_on(pin, Active::Low)
     }
-
 }
-

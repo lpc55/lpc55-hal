@@ -1,7 +1,7 @@
 pub mod prelude {
-    pub use super::UsbBus;
-    pub use super::UsbError as UsbError;
     pub use super::Result as UsbResult;
+    pub use super::UsbBus;
+    pub use super::UsbError;
 }
 
 pub mod constants;
@@ -10,9 +10,7 @@ pub mod endpoint;
 use endpoint::Endpoint;
 
 pub mod endpoint_memory;
-use endpoint_memory::{
-    EndpointMemoryAllocator,
-};
+use endpoint_memory::EndpointMemoryAllocator;
 
 pub mod endpoint_registers;
 
@@ -20,43 +18,21 @@ pub mod endpoint_registers;
 
 use core::mem;
 
-use cortex_m::interrupt::{
-    self,
-    Mutex,
-};
+use cortex_m::interrupt::{self, Mutex};
 
-pub use usb_device::{
-    Result,
-    UsbError,
-};
+pub use usb_device::{Result, UsbError};
 
 use usb_device::{
+    bus::{PollResult, UsbBusAllocator},
+    endpoint::{EndpointAddress, EndpointType},
     UsbDirection,
-    endpoint::{
-        EndpointType,
-        EndpointAddress,
-    },
-    bus::{
-        UsbBusAllocator,
-        PollResult,
-    },
 };
 
-use crate::traits::usb::{
-    Usb,
-};
-use crate::{
-    typestates::{
-        init_state,
-    }
-};
-use crate::{
-    Pin,
-    drivers::pins::PinId,
-    typestates::pin,
-};
+use crate::traits::usb::Usb;
+use crate::typestates::init_state;
+use crate::{drivers::pins::PinId, typestates::pin, Pin};
 
-pub trait Usb0VbusPin: Send { }
+pub trait Usb0VbusPin: Send {}
 impl<P> Usb0VbusPin for Pin<P, pin::state::Special<pin::function::USB0_VBUS>> where P: PinId + Send {}
 
 /// Implements the `usb_device::bus::UsbBus` trait.
@@ -83,14 +59,14 @@ where
     max_endpoint: usize,
 }
 
-
 impl<USB> UsbBus<USB>
 where
     USB: Usb<init_state::Enabled> + Send,
 {
     /// Constructs a new USB peripheral driver.
     pub fn new<PIN>(usb_device: USB, _usb0_vbus_pin: PIN) -> UsbBusAllocator<UsbBus<USB>>
-        where PIN: Usb0VbusPin + Sync
+    where
+        PIN: Usb0VbusPin + Sync,
     {
         use self::constants::NUM_ENDPOINTS;
 
@@ -100,9 +76,8 @@ where
             ep_allocator: EndpointMemoryAllocator::new(),
             max_endpoint: 0,
             endpoints: {
-                let mut endpoints: [mem::MaybeUninit<Endpoint<USB>>; NUM_ENDPOINTS] = unsafe {
-                    mem::MaybeUninit::uninit().assume_init()
-                };
+                let mut endpoints: [mem::MaybeUninit<Endpoint<USB>>; NUM_ENDPOINTS] =
+                    unsafe { mem::MaybeUninit::uninit().assume_init() };
 
                 for (i, endpoint) in endpoints.iter_mut().enumerate() {
                     *endpoint = mem::MaybeUninit::new(Endpoint::<USB>::new(i as u8));
@@ -124,17 +99,13 @@ where
             usb.intstat.write(|w| w.dev_int().set_bit());
         });
     }
-
-
 }
-
 
 // impl<PINS: Send+Sync> usb_device::bus::UsbBus for UsbBus<PINS> {
 impl<USB> usb_device::bus::UsbBus for UsbBus<USB>
 where
     USB: Usb<init_state::Enabled> + Send,
 {
-
     // override the default (contrary to USB spec),
     // as describe in the user manual
     const QUIRK_SET_ADDRESS_BEFORE_STATUS: bool = true;
@@ -145,16 +116,23 @@ where
         ep_addr: Option<EndpointAddress>,
         ep_type: EndpointType,
         max_packet_size: u16,
-        _interval: u8) -> Result<EndpointAddress>
-    {
+        _interval: u8,
+    ) -> Result<EndpointAddress> {
         // well this is clever but is it readable
-        for index in ep_addr.map(|a| a.index()..a.index() + 1).unwrap_or(1..self::constants::NUM_ENDPOINTS) {
+        for index in ep_addr
+            .map(|a| a.index()..a.index() + 1)
+            .unwrap_or(1..self::constants::NUM_ENDPOINTS)
+        {
             let ep = &mut self.endpoints[index];
 
             match ep.ep_type() {
-                None => { ep.set_ep_type(ep_type); },
-                Some(t) if t != ep_type => { continue; },
-                _ => { },
+                None => {
+                    ep.set_ep_type(ep_type);
+                }
+                Some(t) if t != ep_type => {
+                    continue;
+                }
+                _ => {}
             };
 
             match ep_dir {
@@ -170,7 +148,7 @@ where
                     }
 
                     return Ok(EndpointAddress::from_parts(index, ep_dir));
-                },
+                }
 
                 UsbDirection::In if !ep.is_in_buf_set() => {
                     let size = max_packet_size;
@@ -178,9 +156,9 @@ where
                     ep.set_in_buf(buffer);
 
                     return Ok(EndpointAddress::from_parts(index, ep_dir));
-                },
+                }
 
-                _ => { }
+                _ => {}
             }
         }
 
@@ -204,7 +182,9 @@ where
                     // not sure this is needed
                     if ep.is_out_buf_set() {
                         ep.reset_out_buf(cs, eps);
-                        if index == 0 { ep.reset_setup_buf(cs, eps); }
+                        if index == 0 {
+                            ep.reset_setup_buf(cs, eps);
+                        }
                         // ep.enable_out_interrupt(usb);
                     }
                     if ep.is_in_buf_set() {
@@ -219,22 +199,27 @@ where
             unsafe {
                 // lower part is stored in endpoint registers
                 let databufstart = constants::EP_MEM_ADDR as u32;
-                usb.databufstart.modify(|_, w| w.da_buf().bits(databufstart));
+                usb.databufstart
+                    .modify(|_, w| w.da_buf().bits(databufstart));
             };
 
             // EPLISTSTART
             unsafe {
                 let epliststart = eps.addr;
                 debug_assert!(epliststart as u8 == 0); // needs to be 256 byte aligned
-                usb.epliststart.modify(|_, w| w.ep_list().bits(epliststart >> 8));
+                usb.epliststart
+                    .modify(|_, w| w.ep_list().bits(epliststart >> 8));
             }
 
             // ENABLE + CONNECT
-            usb.devcmdstat.modify(|_, w| w.dev_en().set_bit().dcon().set_bit());
+            usb.devcmdstat
+                .modify(|_, w| w.dev_en().set_bit().dcon().set_bit());
 
             // HERE TOO?
-            usb.inten.modify(|r, w| unsafe { w.bits(r.bits() | ((1 << 12) - 1)) } );
-            usb.inten.modify(|r, w| unsafe { w.bits(r.bits() | (1 << 31)) } );
+            usb.inten
+                .modify(|r, w| unsafe { w.bits(r.bits() | ((1 << 12) - 1)) });
+            usb.inten
+                .modify(|r, w| unsafe { w.bits(r.bits() | (1 << 31)) });
         });
     }
 
@@ -245,14 +230,15 @@ where
             let usb = self.usb_regs.borrow(cs);
             let eps = self.ep_regs.borrow(cs);
 
-            usb.devcmdstat.modify(|_, w| unsafe { w.dev_addr().bits(0) } );
+            usb.devcmdstat
+                .modify(|_, w| unsafe { w.dev_addr().bits(0) });
 
             for ep in self.endpoints.iter() {
                 ep.configure(cs, usb, eps);
             }
 
             // clear all interrupts
-            usb.intstat.write(|w| unsafe { w.bits(!0) } );
+            usb.intstat.write(|w| unsafe { w.bits(!0) });
 
             // enable them
             // TODO: do this by endpoint
@@ -268,9 +254,10 @@ where
     fn set_device_address(&self, addr: u8) {
         // cortex_m_semihosting::hprintln!("Setting UsbBus device address {}", addr).ok();
         interrupt::free(|cs| {
-            self.usb_regs.borrow(cs).devcmdstat.modify(|_, w| unsafe {
-                w.dev_addr().bits(addr)
-            });
+            self.usb_regs
+                .borrow(cs)
+                .devcmdstat
+                .modify(|_, w| unsafe { w.dev_addr().bits(addr) });
         });
     }
 
@@ -299,7 +286,7 @@ where
             if devcmdstat.read().dres_c().bit_is_set() {
                 devcmdstat.modify(|_, w| w.dres_c().set_bit());
                 // debug_assert!(devcmdstat.read().dres_c().bit_is_clear());
-                return PollResult::Reset
+                return PollResult::Reset;
             }
 
             // if devcmdstat.read().dsus_c().bit_is_set() {
@@ -353,7 +340,7 @@ where
                 let i = ep.index() as usize;
 
                 // OUT = READ
-                let out_offset = 2*i;
+                let out_offset = 2 * i;
                 let out_int = ((intstat_r.bits() >> out_offset) & 0x1) != 0;
                 let out_inactive = eps.eps[i].ep_out[0].read().a().is_not_active();
 
@@ -371,7 +358,7 @@ where
                 }
 
                 // IN = WRITE
-                let in_offset = 2*i + 1;
+                let in_offset = 2 * i + 1;
                 let in_int = ((intstat_r.bits() >> in_offset) & 0x1) != 0;
                 // WHYY is this sometimes still active?
                 let in_inactive = eps.eps[i].ep_in[0].read().a().is_not_active();
@@ -390,7 +377,7 @@ where
                 if in_int && in_inactive {
                     ep_in_complete |= bit;
                     // clear it
-                    usb.intstat.write(|w| unsafe { w.bits(1u32 << in_offset) } );
+                    usb.intstat.write(|w| unsafe { w.bits(1u32 << in_offset) });
                     debug_assert!(eps.eps[i].ep_in[0].read().a().is_not_active());
 
                     // let err_code = usb.info.read().err_code().bits();
@@ -403,7 +390,11 @@ where
 
             usb.intstat.write(|w| w.dev_int().set_bit());
             if (ep_out | ep_in_complete | ep_setup) != 0 {
-                PollResult::Data { ep_out, ep_in_complete, ep_setup }
+                PollResult::Data {
+                    ep_out,
+                    ep_in_complete,
+                    ep_setup,
+                }
             } else {
                 PollResult::None
             }
@@ -411,7 +402,9 @@ where
     }
 
     fn read(&self, ep_addr: EndpointAddress, buf: &mut [u8]) -> Result<usize> {
-        if !ep_addr.is_out() { return Err(UsbError::InvalidEndpoint); }
+        if !ep_addr.is_out() {
+            return Err(UsbError::InvalidEndpoint);
+        }
 
         interrupt::free(|cs| {
             let usb = self.usb_regs.borrow(cs);
@@ -421,7 +414,9 @@ where
     }
 
     fn write(&self, ep_addr: EndpointAddress, buf: &[u8]) -> Result<usize> {
-        if !ep_addr.is_in() { return Err(UsbError::InvalidEndpoint); }
+        if !ep_addr.is_in() {
+            return Err(UsbError::InvalidEndpoint);
+        }
 
         interrupt::free(|cs| {
             let eps = self.ep_regs.borrow(cs);
@@ -431,15 +426,17 @@ where
 
     fn set_stalled(&self, ep_addr: EndpointAddress, stalled: bool) {
         interrupt::free(|cs| {
-            if self.is_stalled(ep_addr) == stalled { return }
+            if self.is_stalled(ep_addr) == stalled {
+                return;
+            }
 
             let i = ep_addr.index();
             let ep = &self.ep_regs.borrow(cs).eps[i];
 
             if i > 0 {
                 match ep_addr.direction() {
-                    UsbDirection::In => { while ep.ep_in[0].read().a().is_active() {} },
-                    UsbDirection::Out => { while ep.ep_out[0].read().a().is_active() {} },
+                    UsbDirection::In => while ep.ep_in[0].read().a().is_active() {},
+                    UsbDirection::Out => while ep.ep_out[0].read().a().is_active() {},
                 }
             }
 
@@ -481,4 +478,3 @@ where
         // });
     }
 }
-

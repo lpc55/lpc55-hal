@@ -5,26 +5,23 @@ extern crate panic_semihosting;
 use cortex_m_rt::entry;
 
 #[allow(unused_imports)]
-use cortex_m_semihosting::{dbg, hprintln, hprint};
+use cortex_m_semihosting::{dbg, hprint, hprintln};
 
-use lpc55_hal as hal;
 use hal::prelude::*;
+use lpc55_hal as hal;
 
 macro_rules! dump_hex {
     ($array:expr) => {
-
         hprint!("{:?} = ", stringify!($array)).unwrap();
         for i in 0..$array.len() {
             hprint!("{:02X}", $array[i]).unwrap();
         }
         hprintln!("").unwrap();
-
     };
 }
 
 #[entry]
 fn main() -> ! {
-
     let hal = hal::new();
 
     let mut anactrl = hal.anactrl;
@@ -48,24 +45,22 @@ fn main() -> ! {
 
     prince.enable_all_region_2();
 
-
     hprintln!("writing AA's to flash data.").ok();
 
-    flash.erase_page((DATA_ADDR/512) + 0).unwrap();
-    flash.erase_page((DATA_ADDR/512) + 1).unwrap();
+    flash.erase_page((DATA_ADDR / 512) + 0).unwrap();
+    flash.erase_page((DATA_ADDR / 512) + 1).unwrap();
 
     prince.write_encrypted(|_prince| {
         let vector = [0xAA; 1024];
         flash.write(DATA_ADDR, &vector).unwrap();
     });
 
-
     hprintln!("Read bytes PRINCE ON:").ok();
     let mut buf = [0u8; 1024];
 
-    for i in 0 .. buf.len() {
+    for i in 0..buf.len() {
         let ptr = DATA_ADDR as *const u8;
-        buf[i] = unsafe{*ptr.offset(i as isize)};
+        buf[i] = unsafe { *ptr.offset(i as isize) };
     }
 
     dump_hex!(&buf[0..32]);
@@ -73,18 +68,16 @@ fn main() -> ! {
     // Turn off PRINCE.
     prince.disable_all_region_2();
 
-    for i in 0 .. buf.len() {
+    for i in 0..buf.len() {
         let ptr = DATA_ADDR as *const u8;
-        buf[i] = unsafe{*ptr.offset(i as isize)};
+        buf[i] = unsafe { *ptr.offset(i as isize) };
     }
 
     hprintln!("Read bytes PRINCE OFF:").ok();
     dump_hex!(&buf[0..32]);
 
-
     hprintln!("done.").ok();
     loop {
         continue;
     }
-
 }

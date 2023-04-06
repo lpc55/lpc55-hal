@@ -16,10 +16,7 @@ pub mod clocks;
 pub use clocks::ClockRequirements;
 
 pub mod pins;
-pub use pins::{
-    Pin,
-    Pins,
-};
+pub use pins::{Pin, Pins};
 
 pub mod flash;
 pub use flash::FlashGordon;

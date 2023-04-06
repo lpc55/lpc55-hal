@@ -1,12 +1,12 @@
 use core::ops::Deref;
 
 #[derive(Copy, Clone)]
-pub enum UsbSpeed{
+pub enum UsbSpeed {
     FullSpeed,
     HighSpeed,
 }
 
-pub trait Usb <State>: Deref<Target = crate::raw::usb1::RegisterBlock> + Sync  {
+pub trait Usb<State>: Deref<Target = crate::raw::usb1::RegisterBlock> + Sync {
     const SPEED: UsbSpeed;
     // TODO: Ideally, user could use both FS and HS peripherals.
     // Then the Cargo feature could go away as well.

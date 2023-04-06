@@ -6,11 +6,8 @@ extern crate panic_halt; // 672 bytes
 
 use cortex_m_rt::entry;
 
+use hal::{drivers::pins::Level, prelude::*};
 use lpc55_hal as hal;
-use hal::{
-    drivers::pins::Level,
-    prelude::*,
-};
 
 macro_rules! kitt {
     ($utick:ident, $($led:ident),+ ) => ($(

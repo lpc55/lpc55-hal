@@ -1,49 +1,40 @@
 #![no_main]
 #![no_std]
 
-extern crate panic_semihosting;  // 4004 bytes
-// extern crate panic_halt; // 672 bytes
+extern crate panic_semihosting; // 4004 bytes
+                                // extern crate panic_halt; // 672 bytes
 
 #[macro_use(block)]
 extern crate nb;
 
 use cortex_m_rt::entry;
 
-use lpc55_hal as hal;
+use hal::drivers::{Pins, Pwm, Timer};
 use hal::prelude::*;
-use hal::{
-    drivers::{
-        Pins,
-        Timer,
-        Pwm,
-    },
-};
 pub use hal::typestates::pin::state;
+use lpc55_hal as hal;
 
 // translated from https://stackoverflow.com/a/2284929/2490057
-fn sin(x: f32) -> f32
-{
-
+fn sin(x: f32) -> f32 {
     let mut res = 0f32;
     let mut pow = x;
     let mut fact = 1f32;
     for i in 0..5 {
-        res += pow/fact;
+        res += pow / fact;
         pow *= -1f32 * x * x;
-        fact *= ((2*(i+1))*(2*(i+1)+1)) as f32;
+        fact *= ((2 * (i + 1)) * (2 * (i + 1) + 1)) as f32;
     }
 
     res
 }
 
 fn print_type_of<T>(_: &T) {
-    use cortex_m_semihosting::{hprintln};
+    use cortex_m_semihosting::hprintln;
     hprintln!("{}", core::any::type_name::<T>()).ok();
 }
 
 #[entry]
 fn main() -> ! {
-
     let mut hal = hal::new();
 
     let clocks = hal::ClockRequirements::default()
@@ -54,7 +45,11 @@ fn main() -> ! {
     let mut iocon = hal.iocon.enabled(&mut hal.syscon);
     let pins = Pins::take().unwrap();
 
-    let mut delay_timer = Timer::new(hal.ctimer.0.enabled(&mut hal.syscon, clocks.support_1mhz_fro_token().unwrap()));
+    let mut delay_timer = Timer::new(
+        hal.ctimer
+            .0
+            .enabled(&mut hal.syscon, clocks.support_1mhz_fro_token().unwrap()),
+    );
 
     // Xpresso LED (they used same channel for two pins)
     // let mut pwm = Pwm::new(hal.ctimer.2.enabled(&mut hal.syscon, clocks.support_1mhz_fro_token().unwrap()));
@@ -63,7 +58,11 @@ fn main() -> ! {
     // let red = pins.pio1_4.into_match_output(&mut iocon);
 
     // Bee LED
-    let mut pwm = Pwm::new(hal.ctimer.3.enabled(&mut hal.syscon, clocks.support_1mhz_fro_token().unwrap()));
+    let mut pwm = Pwm::new(
+        hal.ctimer
+            .3
+            .enabled(&mut hal.syscon, clocks.support_1mhz_fro_token().unwrap()),
+    );
     let red = pins.pio1_21.into_match_output(&mut iocon);
     let green = pins.pio0_5.into_match_output(&mut iocon);
     let blue = pins.pio1_19.into_match_output(&mut iocon);
@@ -86,7 +85,6 @@ fn main() -> ! {
     pwm.scale_max_duty_by(10);
 
     loop {
-
         delay_timer.start(5_000.microseconds());
         block!(delay_timer.wait()).unwrap();
 
@@ -98,22 +96,20 @@ fn main() -> ! {
         }
 
         for i in 0..3 {
-            let duty = (sin(duties[i] * 3.14159265f32/180f32) * 255f32) as u16;
+            let duty = (sin(duties[i] * 3.14159265f32 / 180f32) * 255f32) as u16;
             match i {
                 0 => {
                     // need to tune down red some
                     pwm.set_duty(red.get_channel(), duty as u16);
                 }
                 1 => {
-                    pwm.set_duty(green.get_channel(), duty*2);
+                    pwm.set_duty(green.get_channel(), duty * 2);
                 }
                 2 => {
-                    pwm.set_duty(blue.get_channel(), duty*2);
+                    pwm.set_duty(blue.get_channel(), duty * 2);
                 }
                 _ => {}
             }
-
         }
-
     }
 }

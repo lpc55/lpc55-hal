@@ -1,13 +1,16 @@
 use core::marker::PhantomData;
 
-use crate::traits::aligned::{A4, Aligned};
+use crate::traits::aligned::{Aligned, A4};
 use block_buffer::BlockBuffer;
 
 use crate::{
     peripherals::hashcrypt::Hashcrypt,
     traits::{
+        digest::generic_array::{
+            typenum::{U20, U32, U64},
+            GenericArray,
+        },
         digest::{BlockInput, FixedOutputDirty, Update /*, Reset*/},
-        digest::generic_array::{GenericArray, typenum::{U20, U32, U64}},
     },
     typestates::init_state::Enabled,
 };
@@ -41,7 +44,12 @@ pub type Sha256<'a> = Sha<'a, U32>;
 
 impl<'a, Size: OutputSize> Sha<'a, Size> {
     pub fn new(hashcrypt: &'a mut Hashcrypt<Enabled>) -> Self {
-        let mut sha = Self { buffer: Aligned(Default::default()), inner: hashcrypt, len: 0, size: PhantomData };
+        let mut sha = Self {
+            buffer: Aligned(Default::default()),
+            inner: hashcrypt,
+            len: 0,
+            size: PhantomData,
+        };
         sha.reset();
         sha
     }
@@ -51,7 +59,7 @@ impl<'a, Size: OutputSize> Sha<'a, Size> {
     }
 
     pub fn reset(&mut self) {
-        self.buffer =  Aligned(Default::default());
+        self.buffer = Aligned(Default::default());
         self.len = 0;
 
         // SDK says:
@@ -59,8 +67,14 @@ impl<'a, Size: OutputSize> Sha<'a, Size> {
         // new mode will not work correctly */
         self.inner.ctrl.write(|w| w.new_hash().start());
         match Size::to_usize() {
-            20 => self.inner.ctrl.write(|w| w.new_hash().start().mode().sha1()),
-            32 => self.inner.ctrl.write(|w| w.new_hash().start().mode().sha2_256()),
+            20 => self
+                .inner
+                .ctrl
+                .write(|w| w.new_hash().start().mode().sha1()),
+            32 => self
+                .inner
+                .ctrl
+                .write(|w| w.new_hash().start().mode().sha2_256()),
             _ => unreachable!(),
         }
     }
@@ -85,7 +99,8 @@ impl<Size: OutputSize> FixedOutputDirty for Sha<'_, Size> {
         self.finish();
         // cf `hashcrypt_get_data` ~line 315 of `fsl_hashcrypt.c`
         for i in 0..Size::to_usize() / 4 {
-            out.as_mut_slice()[4*i..4*i + 4].copy_from_slice(&self.inner.raw.digest0[i].read().bits().to_be_bytes());
+            out.as_mut_slice()[4 * i..4 * i + 4]
+                .copy_from_slice(&self.inner.raw.digest0[i].read().bits().to_be_bytes());
         }
     }
 }
@@ -105,14 +120,12 @@ impl<Size: OutputSize> Sha<'_, Size> {
         // need to convince compiler we're using buffer and peripheral
         // independently, and not doing a double &mut
         let peripheral = &mut self.inner;
-        self.buffer.input_block(data, |data| Self::process_block(peripheral, data));
+        self.buffer
+            .input_block(data, |data| Self::process_block(peripheral, data));
     }
 
     // relevant code is ~line 800 in fsl_hashcrypt.c
-    fn process_block(
-        peripheral: &mut Hashcrypt<Enabled>,
-        input: &GenericArray<u8, BlockSize>,
-    ) {
+    fn process_block(peripheral: &mut Hashcrypt<Enabled>, input: &GenericArray<u8, BlockSize>) {
         // input must be word-aligned
         let input: Aligned<A4, GenericArray<u8, BlockSize>> = Aligned(input.clone());
         let addr: u32 = &input.as_ref()[0] as *const _ as _;
@@ -120,15 +133,18 @@ impl<Size: OutputSize> Sha<'_, Size> {
         while peripheral.raw.status.read().waiting().is_not_waiting() {
             continue;
         }
-        peripheral.raw.memaddr.write(|w| unsafe { w.bits(addr) } );
-        peripheral.raw.memctrl.write(|w| unsafe {
-            w.master().enabled().count().bits(1) });
+        peripheral.raw.memaddr.write(|w| unsafe { w.bits(addr) });
+        peripheral
+            .raw
+            .memctrl
+            .write(|w| unsafe { w.master().enabled().count().bits(1) });
     }
 
     fn finish(&mut self) {
         let peripheral = &mut self.inner;
         let l = self.len;
-        self.buffer.len64_padding_be(l, |block| Self::process_block(peripheral, block));
+        self.buffer
+            .len64_padding_be(l, |block| Self::process_block(peripheral, block));
         while peripheral.raw.status.read().digest().is_not_ready() {
             continue;
         }
@@ -140,4 +156,3 @@ impl<Size: OutputSize> digest::Reset for Sha<'_, Size> {
         self.reset();
     }
 }
-

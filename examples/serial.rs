@@ -9,20 +9,14 @@ use cortex_m_rt::entry;
 use hal::prelude::*;
 use lpc55_hal as hal;
 
-use hal::{
-    drivers::{
-        Pins,
-        Serial,
-    },
-};
+use hal::drivers::{Pins, Serial};
 
 #[allow(unused_imports)]
-use cortex_m_semihosting::{hprintln, dbg};
+use cortex_m_semihosting::{dbg, hprintln};
 use nb::block;
 
 #[entry]
 fn main() -> ! {
-
     let hal = hal::new();
 
     let mut anactrl = hal.anactrl;
@@ -47,8 +41,7 @@ fn main() -> ! {
     let tx = pins.pio0_27.into_usart2_tx_pin(&mut iocon);
     let rx = pins.pio1_24.into_usart2_rx_pin(&mut iocon);
 
-    let config = hal::drivers::serial::config::Config::default()
-        .speed(19_200.Hz());
+    let config = hal::drivers::serial::config::Config::default().speed(19_200.Hz());
     hprintln!("config = {:?}", config).ok();
 
     let serial = Serial::new(usart, (tx, rx), config);
@@ -73,5 +66,7 @@ fn main() -> ! {
     assert_eq!(received, sent);
     hprintln!("equal").ok();
 
-    loop { continue; }
+    loop {
+        continue;
+    }
 }

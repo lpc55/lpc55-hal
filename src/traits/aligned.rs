@@ -1,6 +1,5 @@
 /// Extract of relevant parts of `aligned` library,
 /// without its multi-generic-array dependency tree.
-
 use core::ops;
 
 pub trait Alignment {}
@@ -51,4 +50,3 @@ where
         &mut self.value
     }
 }
-
