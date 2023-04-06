@@ -133,8 +133,8 @@ macro_rules! impl_power_control {
             }
 
             fn is_powered(&self, pmc: &Pmc) -> bool {
-                pmc.raw.pdruncfg0.read().$register1().is_poweredon() &&
-                pmc.raw.pdruncfg0.read().$register2().is_poweredon()
+                pmc.raw.pdruncfg0.read().$register1().is_poweredon()
+                    && pmc.raw.pdruncfg0.read().$register2().is_poweredon()
             }
         }
     };

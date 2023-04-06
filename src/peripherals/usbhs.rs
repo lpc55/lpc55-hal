@@ -1,15 +1,10 @@
 use core::ops::Deref;
 use embedded_time::duration::Extensions;
 
+use crate::drivers::timer;
+use crate::peripherals::{anactrl, ctimer, pmc, syscon};
 use crate::raw;
 use crate::traits::wg::timer::CountDown;
-use crate::drivers::timer;
-use crate::peripherals::{
-    anactrl,
-    pmc,
-    syscon,
-    ctimer,
-};
 use crate::typestates::{
     init_state,
     usbhs_mode,
@@ -18,13 +13,13 @@ use crate::typestates::{
     ClocksSupportUsbhsToken,
 };
 
-use crate::traits::usb::{
-    Usb,
-    UsbSpeed,
-};
+use crate::traits::usb::{Usb, UsbSpeed};
 
 // Main struct
-pub struct Usbhs<State: init_state::InitState = init_state::Unknown, Mode: usbhs_mode::UsbhsMode = usbhs_mode::Unknown> {
+pub struct Usbhs<
+    State: init_state::InitState = init_state::Unknown,
+    Mode: usbhs_mode::UsbhsMode = usbhs_mode::Unknown,
+> {
     pub(crate) raw_phy: raw::USBPHY,
     pub(crate) raw_hsd: raw::USB1,
     pub(crate) raw_hsh: raw::USBHSH,
@@ -66,7 +61,6 @@ impl<State: init_state::InitState, Mode: usbhs_mode::UsbhsMode> Usbhs<State, Mod
         (self.raw_hsd, self.raw_hsh)
     }
 
-
     pub fn enabled_as_device(
         mut self,
         anactrl: &mut anactrl::Anactrl,
@@ -76,8 +70,6 @@ impl<State: init_state::InitState, Mode: usbhs_mode::UsbhsMode> Usbhs<State, Mod
         // lock_fro_to_sof: bool, // we always lock to SOF
         _clocks_token: ClocksSupportUsbhsToken,
     ) -> EnabledUsbhsDevice {
-
-
         // Reset devices
         syscon.reset(&mut self.raw_hsh);
         syscon.reset(&mut self.raw_hsd);
@@ -86,16 +78,23 @@ impl<State: init_state::InitState, Mode: usbhs_mode::UsbhsMode> Usbhs<State, Mod
         // Briefly turn on host controller to enable device control of USB1 port
         syscon.enable_clock(&mut self.raw_hsh);
 
-        self.raw_hsh.portmode.modify(|_,w| {
-            w.dev_enable().set_bit()
-        });
+        self.raw_hsh
+            .portmode
+            .modify(|_, w| w.dev_enable().set_bit());
 
         syscon.disable_clock(&mut self.raw_hsh);
 
         // Power on 32M crystal for HS PHY and connect to USB PLL
-        pmc.raw.pdruncfg0.modify(|_,w| w.pden_xtal32m().poweredon());
-        pmc.raw.pdruncfg0.modify(|_,w| w.pden_ldoxo32m().poweredon());
-        anactrl.raw.xo32m_ctrl.modify(|_,w| w.enable_pll_usb_out().set_bit() );
+        pmc.raw
+            .pdruncfg0
+            .modify(|_, w| w.pden_xtal32m().poweredon());
+        pmc.raw
+            .pdruncfg0
+            .modify(|_, w| w.pden_ldoxo32m().poweredon());
+        anactrl
+            .raw
+            .xo32m_ctrl
+            .modify(|_, w| w.enable_pll_usb_out().set_bit());
 
         pmc.power_on(&mut self.raw_phy);
 
@@ -106,16 +105,14 @@ impl<State: init_state::InitState, Mode: usbhs_mode::UsbhsMode> Usbhs<State, Mod
         syscon.enable_clock(&mut self.raw_phy);
 
         // Initial config of PHY control registers
-        self.raw_phy.ctrl.write(|w| {
-            w
-            .sftrst().clear_bit()
-        });
+        self.raw_phy.ctrl.write(|w| w.sftrst().clear_bit());
 
-        self.raw_phy.pll_sic.modify(|_,w|
-            w
-            .pll_div_sel().bits(6) /* 16MHz = xtal32m */
-            .pll_reg_enable().set_bit()
-        );
+        self.raw_phy.pll_sic.modify(|_, w| {
+            w.pll_div_sel()
+                .bits(6) /* 16MHz = xtal32m */
+                .pll_reg_enable()
+                .set_bit()
+        });
 
         self.raw_phy.pll_sic_clr.write(|w| unsafe {
             // must be done, according to SDK.
@@ -126,21 +123,21 @@ impl<State: init_state::InitState, Mode: usbhs_mode::UsbhsMode> Usbhs<State, Mod
         timer.start(15.microseconds());
         nb::block!(timer.wait()).ok();
 
-        self.raw_phy.pll_sic.modify(|_,w| {
-            w
-            .pll_power().set_bit()
-            .pll_en_usb_clks().set_bit()
-        });
+        self.raw_phy
+            .pll_sic
+            .modify(|_, w| w.pll_power().set_bit().pll_en_usb_clks().set_bit());
 
-        self.raw_phy.ctrl.modify(|_,w| {
-            w
-            .clkgate().clear_bit()
-            .enautoclr_clkgate().set_bit()
-            .enautoclr_phy_pwd().clear_bit()
+        self.raw_phy.ctrl.modify(|_, w| {
+            w.clkgate()
+                .clear_bit()
+                .enautoclr_clkgate()
+                .set_bit()
+                .enautoclr_phy_pwd()
+                .clear_bit()
         });
 
         // Turn on everything in PHY
-        self.raw_phy.pwd.write(|w| unsafe { w.bits(0) } );
+        self.raw_phy.pwd.write(|w| unsafe { w.bits(0) });
 
         // turn on USB1 device controller access
         syscon.enable_clock(&mut self.raw_hsd);
@@ -154,10 +151,9 @@ impl<State: init_state::InitState, Mode: usbhs_mode::UsbhsMode> Usbhs<State, Mod
         }
     }
 
-    pub fn borrow<F: Fn(&mut Self) -> () >(&mut self, func: F) {
+    pub fn borrow<F: Fn(&mut Self) -> ()>(&mut self, func: F) {
         func(self);
     }
-
 }
 
 #[derive(Debug)]
@@ -182,7 +178,9 @@ impl EnabledUsbhsDevice {
     pub fn disable_high_speed(&mut self) {
         // Note: Application Note https://www.nxp.com/docs/en/application-note/TN00071.zip
         // states that devcmdstat.force_fs (bit 21) might also be used.
-        self.raw_phy.pwd_set.write(|w| unsafe { w.bits(1<<12) /* TXPWDV2I */} );
+        self.raw_phy.pwd_set.write(|w| unsafe {
+            w.bits(1 << 12) /* TXPWDV2I */
+        });
     }
 }
 
@@ -193,15 +191,18 @@ impl<State: init_state::InitState> Usbhs<State, usbhs_mode::Device> {
         pmc: &mut pmc::Pmc,
         syscon: &mut syscon::Syscon,
     ) -> Usbhs<init_state::Disabled, usbhs_mode::Device> {
-
         syscon.disable_clock(&mut self.raw_hsd);
 
         syscon.disable_clock(&mut self.raw_phy);
 
         pmc.power_off(&mut self.raw_phy);
 
-        pmc.raw.pdruncfg0.modify(|_,w| w.pden_xtal32m().poweredoff());
-        pmc.raw.pdruncfg0.modify(|_,w| w.pden_ldoxo32m().poweredoff());
+        pmc.raw
+            .pdruncfg0
+            .modify(|_, w| w.pden_xtal32m().poweredoff());
+        pmc.raw
+            .pdruncfg0
+            .modify(|_, w| w.pden_ldoxo32m().poweredoff());
 
         Usbhs {
             raw_phy: self.raw_phy,

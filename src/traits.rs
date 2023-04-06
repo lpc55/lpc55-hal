@@ -56,14 +56,11 @@ pub mod reg_proxy {
         /// Return a pointer to the memory location of the register
         fn get() -> *const [Self::Target];
     }
-
 }
 
 // maybe put in submodule?
 pub trait Gint: Deref<Target = crate::raw::gint0::RegisterBlock> {}
 
-
 pub mod aligned;
 pub mod flash;
 pub mod usb;
-

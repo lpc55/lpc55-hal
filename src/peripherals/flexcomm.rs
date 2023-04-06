@@ -1,22 +1,14 @@
 use core::ops::Deref;
 
 use crate::{
+    peripherals::syscon,
     raw,
     typestates::{
         init_state,
+        pin::flexcomm::{I2c, I2s, Spi, Usart},
         ClocksSupportFlexcommToken,
-        pin::{
-            flexcomm::{
-                I2c,
-                I2s,
-                Spi,
-                Usart,
-            },
-        },
     },
-    peripherals::syscon,
 };
-
 
 pub type Flexcomm = (
     Flexcomm0,
@@ -113,14 +105,38 @@ macro_rules! flexcomm {
 
         impl Usart for $usart_hal {}
 
-        impl core::convert::From<(raw::$fc_pac, raw::$i2c_pac, raw::$i2s_pac, raw::$spi_pac, raw::$usart_pac)> for $fc_hal {
-            fn from(raw: (raw::$fc_pac, raw::$i2c_pac, raw::$i2s_pac, raw::$spi_pac, raw::$usart_pac)) -> Self {
+        impl
+            core::convert::From<(
+                raw::$fc_pac,
+                raw::$i2c_pac,
+                raw::$i2s_pac,
+                raw::$spi_pac,
+                raw::$usart_pac,
+            )> for $fc_hal
+        {
+            fn from(
+                raw: (
+                    raw::$fc_pac,
+                    raw::$i2c_pac,
+                    raw::$i2s_pac,
+                    raw::$spi_pac,
+                    raw::$usart_pac,
+                ),
+            ) -> Self {
                 $fc_hal::new(raw)
             }
         }
 
         impl $fc_hal {
-            fn new(raw: (raw::$fc_pac, raw::$i2c_pac, raw::$i2s_pac, raw::$spi_pac, raw::$usart_pac)) -> Self {
+            fn new(
+                raw: (
+                    raw::$fc_pac,
+                    raw::$i2c_pac,
+                    raw::$i2s_pac,
+                    raw::$spi_pac,
+                    raw::$usart_pac,
+                ),
+            ) -> Self {
                 $fc_hal {
                     raw_fc: raw.0,
                     raw_i2c: raw.1,
@@ -138,8 +154,22 @@ macro_rules! flexcomm {
         }
 
         impl<State> $fc_hal<State> {
-            pub fn release(self) -> (raw::$fc_pac, raw::$i2c_pac, raw::$i2s_pac, raw::$spi_pac, raw::$usart_pac) {
-                (self.raw_fc, self.raw_i2c, self.raw_i2s, self.raw_spi, self.raw_usart)
+            pub fn release(
+                self,
+            ) -> (
+                raw::$fc_pac,
+                raw::$i2c_pac,
+                raw::$i2s_pac,
+                raw::$spi_pac,
+                raw::$usart_pac,
+            ) {
+                (
+                    self.raw_fc,
+                    self.raw_i2c,
+                    self.raw_i2s,
+                    self.raw_spi,
+                    self.raw_usart,
+                )
             }
         }
 
@@ -154,7 +184,6 @@ macro_rules! flexcomm {
                 syscon: &mut syscon::Syscon,
                 _clocks_token: &ClocksSupportFlexcommToken,
             ) -> $i2c_hal<init_state::Enabled> {
-
                 // The FRG output frequency must not be higher than 48 MHz for SPI and I2S
                 // and not higher than 44 MHz for USART and I2C.
                 //
@@ -164,12 +193,15 @@ macro_rules! flexcomm {
 
                 self.enabled(syscon);
 
-                self.raw_fc.pselid.modify(|_, w| w
-                    // select I2C function on corresponding FLEXCOMM
-                    .persel().i2c()
-                    // lock it
-                    .lock().locked()
-                );
+                self.raw_fc.pselid.modify(|_, w| {
+                    w
+                        // select I2C function on corresponding FLEXCOMM
+                        .persel()
+                        .i2c()
+                        // lock it
+                        .lock()
+                        .locked()
+                });
                 assert!(self.raw_fc.pselid.read().i2cpresent().is_present());
 
                 $i2c_hal {
@@ -187,7 +219,6 @@ macro_rules! flexcomm {
                 syscon: &mut syscon::Syscon,
                 _clocks_token: &ClocksSupportFlexcommToken,
             ) -> $spi_hal<init_state::Enabled> {
-
                 // The FRG output frequency must not be higher than 48 MHz for SPI and I2S
                 // and not higher than 44 MHz for USART and I2C.
                 //
@@ -197,12 +228,15 @@ macro_rules! flexcomm {
 
                 self.enabled(syscon);
 
-                self.raw_fc.pselid.modify(|_, w| w
-                    // select SPI function on corresponding FLEXCOMM
-                    .persel().spi()
-                    // lock it
-                    .lock().locked()
-                );
+                self.raw_fc.pselid.modify(|_, w| {
+                    w
+                        // select SPI function on corresponding FLEXCOMM
+                        .persel()
+                        .spi()
+                        // lock it
+                        .lock()
+                        .locked()
+                });
                 assert!(self.raw_fc.pselid.read().spipresent().is_present());
 
                 $spi_hal {
@@ -220,7 +254,6 @@ macro_rules! flexcomm {
                 syscon: &mut syscon::Syscon,
                 _clocks_token: &ClocksSupportFlexcommToken,
             ) -> $usart_hal<init_state::Enabled> {
-
                 // The FRG output frequency must not be higher than 48 MHz for SPI and I2S
                 // and not higher than 44 MHz for USART and I2C.
                 //
@@ -230,12 +263,15 @@ macro_rules! flexcomm {
 
                 self.enabled(syscon);
 
-                self.raw_fc.pselid.modify(|_, w| w
-                    // select USART function on corresponding FLEXCOMM
-                    .persel().usart()
-                    // lock it
-                    .lock().locked()
-                );
+                self.raw_fc.pselid.modify(|_, w| {
+                    w
+                        // select USART function on corresponding FLEXCOMM
+                        .persel()
+                        .usart()
+                        // lock it
+                        .lock()
+                        .locked()
+                });
                 assert!(self.raw_fc.pselid.read().usartpresent().is_present());
 
                 $usart_hal {
@@ -248,7 +284,7 @@ macro_rules! flexcomm {
                 }
             }
         }
-    }
+    };
 }
 
 flexcomm!(Flexcomm0, I2c0, I2s0, Spi0, Usart0, FLEXCOMM0, I2C0, I2S0, SPI0, USART0, fcclksel0);
@@ -315,7 +351,6 @@ impl Flexcomm8 {
         syscon: &mut syscon::Syscon,
         _clocks_token: &ClocksSupportFlexcommToken,
     ) -> Spi8<init_state::Enabled> {
-
         // NB: This is the high-speed SPI
 
         // The FRG output frequency must not be higher than 48 MHz for SPI and I2S
@@ -327,12 +362,15 @@ impl Flexcomm8 {
 
         self.enabled(syscon);
 
-        self.raw_fc.pselid.modify(|_, w| w
-            // select SPI function on corresponding FLEXCOMM
-            .persel().spi()
-            // lock it
-            .lock().locked()
-        );
+        self.raw_fc.pselid.modify(|_, w| {
+            w
+                // select SPI function on corresponding FLEXCOMM
+                .persel()
+                .spi()
+                // lock it
+                .lock()
+                .locked()
+        });
         assert!(self.raw_fc.pselid.read().spipresent().is_present());
 
         Spi8 {
@@ -341,5 +379,4 @@ impl Flexcomm8 {
             _state: init_state::Enabled(()),
         }
     }
-
 }

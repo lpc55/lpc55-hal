@@ -5,8 +5,8 @@ extern crate panic_semihosting;
 use cortex_m_rt::entry;
 use cortex_m_semihosting::{dbg, hprintln};
 
-use lpc55_hal as hal;
 use hal::prelude::*;
+use lpc55_hal as hal;
 
 #[repr(C)]
 #[allow(dead_code)]
@@ -22,12 +22,11 @@ enum FlashCommands {
     Write = 0x8,
     WriteProg = 0xA,
     Program = 0xC,
-    ReportEcc= 0xD,
+    ReportEcc = 0xD,
 }
 
 #[entry]
 fn main() -> ! {
-
     let hal = hal::new();
 
     // dbg!(hal.FLASH_CMPA.boot_cfg.read().bits());
@@ -133,7 +132,6 @@ fn main() -> ! {
     // debug_assert!(flash.int_status.read().err().bit_is_clear());
     // debug_assert!(flash.int_status.read().fail().bit_is_clear());
 
-
     // let x: u8 = unsafe { core::ptr::read_volatile(0x0004_0000 as *const u8) } ;
     // hprintln!("{:x}", x).ok();
     // let x: u32 = unsafe { core::ptr::read_volatile(0x0004_0004 as *const u32) } ;
@@ -162,7 +160,6 @@ fn main() -> ! {
     hprintln!("{:#034x}", flash.read_u128(0x4_0010)).ok();
     hprintln!("{:#034x}", flash.read_u128(0x4_0020)).ok();
 
-
     let mut read_buf = [0u8; 16];
     flash.read(WHERE, &mut read_buf);
     // dbg!(read_buf);
@@ -177,10 +174,14 @@ fn main() -> ! {
     let mut buf = [0u8; 512];
     buf[..4].copy_from_slice(&data);
 
-    flash.write_native(WHERE, &generic_array::GenericArray::from_slice(&buf)).unwrap();
+    flash
+        .write_native(WHERE, &generic_array::GenericArray::from_slice(&buf))
+        .unwrap();
     buf[0] = 37;
     // // buf[3] = 37;
-    flash.write_native(WHERE, &generic_array::GenericArray::from_slice(&buf)).unwrap();
+    flash
+        .write_native(WHERE, &generic_array::GenericArray::from_slice(&buf))
+        .unwrap();
     flash.write_u8(0x4_000F, 69).ok();
     flash.read(WHERE, &mut read_buf);
     // dbg!(read_buf);
@@ -216,10 +217,8 @@ fn main() -> ! {
     hprintln!("{:#034x}", flash.read_u128(0x4_0210)).ok();
     hprintln!("{:#034x}", flash.read_u128(0x4_0220)).ok();
 
-
     hprintln!("loop-continue").ok();
     loop {
         continue;
     }
-
 }

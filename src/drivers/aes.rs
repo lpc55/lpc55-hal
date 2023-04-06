@@ -1,16 +1,18 @@
 use core::convert::TryInto;
 
-use crate::traits::aligned::{A4, Aligned};
+use crate::traits::aligned::{Aligned, A4};
 
 use crate::{
     peripherals::hashcrypt::Hashcrypt,
     traits::{
         cipher::{Block, BlockCipher, BlockDecrypt, BlockEncrypt},
-        digest::generic_array::{GenericArray, typenum::{U1, U16, U24, U32}},
+        digest::generic_array::{
+            typenum::{U1, U16, U24, U32},
+            GenericArray,
+        },
     },
     typestates::init_state::Enabled,
 };
-
 
 // intention of this module is to prevent users from implementing KeySize for anything
 // other than the valid sizes.
@@ -52,10 +54,12 @@ pub type Aes192<'a> = Aes<'a, U24>;
 pub type Aes256<'a> = Aes<'a, U32>;
 
 impl<'a, Size: KeySize> Aes<'a, Size> {
-
     /// New AES struct implementing `block-cipher`.
     pub fn new(hashcrypt: &'a mut Hashcrypt<Enabled>, key: Key<Size>, mode: Mode) -> Self {
-        let aes = Self { inner: hashcrypt, key };
+        let aes = Self {
+            inner: hashcrypt,
+            key,
+        };
         aes.configure(mode);
         aes
     }
@@ -85,19 +89,22 @@ impl<'a, Size: KeySize> Aes<'a, Size> {
     // this, which besides the context-switching cost would avoid having to store the
     // key inside the struct.
     fn configure(&self, mode: Mode) {
-
         //
         // CRYPTCFG
         //
 
         self.cryptcfg.write(|w| {
             let mut w = w
-                .aesmode().ecb()
-                .msw1st_out().set_bit()
-                .swapkey().set_bit()
-                .swapdat().set_bit()
-                .msw1st().set_bit()
-            ;
+                .aesmode()
+                .ecb()
+                .msw1st_out()
+                .set_bit()
+                .swapkey()
+                .set_bit()
+                .swapdat()
+                .set_bit()
+                .msw1st()
+                .set_bit();
 
             match mode {
                 Mode::Encrypt => w = w.aesdecrypt().encrypt(),
@@ -140,9 +147,12 @@ impl<'a, Size: KeySize> Aes<'a, Size> {
 
             Key::User(key) => {
                 let key: Aligned<A4, GenericArray<u8, Size>> = Aligned(key.clone());
-                self.indata.write(|w| unsafe { w.bits(u32::from_le_bytes(key[..4].try_into().unwrap())) } );
+                self.indata
+                    .write(|w| unsafe { w.bits(u32::from_le_bytes(key[..4].try_into().unwrap())) });
                 for (i, chunk) in key[4..].chunks(4).enumerate() {
-                    self.alias[i].write(|w| unsafe { w.bits(u32::from_le_bytes(chunk.try_into().unwrap())) } );
+                    self.alias[i].write(|w| unsafe {
+                        w.bits(u32::from_le_bytes(chunk.try_into().unwrap()))
+                    });
                 }
             }
         }
@@ -155,18 +165,17 @@ impl<'a, Size: KeySize> Aes<'a, Size> {
         let aligned_block: Aligned<A4, Block<Self>> = Aligned(block.clone());
         let addr: u32 = &aligned_block as *const _ as _;
 
-        self.memaddr.write(|w| unsafe { w.bits(addr) } );
-        self.memctrl.write(|w| unsafe { w
-            .master().enabled()
-            .count().bits(1)
-        });
+        self.memaddr.write(|w| unsafe { w.bits(addr) });
+        self.memctrl
+            .write(|w| unsafe { w.master().enabled().count().bits(1) });
 
         while self.status.read().digest().is_not_ready() {
             continue;
         }
 
         for i in 0..4 {
-            block.as_mut_slice()[4*i..4*i + 4].copy_from_slice(&self.digest0[i].read().bits().to_be_bytes());
+            block.as_mut_slice()[4 * i..4 * i + 4]
+                .copy_from_slice(&self.digest0[i].read().bits().to_be_bytes());
         }
     }
 }
@@ -210,4 +219,3 @@ impl<Size: KeySize> core::ops::DerefMut for Aes<'_, Size> {
         &mut self.inner
     }
 }
-

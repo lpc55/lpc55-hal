@@ -5,7 +5,7 @@
 extern crate panic_halt; // 672 bytes
 
 use cortex_m_rt::entry;
-use rtt_target::{rtt_init_print, rprintln};
+use rtt_target::{rprintln, rtt_init_print};
 
 use hal::{drivers::pins::Level, prelude::*};
 use lpc55_hal as hal;

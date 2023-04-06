@@ -1,14 +1,6 @@
 use core::ops::Deref;
 
-use crate::{
-    peripherals::{
-        syscon,
-    },
-    traits,
-    typestates::{
-        init_state,
-    },
-};
+use crate::{peripherals::syscon, traits, typestates::init_state};
 
 // Main struct
 pub struct Gint<State: init_state::InitState = init_state::Unknown> {
@@ -62,10 +54,7 @@ impl<State: init_state::InitState> Gint<State> {
         (self.raw_gint0, self.raw_gint1)
     }
 
-    pub fn enabled(
-        mut self,
-        syscon: &mut syscon::Syscon,
-    ) -> (Gint0, Gint1) {
+    pub fn enabled(mut self, syscon: &mut syscon::Syscon) -> (Gint0, Gint1) {
         syscon.enable_clock(&mut (&mut self.raw_gint0, &mut self.raw_gint1));
         (
             Gint0 {

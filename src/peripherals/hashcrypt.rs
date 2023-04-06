@@ -2,8 +2,8 @@ use crate::traits::digest::generic_array::GenericArray;
 
 use crate::{
     drivers::{aes, Aes, AesKey, Sha1, Sha256},
-    raw,
     peripherals::syscon,
+    raw,
     typestates::init_state,
 };
 
@@ -35,11 +35,9 @@ impl<State> Hashcrypt<State> {
             _state: init_state::Disabled,
         }
     }
-
 }
 
 impl Hashcrypt<init_state::Enabled> {
-
     /// SHA-1, as in RustCrypto  `digest` trait
     pub fn sha1<'a>(&'a mut self) -> Sha1<'a> {
         Sha1::from(self)
@@ -75,5 +73,4 @@ impl Hashcrypt<init_state::Enabled> {
     pub fn puf_aes<'a>(&'a mut self) -> aes::Aes256<'a> {
         Aes::new(self, AesKey::Puf, aes::Mode::Encrypt)
     }
-
 }

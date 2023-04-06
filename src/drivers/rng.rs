@@ -1,7 +1,4 @@
-use crate::traits::{
-    rand_core,
-    wg::blocking::rng,
-};
+use crate::traits::{rand_core, wg::blocking::rng};
 
 use crate::typestates::init_state;
 

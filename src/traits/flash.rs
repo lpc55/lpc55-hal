@@ -1,7 +1,4 @@
-use generic_array::{
-    ArrayLength,
-    GenericArray,
-};
+use generic_array::{ArrayLength, GenericArray};
 
 /// Flash operation error
 #[derive(Copy, Clone, Debug)]
@@ -48,16 +45,13 @@ pub trait Read<ReadSize: ArrayLength<u8>> {
         for i in (0..buf.len()).step_by(ReadSize::to_usize()) {
             self.read_native(
                 address + i,
-                GenericArray::from_mut_slice(
-                    &mut buf[i..i + ReadSize::to_usize()]
-                )
+                GenericArray::from_mut_slice(&mut buf[i..i + ReadSize::to_usize()]),
             );
         }
     }
 }
 
 pub trait WriteErase<EraseSize: ArrayLength<u8>, WriteSize: ArrayLength<u8>> {
-
     /// check flash status
     fn status(&self) -> Result;
 
@@ -66,11 +60,12 @@ pub trait WriteErase<EraseSize: ArrayLength<u8>, WriteSize: ArrayLength<u8>> {
 
     /// The smallest possible write, depends on platform
     /// TODO: can we typecheck/typehint whether `address` must be aligned?
-    fn write_native(&mut self,
-                    address: usize,
-                    array: &GenericArray<u8, WriteSize>,
-                    // cs: &CriticalSection,
-                    ) -> Result;
+    fn write_native(
+        &mut self,
+        address: usize,
+        array: &GenericArray<u8, WriteSize>,
+        // cs: &CriticalSection,
+    ) -> Result;
 
     fn write(&mut self, address: usize, data: &[u8]) -> Result {
         let write_size = WriteSize::to_usize();
@@ -78,14 +73,14 @@ pub trait WriteErase<EraseSize: ArrayLength<u8>, WriteSize: ArrayLength<u8>> {
         assert!(address % write_size == 0);
 
         // interrupt::free(|cs| {
-            for i in (0..data.len()).step_by(write_size) {
-                self.write_native(
-                    address + i,
-                    GenericArray::from_slice(&data[i..i + write_size]),
-                    // cs,
-                    )?;
-            }
-            Ok(())
+        for i in (0..data.len()).step_by(write_size) {
+            self.write_native(
+                address + i,
+                GenericArray::from_slice(&data[i..i + write_size]),
+                // cs,
+            )?;
+        }
+        Ok(())
         // })
     }
 
@@ -96,5 +91,3 @@ pub trait WriteErase<EraseSize: ArrayLength<u8>, WriteSize: ArrayLength<u8>> {
     // /// Erase all Flash pages
     // fn erase_all_pages(&mut self) -> Result;
 }
-
-

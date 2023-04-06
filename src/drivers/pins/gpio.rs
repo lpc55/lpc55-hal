@@ -1,22 +1,9 @@
-use crate::traits::{
-    wg::{
-        digital::v2::{
-            InputPin,
-            OutputPin,
-            StatefulOutputPin,
-            toggleable,
-        },
-    }
-};
+use crate::traits::wg::digital::v2::{toggleable, InputPin, OutputPin, StatefulOutputPin};
 
 use crate::typestates::{
     pin::{
-        state,
-        gpio::{
-            direction,
-            Level,
-        },
-        PinId,
+        gpio::{direction, Level},
+        state, PinId,
     },
     reg_proxy::RegClusterProxy,
 };
@@ -28,8 +15,8 @@ use crate::{
         // B,
         // W,
         CLR,
-        DIRSET,
         DIRCLR,
+        DIRSET,
         PIN,
         SET,
     },
@@ -43,7 +30,6 @@ reg_cluster!(DIRCLR, DIRCLR, raw::GPIO, dirclr);
 reg_cluster!(PIN, PIN, raw::GPIO, pin);
 reg_cluster!(SET, SET, raw::GPIO, set);
 reg_cluster!(CLR, CLR, raw::GPIO, clr);
-
 
 impl<T> OutputPin for Pin<T, state::Gpio<direction::Output>>
 where
@@ -139,7 +125,6 @@ where
     D: direction::NotInput,
 {
     pub fn into_input(self) -> Pin<T, state::Gpio<direction::Input>> {
-
         // currently, `into_gpio_pin()` sets `.digimode().digital()` in IOCON,
         // meaning input is enabled for all pins
 
@@ -163,14 +148,12 @@ where
     }
 }
 
-
 impl<T, D> Pin<T, state::Analog<D>>
 where
     T: PinId,
     D: direction::NotInput,
 {
     pub fn into_input(self) -> Pin<T, state::Analog<direction::Input>> {
-
         // currently, `into_gpio_pin()` sets `.digimode().digital()` in IOCON,
         // meaning input is enabled for all pins
 
@@ -187,9 +170,3 @@ where
         }
     }
 }
-
-
-
-
-
-

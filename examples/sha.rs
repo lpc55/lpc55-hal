@@ -6,8 +6,8 @@ extern crate panic_semihosting;
 use cortex_m_rt::entry;
 use cortex_m_semihosting::dbg;
 
-use lpc55_hal as hal;
 use hal::traits::digest::{FixedOutput, Update};
+use lpc55_hal as hal;
 
 #[entry]
 fn main() -> ! {
@@ -47,7 +47,14 @@ fn main() -> ! {
     }
 
     dbg!("SHA-1 checked for all sizes up to", N);
-    dbg!("hw", hw_cycles, "sw", sw_cycles, "speedup", sw_cycles/hw_cycles);
+    dbg!(
+        "hw",
+        hw_cycles,
+        "sw",
+        sw_cycles,
+        "speedup",
+        sw_cycles / hw_cycles
+    );
 
     // SHA-256
     for i in 0..N {
@@ -71,7 +78,14 @@ fn main() -> ! {
     }
 
     dbg!("SHA-256 checked for all sizes up to", N);
-    dbg!("hw", hw_cycles, "sw", sw_cycles, "speedup", sw_cycles/hw_cycles);
+    dbg!(
+        "hw",
+        hw_cycles,
+        "sw",
+        sw_cycles,
+        "speedup",
+        sw_cycles / hw_cycles
+    );
 
     dbg!("DONE");
     loop {

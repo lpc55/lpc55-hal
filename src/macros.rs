@@ -3,7 +3,6 @@
 //
 // TODO: is the trait thing maybe better after all? boilerplate is bad...
 
-
 #[macro_export]
 macro_rules! reg {
     ($ty:ident, $target:ty, $peripheral:path, $field:ident) => {
@@ -104,7 +103,10 @@ macro_rules! stateful_peripheral_enable_disable {
     ($hal_name:ident) => {
         impl $hal_name {
             /// Consumes disabled $hal_name, returns an enabled one
-            pub fn enabled(mut self, syscon: &mut syscon::Syscon) -> $hal_name<init_state::Enabled> {
+            pub fn enabled(
+                mut self,
+                syscon: &mut syscon::Syscon,
+            ) -> $hal_name<init_state::Enabled> {
                 syscon.enable_clock(&mut self.raw);
 
                 $hal_name {
@@ -114,7 +116,10 @@ macro_rules! stateful_peripheral_enable_disable {
             }
 
             /// Consumes disabled $hal_name, returns an enabled one
-            pub fn disabled(mut self, syscon: &mut syscon::Syscon) -> $hal_name<init_state::Disabled> {
+            pub fn disabled(
+                mut self,
+                syscon: &mut syscon::Syscon,
+            ) -> $hal_name<init_state::Disabled> {
                 syscon.disable_clock(&mut self.raw);
 
                 $hal_name {
@@ -123,7 +128,7 @@ macro_rules! stateful_peripheral_enable_disable {
                 }
             }
         }
-    }
+    };
 }
 
 // #[macro_export]
@@ -156,13 +161,24 @@ macro_rules! stateful_peripheral_enable_disable {
 #[macro_export]
 macro_rules! reg_read {
     ($peripheral:ident, $register:ident, $field:ident, $what:ident) => {
-        unsafe { &(*hal::raw::$peripheral::ptr()) }.$register.read().$field().$what()
+        unsafe { &(*hal::raw::$peripheral::ptr()) }
+            .$register
+            .read()
+            .$field()
+            .$what()
     };
     ($peripheral:ident, $register:ident, $field:ident) => {
-        unsafe { &(*hal::raw::$peripheral::ptr()) }.$register.read().$field().bits()
+        unsafe { &(*hal::raw::$peripheral::ptr()) }
+            .$register
+            .read()
+            .$field()
+            .bits()
     };
     ($peripheral:ident, $register:ident) => {
-        unsafe { &(*hal::raw::$peripheral::ptr()) }.$register.read().bits()
+        unsafe { &(*hal::raw::$peripheral::ptr()) }
+            .$register
+            .read()
+            .bits()
     };
 }
 

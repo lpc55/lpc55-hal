@@ -35,8 +35,8 @@ impl Anactrl {
     /// UM says not enabled by default, empiricially seems it is
     pub fn is_96mhzclk_enabled(&self) -> bool {
         // ewww this hard-faults if 12MHz clock is main clock?!
-        self.raw.fro192m_ctrl.read().ena_96mhzclk().is_enable() &&
-        self.raw.fro192m_status.read().clk_valid().is_clkout()
+        self.raw.fro192m_ctrl.read().ena_96mhzclk().is_enable()
+            && self.raw.fro192m_status.read().clk_valid().is_clkout()
     }
 
     // pub(crate) fn enable_96mhzclk(&self) {

@@ -13,9 +13,7 @@
 
 use cortex_m_semihosting::hprintln;
 use hal::raw::Interrupt;
-use heapless::{
-    spsc::{Consumer, Producer, Queue},
-};
+use heapless::spsc::{Consumer, Producer, Queue};
 use lpc55_hal as hal;
 use panic_semihosting as _;
 
