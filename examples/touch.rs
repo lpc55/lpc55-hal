@@ -1,8 +1,8 @@
 #![no_main]
 #![no_std]
 
-extern crate panic_semihosting;  // 4004 bytes
-// extern crate panic_halt; // 672 bytes
+extern crate panic_semihosting; // 4004 bytes
+                                // extern crate panic_halt; // 672 bytes
 
 #[macro_use(block)]
 extern crate nb;
@@ -11,28 +11,17 @@ use cortex_m_rt::entry;
 // use cortex_m_semihosting::dbg;
 // use cortex_m_semihosting::heprintln;
 
-use lpc55_hal as hal;
-use hal::prelude::*;
-use hal::{
-    drivers::{
-        Pins,
-        Timer,
-        touch::{
-            TouchSensorChannel,
-            TouchSensor,
-            ButtonPins,
-            Edge,
-            profile_touch_sensing,
-        }
-    },
-};
 use hal::drivers::pins::Level;
+use hal::drivers::{
+    touch::{profile_touch_sensing, ButtonPins, Edge, TouchSensor, TouchSensorChannel},
+    Pins, Timer,
+};
+use hal::prelude::*;
 pub use hal::typestates::pin::state;
-
+use lpc55_hal as hal;
 
 #[entry]
 fn main() -> ! {
-
     let mut hal = hal::new();
 
     let clocks = hal::ClockRequirements::default()
@@ -45,13 +34,12 @@ fn main() -> ! {
 
     let mut gpio = hal.gpio.enabled(&mut hal.syscon);
 
-
     let mut iocon = hal.iocon.enabled(&mut hal.syscon);
     let pins = Pins::take().unwrap();
 
-    let but1 = pins.pio0_23.into_analog_input(&mut iocon, &mut gpio);       // channel 0
-    let but2 = pins.pio0_31.into_analog_input(&mut iocon, &mut gpio);       // channel 3
-    let but3 = pins.pio0_15.into_analog_input(&mut iocon, &mut gpio);       // channel 2
+    let but1 = pins.pio0_23.into_analog_input(&mut iocon, &mut gpio); // channel 0
+    let but2 = pins.pio0_31.into_analog_input(&mut iocon, &mut gpio); // channel 3
+    let but3 = pins.pio0_15.into_analog_input(&mut iocon, &mut gpio); // channel 2
 
     let mut green = pins
         .pio0_5
@@ -68,21 +56,31 @@ fn main() -> ! {
 
     let mut delay_timer = Timer::new(hal.ctimer.0.enabled(&mut hal.syscon, fro_token));
 
-    let button_pins = ButtonPins(but1,but2,but3);
+    let button_pins = ButtonPins(but1, but2, but3);
 
     let adc = hal::Adc::from(hal.adc).enabled(&mut hal.pmc, &mut hal.syscon);
 
-    let touch_timer = hal.ctimer.1.enabled(&mut hal.syscon, clocks.support_1mhz_fro_token().unwrap());
-    let touch_sync_timer = hal.ctimer.2.enabled(&mut hal.syscon, clocks.support_1mhz_fro_token().unwrap());
+    let touch_timer = hal
+        .ctimer
+        .1
+        .enabled(&mut hal.syscon, clocks.support_1mhz_fro_token().unwrap());
+    let touch_sync_timer = hal
+        .ctimer
+        .2
+        .enabled(&mut hal.syscon, clocks.support_1mhz_fro_token().unwrap());
     let charge_pin = pins.pio1_16.into_match_output(&mut iocon);
 
     let mut dma = hal::Dma::from(hal.dma).enabled(&mut hal.syscon);
 
-    let touch_sensor = TouchSensor::new([
-        13_900,
-        13_900,
-        13_900,
-        ], 5, adc, touch_timer, touch_sync_timer, charge_pin, button_pins);
+    let touch_sensor = TouchSensor::new(
+        [13_900, 13_900, 13_900],
+        5,
+        adc,
+        touch_timer,
+        touch_sync_timer,
+        charge_pin,
+        button_pins,
+    );
     let mut touch_sensor = touch_sensor.enabled(&mut dma, touch_token);
 
     // Used to get tunning information for capacitive touch
@@ -90,11 +88,16 @@ fn main() -> ! {
         let mut counts = [0u32; 3];
         let mut times = [0u32; 128];
         let mut results = [0u32; 128];
-        profile_touch_sensing(&mut touch_sensor, &mut delay_timer, &mut results, &mut times );
-        for i in 0 .. 125 {
+        profile_touch_sensing(
+            &mut touch_sensor,
+            &mut delay_timer,
+            &mut results,
+            &mut times,
+        );
+        for i in 0..125 {
             let src = (results[i] & (0xf << 24)) >> 24;
-            let _sample_num = (times[i] - 1196)/802;
-            let _button_sample_num = (times[i] - 1192)/(802* 3);
+            let _sample_num = (times[i] - 1196) / 802;
+            let _button_sample_num = (times[i] - 1192) / (802 * 3);
             // heprintln!("{}",src).unwrap();
             // heprintln!("{}\t{}\t{}\t{}\t{}\t{}",times[i], i, sample_num,src, counts[(src-3) as usize], button_sample_num).unwrap();
 
@@ -106,7 +109,6 @@ fn main() -> ! {
     block!(delay_timer.wait()).unwrap();
 
     loop {
-
         // Check for a press
         if touch_sensor.has_edge(TouchSensorChannel::Channel1, Edge::Falling) {
             touch_sensor.reset_results(TouchSensorChannel::Channel1, -1);
@@ -123,8 +125,6 @@ fn main() -> ! {
             blue.set_low().unwrap();
         }
 
-
-
         // Check for a release
         if touch_sensor.has_edge(TouchSensorChannel::Channel1, Edge::Rising) {
             touch_sensor.reset_results(TouchSensorChannel::Channel1, 1);
@@ -140,6 +140,5 @@ fn main() -> ! {
             touch_sensor.reset_results(TouchSensorChannel::Channel3, 1);
             blue.set_high().unwrap();
         }
-
     }
 }

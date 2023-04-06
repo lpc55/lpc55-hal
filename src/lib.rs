@@ -46,48 +46,18 @@ pub mod time;
 pub mod traits;
 
 pub mod typestates;
-pub use typestates::{
-    init_state::Enabled,
-};
+pub use typestates::init_state::Enabled;
 
 pub mod peripherals;
 pub use peripherals::{
-    adc::Adc,
-    anactrl::Anactrl,
-    casper::Casper,
-    ctimer::Ctimers,
-    dma::Dma,
-    flash::Flash,
-    flexcomm::Flexcomm,
-    gpio::Gpio,
-    gint::Gint,
-    hashcrypt::Hashcrypt,
-    inputmux::InputMux,
-    iocon::Iocon,
-    pint::Pint,
-    pfr::Pfr,
-    pmc::Pmc,
-    prince::Prince,
-    puf::Puf,
-    rng::Rng,
-    rtc::Rtc,
-    syscon::Syscon,
-    usbfs::Usbfs,
-    usbhs::Usbhs,
-    utick::Utick,
+    adc::Adc, anactrl::Anactrl, casper::Casper, ctimer::Ctimers, dma::Dma, flash::Flash,
+    flexcomm::Flexcomm, gint::Gint, gpio::Gpio, hashcrypt::Hashcrypt, inputmux::InputMux,
+    iocon::Iocon, pfr::Pfr, pint::Pint, pmc::Pmc, prince::Prince, puf::Puf, rng::Rng, rtc::Rtc,
+    syscon::Syscon, usbfs::Usbfs, usbhs::Usbhs, utick::Utick,
 };
 
 pub mod drivers;
-pub use drivers::{
-    ClockRequirements,
-    FlashGordon,
-    I2cMaster,
-    SpiMaster,
-    Pin,
-    Pins,
-    UsbBus,
-};
-
+pub use drivers::{ClockRequirements, FlashGordon, I2cMaster, Pin, Pins, SpiMaster, UsbBus};
 
 pub fn new() -> Peripherals {
     take().unwrap()
@@ -97,8 +67,8 @@ pub fn new() -> Peripherals {
 /// For RTIC, use `hal::<Peripheral>::from(<raw_peripheral>)` as needed.
 pub fn take() -> Option<Peripherals> {
     Some(Peripherals::from((
-        raw::Peripherals::take()?,//.expect("raw device peripherals already taken elsewhere"),
-        raw::CorePeripherals::take()?,//.expect("raw core peripherals already taken elsewhere"),
+        raw::Peripherals::take()?, //.expect("raw device peripherals already taken elsewhere"),
+        raw::CorePeripherals::take()?, //.expect("raw core peripherals already taken elsewhere"),
     )))
 }
 
@@ -118,7 +88,6 @@ pub fn from(raw: (raw::Peripherals, rtic::Peripherals)) -> Peripherals {
 /// via `hal::new` or `hal::steal`.
 #[allow(non_snake_case)]
 pub struct Peripherals {
-
     /// Analog-to-Digital Converter (ADC)
     pub adc: Adc,
 
@@ -166,7 +135,7 @@ pub struct Peripherals {
 
     // PRINCE
     pub prince: Prince,
-    
+
     // PUF
     pub puf: Puf,
 
@@ -187,7 +156,6 @@ pub struct Peripherals {
 
     /// Micro-Tick Timer
     pub utick: Utick,
-
 
     /// CRC engine - not HAL-ified.
     pub CRC_ENGINE: raw::CRC_ENGINE,
@@ -248,14 +216,62 @@ impl From<(raw::Peripherals, rtic::Peripherals)> for Peripherals {
             dma: Dma::from(p.DMA0),
             flash: Flash::from(p.FLASH),
             flexcomm: (
-                peripherals::flexcomm::Flexcomm0::from((p.FLEXCOMM0, p.I2C0, p.I2S0, p.SPI0, p.USART0)),
-                peripherals::flexcomm::Flexcomm1::from((p.FLEXCOMM1, p.I2C1, p.I2S1, p.SPI1, p.USART1)),
-                peripherals::flexcomm::Flexcomm2::from((p.FLEXCOMM2, p.I2C2, p.I2S2, p.SPI2, p.USART2)),
-                peripherals::flexcomm::Flexcomm3::from((p.FLEXCOMM3, p.I2C3, p.I2S3, p.SPI3, p.USART3)),
-                peripherals::flexcomm::Flexcomm4::from((p.FLEXCOMM4, p.I2C4, p.I2S4, p.SPI4, p.USART4)),
-                peripherals::flexcomm::Flexcomm5::from((p.FLEXCOMM5, p.I2C5, p.I2S5, p.SPI5, p.USART5)),
-                peripherals::flexcomm::Flexcomm6::from((p.FLEXCOMM6, p.I2C6, p.I2S6, p.SPI6, p.USART6)),
-                peripherals::flexcomm::Flexcomm7::from((p.FLEXCOMM7, p.I2C7, p.I2S7, p.SPI7, p.USART7)),
+                peripherals::flexcomm::Flexcomm0::from((
+                    p.FLEXCOMM0,
+                    p.I2C0,
+                    p.I2S0,
+                    p.SPI0,
+                    p.USART0,
+                )),
+                peripherals::flexcomm::Flexcomm1::from((
+                    p.FLEXCOMM1,
+                    p.I2C1,
+                    p.I2S1,
+                    p.SPI1,
+                    p.USART1,
+                )),
+                peripherals::flexcomm::Flexcomm2::from((
+                    p.FLEXCOMM2,
+                    p.I2C2,
+                    p.I2S2,
+                    p.SPI2,
+                    p.USART2,
+                )),
+                peripherals::flexcomm::Flexcomm3::from((
+                    p.FLEXCOMM3,
+                    p.I2C3,
+                    p.I2S3,
+                    p.SPI3,
+                    p.USART3,
+                )),
+                peripherals::flexcomm::Flexcomm4::from((
+                    p.FLEXCOMM4,
+                    p.I2C4,
+                    p.I2S4,
+                    p.SPI4,
+                    p.USART4,
+                )),
+                peripherals::flexcomm::Flexcomm5::from((
+                    p.FLEXCOMM5,
+                    p.I2C5,
+                    p.I2S5,
+                    p.SPI5,
+                    p.USART5,
+                )),
+                peripherals::flexcomm::Flexcomm6::from((
+                    p.FLEXCOMM6,
+                    p.I2C6,
+                    p.I2S6,
+                    p.SPI6,
+                    p.USART6,
+                )),
+                peripherals::flexcomm::Flexcomm7::from((
+                    p.FLEXCOMM7,
+                    p.I2C7,
+                    p.I2S7,
+                    p.SPI7,
+                    p.USART7,
+                )),
                 peripherals::flexcomm::Flexcomm8::from((p.FLEXCOMM8, p.SPI8)),
             ),
             gint: Gint::from((p.GINT0, p.GINT1)),
@@ -314,14 +330,62 @@ impl From<(raw::Peripherals, raw::CorePeripherals)> for Peripherals {
             dma: Dma::from(p.DMA0),
             flash: Flash::from(p.FLASH),
             flexcomm: (
-                peripherals::flexcomm::Flexcomm0::from((p.FLEXCOMM0, p.I2C0, p.I2S0, p.SPI0, p.USART0)),
-                peripherals::flexcomm::Flexcomm1::from((p.FLEXCOMM1, p.I2C1, p.I2S1, p.SPI1, p.USART1)),
-                peripherals::flexcomm::Flexcomm2::from((p.FLEXCOMM2, p.I2C2, p.I2S2, p.SPI2, p.USART2)),
-                peripherals::flexcomm::Flexcomm3::from((p.FLEXCOMM3, p.I2C3, p.I2S3, p.SPI3, p.USART3)),
-                peripherals::flexcomm::Flexcomm4::from((p.FLEXCOMM4, p.I2C4, p.I2S4, p.SPI4, p.USART4)),
-                peripherals::flexcomm::Flexcomm5::from((p.FLEXCOMM5, p.I2C5, p.I2S5, p.SPI5, p.USART5)),
-                peripherals::flexcomm::Flexcomm6::from((p.FLEXCOMM6, p.I2C6, p.I2S6, p.SPI6, p.USART6)),
-                peripherals::flexcomm::Flexcomm7::from((p.FLEXCOMM7, p.I2C7, p.I2S7, p.SPI7, p.USART7)),
+                peripherals::flexcomm::Flexcomm0::from((
+                    p.FLEXCOMM0,
+                    p.I2C0,
+                    p.I2S0,
+                    p.SPI0,
+                    p.USART0,
+                )),
+                peripherals::flexcomm::Flexcomm1::from((
+                    p.FLEXCOMM1,
+                    p.I2C1,
+                    p.I2S1,
+                    p.SPI1,
+                    p.USART1,
+                )),
+                peripherals::flexcomm::Flexcomm2::from((
+                    p.FLEXCOMM2,
+                    p.I2C2,
+                    p.I2S2,
+                    p.SPI2,
+                    p.USART2,
+                )),
+                peripherals::flexcomm::Flexcomm3::from((
+                    p.FLEXCOMM3,
+                    p.I2C3,
+                    p.I2S3,
+                    p.SPI3,
+                    p.USART3,
+                )),
+                peripherals::flexcomm::Flexcomm4::from((
+                    p.FLEXCOMM4,
+                    p.I2C4,
+                    p.I2S4,
+                    p.SPI4,
+                    p.USART4,
+                )),
+                peripherals::flexcomm::Flexcomm5::from((
+                    p.FLEXCOMM5,
+                    p.I2C5,
+                    p.I2S5,
+                    p.SPI5,
+                    p.USART5,
+                )),
+                peripherals::flexcomm::Flexcomm6::from((
+                    p.FLEXCOMM6,
+                    p.I2C6,
+                    p.I2S6,
+                    p.SPI6,
+                    p.USART6,
+                )),
+                peripherals::flexcomm::Flexcomm7::from((
+                    p.FLEXCOMM7,
+                    p.I2C7,
+                    p.I2S7,
+                    p.SPI7,
+                    p.USART7,
+                )),
                 peripherals::flexcomm::Flexcomm8::from((p.FLEXCOMM8, p.SPI8)),
             ),
             gint: Gint::from((p.GINT0, p.GINT1)),
@@ -363,7 +427,6 @@ impl From<(raw::Peripherals, raw::CorePeripherals)> for Peripherals {
 }
 
 impl Peripherals {
-
     #[cfg(not(feature = "rtic-peripherals"))]
     pub fn take() -> Option<Self> {
         Some(Self::from((
@@ -386,7 +449,6 @@ impl Peripherals {
     pub unsafe fn steal() -> Self {
         Self::from((raw::Peripherals::steal(), raw::CorePeripherals::steal()))
     }
-
 }
 
 pub fn enable_cycle_counter() {
@@ -404,7 +466,6 @@ pub fn count_cycles<Output>(f: impl FnOnce() -> Output) -> (u32, Output) {
     (after - before, outcome)
 }
 
-
 /// Delay of last resort :-))
 pub fn wait_at_least(delay_usecs: u32) {
     enable_cycle_counter();
@@ -416,9 +477,13 @@ pub fn wait_at_least(delay_usecs: u32) {
     if target > 0xFFFF_FFFF {
         // wait for wraparound
         target -= 0xFFFF_FFFF;
-        while target < get_cycle_count() as u64 { continue; }
+        while target < get_cycle_count() as u64 {
+            continue;
+        }
     }
-    while target > get_cycle_count() as u64 { continue; }
+    while target > get_cycle_count() as u64 {
+        continue;
+    }
 }
 
 /// https://community.nxp.com/t5/LPC-Microcontrollers-Knowledge/Understanding-LPC55S6x-Revisions-and-Tools/ta-p/1117604
@@ -432,7 +497,6 @@ pub fn chip_revision() -> &'static str {
         1 => "1B",
         _ => "unknown",
     }
-
 }
 
 pub fn uuid() -> [u8; 16] {
@@ -455,8 +519,6 @@ pub fn uuid() -> [u8; 16] {
 /// - Must not be called from an interrupt handler.
 /// - TrustZone must not be disabled (unless you can find a way to re-enable it here).
 pub fn boot_to_bootrom() -> ! {
-
-
     // Disconnect all interrupts
     cortex_m::interrupt::disable();
     let core_peripherals = unsafe { cortex_m::peripheral::Peripherals::steal() };
@@ -471,10 +533,9 @@ pub fn boot_to_bootrom() -> ! {
 
     // Now we just INVERT pio0_5 before jumping
     let iocon = unsafe { Iocon::steal() }.enabled(&mut syscon).release();
-    iocon.pio0_5.modify(|_, w| w
-        .invert().set_bit()
-        .digimode().digital()
-    );
+    iocon
+        .pio0_5
+        .modify(|_, w| w.invert().set_bit().digimode().digital());
 
     // Jump to bootrom
     unsafe { cortex_m::asm::bootload(0x03000000 as *const u32) }

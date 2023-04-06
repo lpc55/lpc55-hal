@@ -1,21 +1,9 @@
-use core::{
-    cmp::min,
-    slice,
-};
+use core::{cmp::min, slice};
 
-use usb_device::{
-    Result,
-    UsbError,
-};
+use usb_device::{Result, UsbError};
 use vcell::VolatileCell;
 
-use super::constants::{
-    UsbAccessType,
-    EP_MEM_ADDR,
-    EP_MEM_SIZE,
-    EP_REGISTERS_SIZE,
-};
-
+use super::constants::{UsbAccessType, EP_MEM_ADDR, EP_MEM_SIZE, EP_REGISTERS_SIZE};
 
 // The USB FS peripheral is flexible about which SRAM to use.
 // - On the one hand, the USB HS has no access to regular SRAM, and
@@ -26,8 +14,8 @@ use super::constants::{
 
 pub struct EndpointBuffer(&'static mut [VolatileCell<UsbAccessType>]);
 
-const EP_MEM_PTR: *mut VolatileCell<UsbAccessType> = EP_MEM_ADDR as *mut VolatileCell<UsbAccessType>;
-
+const EP_MEM_PTR: *mut VolatileCell<UsbAccessType> =
+    EP_MEM_ADDR as *mut VolatileCell<UsbAccessType>;
 
 impl EndpointBuffer {
     pub fn new(offset: usize, size: usize) -> Self {
@@ -87,14 +75,17 @@ impl EndpointMemoryAllocator {
 
     pub fn new() -> Self {
         // keep endpoint registers at top
-        Self { next_free_offset: EP_REGISTERS_SIZE }
+        Self {
+            next_free_offset: EP_REGISTERS_SIZE,
+        }
     }
 
     pub fn allocate_buffer(&mut self, size: usize) -> Result<EndpointBuffer> {
         let next_free_addr = EP_MEM_ADDR + self.next_free_offset;
 
         // buffers have to be 64 byte aligned
-        let addr = (next_free_addr + EndpointMemoryAllocator::ALIGN - 1) & !(EndpointMemoryAllocator::ALIGN - 1);
+        let addr = (next_free_addr + EndpointMemoryAllocator::ALIGN - 1)
+            & !(EndpointMemoryAllocator::ALIGN - 1);
         // let addr = if next_free_addr & 0x3f > 0 {
         //     (next_free_addr & !0x3f) + 64
         // } else {
@@ -102,7 +93,9 @@ impl EndpointMemoryAllocator {
         // };
 
         let offset = addr - EP_MEM_ADDR;
-        if offset + size > EP_MEM_SIZE { return Err(UsbError::EndpointMemoryOverflow); }
+        if offset + size > EP_MEM_SIZE {
+            return Err(UsbError::EndpointMemoryOverflow);
+        }
 
         self.next_free_offset = offset + size;
         Ok(EndpointBuffer::new(offset, size))

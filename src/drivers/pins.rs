@@ -1,40 +1,25 @@
 use crate::{
-    peripherals::{
-        gpio::Gpio,
-        iocon::Iocon,
-        flexcomm,
-        ctimer,
-    },
+    peripherals::{ctimer, flexcomm, gpio::Gpio, iocon::Iocon},
     typestates::{
         init_state,
         pin::{
-            function,
-            state::{
-                self,
-                Special,
-            },
             // All the I2cSclPin etc. are here
             flexcomm as fc,
             flexcomm::ChipSelect,
+            function,
+            state::{self, Special},
         },
     },
 };
 
-pub use crate::typestates::pin::gpio::{
-    direction,
-    Level,
-};
+pub use crate::typestates::pin::gpio::{direction, Level};
 
 // Implements GPIO pins
 pub mod gpio;
 
-pub use crate::typestates::pin::{
-    PinId,
-    PinType,
-};
+pub use crate::typestates::pin::{PinId, PinType};
 
 use crate::typestates::reg_proxy::RegClusterProxy;
-
 
 /// Main API to control for controlling pins:w
 pub struct Pin<T: PinId, S: state::PinState> {
@@ -43,20 +28,26 @@ pub struct Pin<T: PinId, S: state::PinState> {
     pub(crate) state: S,
 }
 
-
 impl Pin<Pio0_22, state::Unused> {
     pub fn into_usb0_vbus_pin(
         self,
         iocon: &mut Iocon<init_state::Enabled>,
     ) -> Pin<Pio0_22, state::Special<function::USB0_VBUS>> {
-        iocon.raw.pio0_22.modify(|_, w|
-            w
-            .func().alt7() // FUNC7, pin configured as USB0_VBUS
-            .mode().inactive() // MODE_INACT, no additional pin function
-            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
-            .invert().disabled() // INV_DI, input function is not inverted
-            .digimode().digital() // DIGITAL_EN, enable digital fucntion
-            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        iocon.raw.pio0_22.modify(
+            |_, w| {
+                w.func()
+                    .alt7() // FUNC7, pin configured as USB0_VBUS
+                    .mode()
+                    .inactive() // MODE_INACT, no additional pin function
+                    .slew()
+                    .standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+                    .invert()
+                    .disabled() // INV_DI, input function is not inverted
+                    .digimode()
+                    .digital() // DIGITAL_EN, enable digital fucntion
+                    .od()
+                    .normal()
+            }, // OPENDRAIN_DI, open drain is disabled
         );
 
         Pin {
@@ -67,7 +58,6 @@ impl Pin<Pio0_22, state::Unused> {
         }
     }
 }
-
 
 // seems a bit inefficient, but want to be able to safely
 // take individual pins instead of the whole bunch
@@ -309,8 +299,6 @@ macro_rules! ctimer_match_output_pins {
     }
 }
 
-
-
 pins!(
     pio0_0 , Pio0_0 , 0,  0, PinType::A, state::Unused, state::Unused;
     pio0_1 , Pio0_1 , 0,  1, PinType::D, state::Unused, state::Unused;
@@ -463,7 +451,7 @@ macro_rules! special_pins {
 ///////////////////////////////////////////////////////////////////////////////
 
 // TODO: remove the $Marker argument
-special_pins!{
+special_pins! {
     (Pio0_0, pio0_0): {
         (2, FC3_SCK): [
             (into_usart3_sclk_pin, Usart3, UsartSclkPin),
@@ -1074,76 +1062,236 @@ special_pins!{
     }
 }
 
-impl<PIO: PinId> fc::I2cSclPin<PIO, flexcomm::I2c0> for Pin<PIO, Special<function::FC0_RTS_SCL_SSEL1>> {}
-impl<PIO: PinId> fc::I2cSclPin<PIO, flexcomm::I2c0> for Pin<PIO, Special<function::FC0_TXD_SCL_MISO_WS>> {}
-impl<PIO: PinId> fc::I2cSclPin<PIO, flexcomm::I2c1> for Pin<PIO, Special<function::FC1_RTS_SCL_SSEL1>> {}
-impl<PIO: PinId> fc::I2cSclPin<PIO, flexcomm::I2c1> for Pin<PIO, Special<function::FC1_TXD_SCL_MISO_WS>> {}
-impl<PIO: PinId> fc::I2cSclPin<PIO, flexcomm::I2c2> for Pin<PIO, Special<function::FC2_RTS_SCL_SSEL1>> {}
-impl<PIO: PinId> fc::I2cSclPin<PIO, flexcomm::I2c2> for Pin<PIO, Special<function::FC2_TXD_SCL_MISO_WS>> {}
-impl<PIO: PinId> fc::I2cSclPin<PIO, flexcomm::I2c3> for Pin<PIO, Special<function::FC3_RTS_SCL_SSEL1>> {}
-impl<PIO: PinId> fc::I2cSclPin<PIO, flexcomm::I2c3> for Pin<PIO, Special<function::FC3_TXD_SCL_MISO_WS>> {}
-impl<PIO: PinId> fc::I2cSclPin<PIO, flexcomm::I2c4> for Pin<PIO, Special<function::FC4_RTS_SCL_SSEL1>> {}
-impl<PIO: PinId> fc::I2cSclPin<PIO, flexcomm::I2c4> for Pin<PIO, Special<function::FC4_TXD_SCL_MISO_WS>> {}
-impl<PIO: PinId> fc::I2cSclPin<PIO, flexcomm::I2c5> for Pin<PIO, Special<function::FC5_RTS_SCL_SSEL1>> {}
-impl<PIO: PinId> fc::I2cSclPin<PIO, flexcomm::I2c5> for Pin<PIO, Special<function::FC5_TXD_SCL_MISO_WS>> {}
-impl<PIO: PinId> fc::I2cSclPin<PIO, flexcomm::I2c6> for Pin<PIO, Special<function::FC6_RTS_SCL_SSEL1>> {}
-impl<PIO: PinId> fc::I2cSclPin<PIO, flexcomm::I2c6> for Pin<PIO, Special<function::FC6_TXD_SCL_MISO_WS>> {}
-impl<PIO: PinId> fc::I2cSclPin<PIO, flexcomm::I2c7> for Pin<PIO, Special<function::FC7_RTS_SCL_SSEL1>> {}
-impl<PIO: PinId> fc::I2cSclPin<PIO, flexcomm::I2c7> for Pin<PIO, Special<function::FC7_TXD_SCL_MISO_WS>> {}
-impl<PIO: PinId> fc::I2cSdaPin<PIO, flexcomm::I2c0> for Pin<PIO, Special<function::FC0_CTS_SDA_SSEL0>> {}
-impl<PIO: PinId> fc::I2cSdaPin<PIO, flexcomm::I2c0> for Pin<PIO, Special<function::FC0_RXD_SDA_MOSI_DATA>> {}
-impl<PIO: PinId> fc::I2cSdaPin<PIO, flexcomm::I2c1> for Pin<PIO, Special<function::FC1_CTS_SDA_SSEL0>> {}
-impl<PIO: PinId> fc::I2cSdaPin<PIO, flexcomm::I2c1> for Pin<PIO, Special<function::FC1_RXD_SDA_MOSI_DATA>> {}
-impl<PIO: PinId> fc::I2cSdaPin<PIO, flexcomm::I2c2> for Pin<PIO, Special<function::FC2_CTS_SDA_SSEL0>> {}
-impl<PIO: PinId> fc::I2cSdaPin<PIO, flexcomm::I2c2> for Pin<PIO, Special<function::FC2_RXD_SDA_MOSI_DATA>> {}
-impl<PIO: PinId> fc::I2cSdaPin<PIO, flexcomm::I2c3> for Pin<PIO, Special<function::FC3_CTS_SDA_SSEL0>> {}
-impl<PIO: PinId> fc::I2cSdaPin<PIO, flexcomm::I2c3> for Pin<PIO, Special<function::FC3_RXD_SDA_MOSI_DATA>> {}
-impl<PIO: PinId> fc::I2cSdaPin<PIO, flexcomm::I2c4> for Pin<PIO, Special<function::FC4_CTS_SDA_SSEL0>> {}
-impl<PIO: PinId> fc::I2cSdaPin<PIO, flexcomm::I2c4> for Pin<PIO, Special<function::FC4_RXD_SDA_MOSI_DATA>> {}
-impl<PIO: PinId> fc::I2cSdaPin<PIO, flexcomm::I2c5> for Pin<PIO, Special<function::FC5_CTS_SDA_SSEL0>> {}
-impl<PIO: PinId> fc::I2cSdaPin<PIO, flexcomm::I2c5> for Pin<PIO, Special<function::FC5_RXD_SDA_MOSI_DATA>> {}
-impl<PIO: PinId> fc::I2cSdaPin<PIO, flexcomm::I2c6> for Pin<PIO, Special<function::FC6_CTS_SDA_SSEL0>> {}
-impl<PIO: PinId> fc::I2cSdaPin<PIO, flexcomm::I2c6> for Pin<PIO, Special<function::FC6_RXD_SDA_MOSI_DATA>> {}
-impl<PIO: PinId> fc::I2cSdaPin<PIO, flexcomm::I2c7> for Pin<PIO, Special<function::FC7_CTS_SDA_SSEL0>> {}
-impl<PIO: PinId> fc::I2cSdaPin<PIO, flexcomm::I2c7> for Pin<PIO, Special<function::FC7_RXD_SDA_MOSI_DATA>> {}
-impl<PIO: PinId> fc::I2sSdaPin<PIO, flexcomm::I2s0> for Pin<PIO, Special<function::FC0_RXD_SDA_MOSI_DATA>> {}
-impl<PIO: PinId> fc::I2sSdaPin<PIO, flexcomm::I2s1> for Pin<PIO, Special<function::FC1_RXD_SDA_MOSI_DATA>> {}
-impl<PIO: PinId> fc::I2sSdaPin<PIO, flexcomm::I2s2> for Pin<PIO, Special<function::FC2_RXD_SDA_MOSI_DATA>> {}
-impl<PIO: PinId> fc::I2sSdaPin<PIO, flexcomm::I2s3> for Pin<PIO, Special<function::FC3_RXD_SDA_MOSI_DATA>> {}
-impl<PIO: PinId> fc::I2sSdaPin<PIO, flexcomm::I2s4> for Pin<PIO, Special<function::FC4_RXD_SDA_MOSI_DATA>> {}
-impl<PIO: PinId> fc::I2sSdaPin<PIO, flexcomm::I2s5> for Pin<PIO, Special<function::FC5_RXD_SDA_MOSI_DATA>> {}
-impl<PIO: PinId> fc::I2sSdaPin<PIO, flexcomm::I2s6> for Pin<PIO, Special<function::FC6_RXD_SDA_MOSI_DATA>> {}
-impl<PIO: PinId> fc::I2sSdaPin<PIO, flexcomm::I2s7> for Pin<PIO, Special<function::FC7_RXD_SDA_MOSI_DATA>> {}
-impl<PIO: PinId> fc::I2sWsPin<PIO, flexcomm::I2s0> for Pin<PIO, Special<function::FC0_TXD_SCL_MISO_WS>> {}
-impl<PIO: PinId> fc::I2sWsPin<PIO, flexcomm::I2s1> for Pin<PIO, Special<function::FC1_TXD_SCL_MISO_WS>> {}
-impl<PIO: PinId> fc::I2sWsPin<PIO, flexcomm::I2s2> for Pin<PIO, Special<function::FC2_TXD_SCL_MISO_WS>> {}
-impl<PIO: PinId> fc::I2sWsPin<PIO, flexcomm::I2s3> for Pin<PIO, Special<function::FC3_TXD_SCL_MISO_WS>> {}
-impl<PIO: PinId> fc::I2sWsPin<PIO, flexcomm::I2s4> for Pin<PIO, Special<function::FC4_TXD_SCL_MISO_WS>> {}
-impl<PIO: PinId> fc::I2sWsPin<PIO, flexcomm::I2s5> for Pin<PIO, Special<function::FC5_TXD_SCL_MISO_WS>> {}
-impl<PIO: PinId> fc::I2sWsPin<PIO, flexcomm::I2s6> for Pin<PIO, Special<function::FC6_TXD_SCL_MISO_WS>> {}
-impl<PIO: PinId> fc::I2sWsPin<PIO, flexcomm::I2s7> for Pin<PIO, Special<function::FC7_TXD_SCL_MISO_WS>> {}
-impl<PIO: PinId> fc::SpiCsPin<PIO, flexcomm::Spi0> for Pin<PIO, Special<function::FC0_CTS_SDA_SSEL0>> {
+impl<PIO: PinId> fc::I2cSclPin<PIO, flexcomm::I2c0>
+    for Pin<PIO, Special<function::FC0_RTS_SCL_SSEL1>>
+{
+}
+impl<PIO: PinId> fc::I2cSclPin<PIO, flexcomm::I2c0>
+    for Pin<PIO, Special<function::FC0_TXD_SCL_MISO_WS>>
+{
+}
+impl<PIO: PinId> fc::I2cSclPin<PIO, flexcomm::I2c1>
+    for Pin<PIO, Special<function::FC1_RTS_SCL_SSEL1>>
+{
+}
+impl<PIO: PinId> fc::I2cSclPin<PIO, flexcomm::I2c1>
+    for Pin<PIO, Special<function::FC1_TXD_SCL_MISO_WS>>
+{
+}
+impl<PIO: PinId> fc::I2cSclPin<PIO, flexcomm::I2c2>
+    for Pin<PIO, Special<function::FC2_RTS_SCL_SSEL1>>
+{
+}
+impl<PIO: PinId> fc::I2cSclPin<PIO, flexcomm::I2c2>
+    for Pin<PIO, Special<function::FC2_TXD_SCL_MISO_WS>>
+{
+}
+impl<PIO: PinId> fc::I2cSclPin<PIO, flexcomm::I2c3>
+    for Pin<PIO, Special<function::FC3_RTS_SCL_SSEL1>>
+{
+}
+impl<PIO: PinId> fc::I2cSclPin<PIO, flexcomm::I2c3>
+    for Pin<PIO, Special<function::FC3_TXD_SCL_MISO_WS>>
+{
+}
+impl<PIO: PinId> fc::I2cSclPin<PIO, flexcomm::I2c4>
+    for Pin<PIO, Special<function::FC4_RTS_SCL_SSEL1>>
+{
+}
+impl<PIO: PinId> fc::I2cSclPin<PIO, flexcomm::I2c4>
+    for Pin<PIO, Special<function::FC4_TXD_SCL_MISO_WS>>
+{
+}
+impl<PIO: PinId> fc::I2cSclPin<PIO, flexcomm::I2c5>
+    for Pin<PIO, Special<function::FC5_RTS_SCL_SSEL1>>
+{
+}
+impl<PIO: PinId> fc::I2cSclPin<PIO, flexcomm::I2c5>
+    for Pin<PIO, Special<function::FC5_TXD_SCL_MISO_WS>>
+{
+}
+impl<PIO: PinId> fc::I2cSclPin<PIO, flexcomm::I2c6>
+    for Pin<PIO, Special<function::FC6_RTS_SCL_SSEL1>>
+{
+}
+impl<PIO: PinId> fc::I2cSclPin<PIO, flexcomm::I2c6>
+    for Pin<PIO, Special<function::FC6_TXD_SCL_MISO_WS>>
+{
+}
+impl<PIO: PinId> fc::I2cSclPin<PIO, flexcomm::I2c7>
+    for Pin<PIO, Special<function::FC7_RTS_SCL_SSEL1>>
+{
+}
+impl<PIO: PinId> fc::I2cSclPin<PIO, flexcomm::I2c7>
+    for Pin<PIO, Special<function::FC7_TXD_SCL_MISO_WS>>
+{
+}
+impl<PIO: PinId> fc::I2cSdaPin<PIO, flexcomm::I2c0>
+    for Pin<PIO, Special<function::FC0_CTS_SDA_SSEL0>>
+{
+}
+impl<PIO: PinId> fc::I2cSdaPin<PIO, flexcomm::I2c0>
+    for Pin<PIO, Special<function::FC0_RXD_SDA_MOSI_DATA>>
+{
+}
+impl<PIO: PinId> fc::I2cSdaPin<PIO, flexcomm::I2c1>
+    for Pin<PIO, Special<function::FC1_CTS_SDA_SSEL0>>
+{
+}
+impl<PIO: PinId> fc::I2cSdaPin<PIO, flexcomm::I2c1>
+    for Pin<PIO, Special<function::FC1_RXD_SDA_MOSI_DATA>>
+{
+}
+impl<PIO: PinId> fc::I2cSdaPin<PIO, flexcomm::I2c2>
+    for Pin<PIO, Special<function::FC2_CTS_SDA_SSEL0>>
+{
+}
+impl<PIO: PinId> fc::I2cSdaPin<PIO, flexcomm::I2c2>
+    for Pin<PIO, Special<function::FC2_RXD_SDA_MOSI_DATA>>
+{
+}
+impl<PIO: PinId> fc::I2cSdaPin<PIO, flexcomm::I2c3>
+    for Pin<PIO, Special<function::FC3_CTS_SDA_SSEL0>>
+{
+}
+impl<PIO: PinId> fc::I2cSdaPin<PIO, flexcomm::I2c3>
+    for Pin<PIO, Special<function::FC3_RXD_SDA_MOSI_DATA>>
+{
+}
+impl<PIO: PinId> fc::I2cSdaPin<PIO, flexcomm::I2c4>
+    for Pin<PIO, Special<function::FC4_CTS_SDA_SSEL0>>
+{
+}
+impl<PIO: PinId> fc::I2cSdaPin<PIO, flexcomm::I2c4>
+    for Pin<PIO, Special<function::FC4_RXD_SDA_MOSI_DATA>>
+{
+}
+impl<PIO: PinId> fc::I2cSdaPin<PIO, flexcomm::I2c5>
+    for Pin<PIO, Special<function::FC5_CTS_SDA_SSEL0>>
+{
+}
+impl<PIO: PinId> fc::I2cSdaPin<PIO, flexcomm::I2c5>
+    for Pin<PIO, Special<function::FC5_RXD_SDA_MOSI_DATA>>
+{
+}
+impl<PIO: PinId> fc::I2cSdaPin<PIO, flexcomm::I2c6>
+    for Pin<PIO, Special<function::FC6_CTS_SDA_SSEL0>>
+{
+}
+impl<PIO: PinId> fc::I2cSdaPin<PIO, flexcomm::I2c6>
+    for Pin<PIO, Special<function::FC6_RXD_SDA_MOSI_DATA>>
+{
+}
+impl<PIO: PinId> fc::I2cSdaPin<PIO, flexcomm::I2c7>
+    for Pin<PIO, Special<function::FC7_CTS_SDA_SSEL0>>
+{
+}
+impl<PIO: PinId> fc::I2cSdaPin<PIO, flexcomm::I2c7>
+    for Pin<PIO, Special<function::FC7_RXD_SDA_MOSI_DATA>>
+{
+}
+impl<PIO: PinId> fc::I2sSdaPin<PIO, flexcomm::I2s0>
+    for Pin<PIO, Special<function::FC0_RXD_SDA_MOSI_DATA>>
+{
+}
+impl<PIO: PinId> fc::I2sSdaPin<PIO, flexcomm::I2s1>
+    for Pin<PIO, Special<function::FC1_RXD_SDA_MOSI_DATA>>
+{
+}
+impl<PIO: PinId> fc::I2sSdaPin<PIO, flexcomm::I2s2>
+    for Pin<PIO, Special<function::FC2_RXD_SDA_MOSI_DATA>>
+{
+}
+impl<PIO: PinId> fc::I2sSdaPin<PIO, flexcomm::I2s3>
+    for Pin<PIO, Special<function::FC3_RXD_SDA_MOSI_DATA>>
+{
+}
+impl<PIO: PinId> fc::I2sSdaPin<PIO, flexcomm::I2s4>
+    for Pin<PIO, Special<function::FC4_RXD_SDA_MOSI_DATA>>
+{
+}
+impl<PIO: PinId> fc::I2sSdaPin<PIO, flexcomm::I2s5>
+    for Pin<PIO, Special<function::FC5_RXD_SDA_MOSI_DATA>>
+{
+}
+impl<PIO: PinId> fc::I2sSdaPin<PIO, flexcomm::I2s6>
+    for Pin<PIO, Special<function::FC6_RXD_SDA_MOSI_DATA>>
+{
+}
+impl<PIO: PinId> fc::I2sSdaPin<PIO, flexcomm::I2s7>
+    for Pin<PIO, Special<function::FC7_RXD_SDA_MOSI_DATA>>
+{
+}
+impl<PIO: PinId> fc::I2sWsPin<PIO, flexcomm::I2s0>
+    for Pin<PIO, Special<function::FC0_TXD_SCL_MISO_WS>>
+{
+}
+impl<PIO: PinId> fc::I2sWsPin<PIO, flexcomm::I2s1>
+    for Pin<PIO, Special<function::FC1_TXD_SCL_MISO_WS>>
+{
+}
+impl<PIO: PinId> fc::I2sWsPin<PIO, flexcomm::I2s2>
+    for Pin<PIO, Special<function::FC2_TXD_SCL_MISO_WS>>
+{
+}
+impl<PIO: PinId> fc::I2sWsPin<PIO, flexcomm::I2s3>
+    for Pin<PIO, Special<function::FC3_TXD_SCL_MISO_WS>>
+{
+}
+impl<PIO: PinId> fc::I2sWsPin<PIO, flexcomm::I2s4>
+    for Pin<PIO, Special<function::FC4_TXD_SCL_MISO_WS>>
+{
+}
+impl<PIO: PinId> fc::I2sWsPin<PIO, flexcomm::I2s5>
+    for Pin<PIO, Special<function::FC5_TXD_SCL_MISO_WS>>
+{
+}
+impl<PIO: PinId> fc::I2sWsPin<PIO, flexcomm::I2s6>
+    for Pin<PIO, Special<function::FC6_TXD_SCL_MISO_WS>>
+{
+}
+impl<PIO: PinId> fc::I2sWsPin<PIO, flexcomm::I2s7>
+    for Pin<PIO, Special<function::FC7_TXD_SCL_MISO_WS>>
+{
+}
+impl<PIO: PinId> fc::SpiCsPin<PIO, flexcomm::Spi0>
+    for Pin<PIO, Special<function::FC0_CTS_SDA_SSEL0>>
+{
     const CS: ChipSelect = ChipSelect::Chip0;
 }
-impl<PIO: PinId> fc::SpiCsPin<PIO, flexcomm::Spi0> for Pin<PIO, Special<function::FC0_RTS_SCL_SSEL1>> {
+impl<PIO: PinId> fc::SpiCsPin<PIO, flexcomm::Spi0>
+    for Pin<PIO, Special<function::FC0_RTS_SCL_SSEL1>>
+{
     const CS: ChipSelect = ChipSelect::Chip1;
 }
-impl<PIO: PinId> fc::SpiCsPin<PIO, flexcomm::Spi1> for Pin<PIO, Special<function::FC1_CTS_SDA_SSEL0>> {
+impl<PIO: PinId> fc::SpiCsPin<PIO, flexcomm::Spi1>
+    for Pin<PIO, Special<function::FC1_CTS_SDA_SSEL0>>
+{
     const CS: ChipSelect = ChipSelect::Chip0;
 }
-impl<PIO: PinId> fc::SpiCsPin<PIO, flexcomm::Spi1> for Pin<PIO, Special<function::FC1_RTS_SCL_SSEL1>> {
+impl<PIO: PinId> fc::SpiCsPin<PIO, flexcomm::Spi1>
+    for Pin<PIO, Special<function::FC1_RTS_SCL_SSEL1>>
+{
     const CS: ChipSelect = ChipSelect::Chip1;
 }
-impl<PIO: PinId> fc::SpiCsPin<PIO, flexcomm::Spi2> for Pin<PIO, Special<function::FC2_CTS_SDA_SSEL0>> {
+impl<PIO: PinId> fc::SpiCsPin<PIO, flexcomm::Spi2>
+    for Pin<PIO, Special<function::FC2_CTS_SDA_SSEL0>>
+{
     const CS: ChipSelect = ChipSelect::Chip0;
 }
-impl<PIO: PinId> fc::SpiCsPin<PIO, flexcomm::Spi2> for Pin<PIO, Special<function::FC2_RTS_SCL_SSEL1>> {
+impl<PIO: PinId> fc::SpiCsPin<PIO, flexcomm::Spi2>
+    for Pin<PIO, Special<function::FC2_RTS_SCL_SSEL1>>
+{
     const CS: ChipSelect = ChipSelect::Chip1;
 }
-impl<PIO: PinId> fc::SpiCsPin<PIO, flexcomm::Spi3> for Pin<PIO, Special<function::FC3_CTS_SDA_SSEL0>> {
+impl<PIO: PinId> fc::SpiCsPin<PIO, flexcomm::Spi3>
+    for Pin<PIO, Special<function::FC3_CTS_SDA_SSEL0>>
+{
     const CS: ChipSelect = ChipSelect::Chip0;
 }
-impl<PIO: PinId> fc::SpiCsPin<PIO, flexcomm::Spi3> for Pin<PIO, Special<function::FC3_RTS_SCL_SSEL1>> {
+impl<PIO: PinId> fc::SpiCsPin<PIO, flexcomm::Spi3>
+    for Pin<PIO, Special<function::FC3_RTS_SCL_SSEL1>>
+{
     const CS: ChipSelect = ChipSelect::Chip1;
 }
 impl<PIO: PinId> fc::SpiCsPin<PIO, flexcomm::Spi3> for Pin<PIO, Special<function::FC3_SSEL2>> {
@@ -1152,10 +1300,14 @@ impl<PIO: PinId> fc::SpiCsPin<PIO, flexcomm::Spi3> for Pin<PIO, Special<function
 impl<PIO: PinId> fc::SpiCsPin<PIO, flexcomm::Spi3> for Pin<PIO, Special<function::FC3_SSEL3>> {
     const CS: ChipSelect = ChipSelect::Chip3;
 }
-impl<PIO: PinId> fc::SpiCsPin<PIO, flexcomm::Spi4> for Pin<PIO, Special<function::FC4_CTS_SDA_SSEL0>> {
+impl<PIO: PinId> fc::SpiCsPin<PIO, flexcomm::Spi4>
+    for Pin<PIO, Special<function::FC4_CTS_SDA_SSEL0>>
+{
     const CS: ChipSelect = ChipSelect::Chip0;
 }
-impl<PIO: PinId> fc::SpiCsPin<PIO, flexcomm::Spi4> for Pin<PIO, Special<function::FC4_RTS_SCL_SSEL1>> {
+impl<PIO: PinId> fc::SpiCsPin<PIO, flexcomm::Spi4>
+    for Pin<PIO, Special<function::FC4_RTS_SCL_SSEL1>>
+{
     const CS: ChipSelect = ChipSelect::Chip1;
 }
 impl<PIO: PinId> fc::SpiCsPin<PIO, flexcomm::Spi4> for Pin<PIO, Special<function::FC4_SSEL2>> {
@@ -1164,22 +1316,34 @@ impl<PIO: PinId> fc::SpiCsPin<PIO, flexcomm::Spi4> for Pin<PIO, Special<function
 impl<PIO: PinId> fc::SpiCsPin<PIO, flexcomm::Spi4> for Pin<PIO, Special<function::FC4_SSEL3>> {
     const CS: ChipSelect = ChipSelect::Chip3;
 }
-impl<PIO: PinId> fc::SpiCsPin<PIO, flexcomm::Spi5> for Pin<PIO, Special<function::FC5_CTS_SDA_SSEL0>> {
+impl<PIO: PinId> fc::SpiCsPin<PIO, flexcomm::Spi5>
+    for Pin<PIO, Special<function::FC5_CTS_SDA_SSEL0>>
+{
     const CS: ChipSelect = ChipSelect::Chip0;
 }
-impl<PIO: PinId> fc::SpiCsPin<PIO, flexcomm::Spi5> for Pin<PIO, Special<function::FC5_RTS_SCL_SSEL1>> {
+impl<PIO: PinId> fc::SpiCsPin<PIO, flexcomm::Spi5>
+    for Pin<PIO, Special<function::FC5_RTS_SCL_SSEL1>>
+{
     const CS: ChipSelect = ChipSelect::Chip1;
 }
-impl<PIO: PinId> fc::SpiCsPin<PIO, flexcomm::Spi6> for Pin<PIO, Special<function::FC6_CTS_SDA_SSEL0>> {
+impl<PIO: PinId> fc::SpiCsPin<PIO, flexcomm::Spi6>
+    for Pin<PIO, Special<function::FC6_CTS_SDA_SSEL0>>
+{
     const CS: ChipSelect = ChipSelect::Chip0;
 }
-impl<PIO: PinId> fc::SpiCsPin<PIO, flexcomm::Spi6> for Pin<PIO, Special<function::FC6_RTS_SCL_SSEL1>> {
+impl<PIO: PinId> fc::SpiCsPin<PIO, flexcomm::Spi6>
+    for Pin<PIO, Special<function::FC6_RTS_SCL_SSEL1>>
+{
     const CS: ChipSelect = ChipSelect::Chip1;
 }
-impl<PIO: PinId> fc::SpiCsPin<PIO, flexcomm::Spi7> for Pin<PIO, Special<function::FC7_CTS_SDA_SSEL0>> {
+impl<PIO: PinId> fc::SpiCsPin<PIO, flexcomm::Spi7>
+    for Pin<PIO, Special<function::FC7_CTS_SDA_SSEL0>>
+{
     const CS: ChipSelect = ChipSelect::Chip0;
 }
-impl<PIO: PinId> fc::SpiCsPin<PIO, flexcomm::Spi7> for Pin<PIO, Special<function::FC7_RTS_SCL_SSEL1>> {
+impl<PIO: PinId> fc::SpiCsPin<PIO, flexcomm::Spi7>
+    for Pin<PIO, Special<function::FC7_RTS_SCL_SSEL1>>
+{
     const CS: ChipSelect = ChipSelect::Chip1;
 }
 impl<PIO: PinId> fc::SpiCsPin<PIO, flexcomm::Spi8> for Pin<PIO, Special<function::HS_SPI_SSEL0>> {
@@ -1194,23 +1358,71 @@ impl<PIO: PinId> fc::SpiCsPin<PIO, flexcomm::Spi8> for Pin<PIO, Special<function
 impl<PIO: PinId> fc::SpiCsPin<PIO, flexcomm::Spi8> for Pin<PIO, Special<function::HS_SPI_SSEL3>> {
     const CS: ChipSelect = ChipSelect::Chip3;
 }
-impl<PIO: PinId> fc::SpiMisoPin<PIO, flexcomm::Spi0> for Pin<PIO, Special<function::FC0_TXD_SCL_MISO_WS>> {}
-impl<PIO: PinId> fc::SpiMisoPin<PIO, flexcomm::Spi1> for Pin<PIO, Special<function::FC1_TXD_SCL_MISO_WS>> {}
-impl<PIO: PinId> fc::SpiMisoPin<PIO, flexcomm::Spi2> for Pin<PIO, Special<function::FC2_TXD_SCL_MISO_WS>> {}
-impl<PIO: PinId> fc::SpiMisoPin<PIO, flexcomm::Spi3> for Pin<PIO, Special<function::FC3_TXD_SCL_MISO_WS>> {}
-impl<PIO: PinId> fc::SpiMisoPin<PIO, flexcomm::Spi4> for Pin<PIO, Special<function::FC4_TXD_SCL_MISO_WS>> {}
-impl<PIO: PinId> fc::SpiMisoPin<PIO, flexcomm::Spi5> for Pin<PIO, Special<function::FC5_TXD_SCL_MISO_WS>> {}
-impl<PIO: PinId> fc::SpiMisoPin<PIO, flexcomm::Spi6> for Pin<PIO, Special<function::FC6_TXD_SCL_MISO_WS>> {}
-impl<PIO: PinId> fc::SpiMisoPin<PIO, flexcomm::Spi7> for Pin<PIO, Special<function::FC7_TXD_SCL_MISO_WS>> {}
+impl<PIO: PinId> fc::SpiMisoPin<PIO, flexcomm::Spi0>
+    for Pin<PIO, Special<function::FC0_TXD_SCL_MISO_WS>>
+{
+}
+impl<PIO: PinId> fc::SpiMisoPin<PIO, flexcomm::Spi1>
+    for Pin<PIO, Special<function::FC1_TXD_SCL_MISO_WS>>
+{
+}
+impl<PIO: PinId> fc::SpiMisoPin<PIO, flexcomm::Spi2>
+    for Pin<PIO, Special<function::FC2_TXD_SCL_MISO_WS>>
+{
+}
+impl<PIO: PinId> fc::SpiMisoPin<PIO, flexcomm::Spi3>
+    for Pin<PIO, Special<function::FC3_TXD_SCL_MISO_WS>>
+{
+}
+impl<PIO: PinId> fc::SpiMisoPin<PIO, flexcomm::Spi4>
+    for Pin<PIO, Special<function::FC4_TXD_SCL_MISO_WS>>
+{
+}
+impl<PIO: PinId> fc::SpiMisoPin<PIO, flexcomm::Spi5>
+    for Pin<PIO, Special<function::FC5_TXD_SCL_MISO_WS>>
+{
+}
+impl<PIO: PinId> fc::SpiMisoPin<PIO, flexcomm::Spi6>
+    for Pin<PIO, Special<function::FC6_TXD_SCL_MISO_WS>>
+{
+}
+impl<PIO: PinId> fc::SpiMisoPin<PIO, flexcomm::Spi7>
+    for Pin<PIO, Special<function::FC7_TXD_SCL_MISO_WS>>
+{
+}
 impl<PIO: PinId> fc::SpiMisoPin<PIO, flexcomm::Spi8> for Pin<PIO, Special<function::HS_SPI_MISO>> {}
-impl<PIO: PinId> fc::SpiMosiPin<PIO, flexcomm::Spi0> for Pin<PIO, Special<function::FC0_RXD_SDA_MOSI_DATA>> {}
-impl<PIO: PinId> fc::SpiMosiPin<PIO, flexcomm::Spi1> for Pin<PIO, Special<function::FC1_RXD_SDA_MOSI_DATA>> {}
-impl<PIO: PinId> fc::SpiMosiPin<PIO, flexcomm::Spi2> for Pin<PIO, Special<function::FC2_RXD_SDA_MOSI_DATA>> {}
-impl<PIO: PinId> fc::SpiMosiPin<PIO, flexcomm::Spi3> for Pin<PIO, Special<function::FC3_RXD_SDA_MOSI_DATA>> {}
-impl<PIO: PinId> fc::SpiMosiPin<PIO, flexcomm::Spi4> for Pin<PIO, Special<function::FC4_RXD_SDA_MOSI_DATA>> {}
-impl<PIO: PinId> fc::SpiMosiPin<PIO, flexcomm::Spi5> for Pin<PIO, Special<function::FC5_RXD_SDA_MOSI_DATA>> {}
-impl<PIO: PinId> fc::SpiMosiPin<PIO, flexcomm::Spi6> for Pin<PIO, Special<function::FC6_RXD_SDA_MOSI_DATA>> {}
-impl<PIO: PinId> fc::SpiMosiPin<PIO, flexcomm::Spi7> for Pin<PIO, Special<function::FC7_RXD_SDA_MOSI_DATA>> {}
+impl<PIO: PinId> fc::SpiMosiPin<PIO, flexcomm::Spi0>
+    for Pin<PIO, Special<function::FC0_RXD_SDA_MOSI_DATA>>
+{
+}
+impl<PIO: PinId> fc::SpiMosiPin<PIO, flexcomm::Spi1>
+    for Pin<PIO, Special<function::FC1_RXD_SDA_MOSI_DATA>>
+{
+}
+impl<PIO: PinId> fc::SpiMosiPin<PIO, flexcomm::Spi2>
+    for Pin<PIO, Special<function::FC2_RXD_SDA_MOSI_DATA>>
+{
+}
+impl<PIO: PinId> fc::SpiMosiPin<PIO, flexcomm::Spi3>
+    for Pin<PIO, Special<function::FC3_RXD_SDA_MOSI_DATA>>
+{
+}
+impl<PIO: PinId> fc::SpiMosiPin<PIO, flexcomm::Spi4>
+    for Pin<PIO, Special<function::FC4_RXD_SDA_MOSI_DATA>>
+{
+}
+impl<PIO: PinId> fc::SpiMosiPin<PIO, flexcomm::Spi5>
+    for Pin<PIO, Special<function::FC5_RXD_SDA_MOSI_DATA>>
+{
+}
+impl<PIO: PinId> fc::SpiMosiPin<PIO, flexcomm::Spi6>
+    for Pin<PIO, Special<function::FC6_RXD_SDA_MOSI_DATA>>
+{
+}
+impl<PIO: PinId> fc::SpiMosiPin<PIO, flexcomm::Spi7>
+    for Pin<PIO, Special<function::FC7_RXD_SDA_MOSI_DATA>>
+{
+}
 impl<PIO: PinId> fc::SpiMosiPin<PIO, flexcomm::Spi8> for Pin<PIO, Special<function::HS_SPI_MOSI>> {}
 impl<PIO: PinId> fc::SpiSckPin<PIO, flexcomm::Spi0> for Pin<PIO, Special<function::FC0_SCK>> {}
 impl<PIO: PinId> fc::SpiSckPin<PIO, flexcomm::Spi1> for Pin<PIO, Special<function::FC1_SCK>> {}
@@ -1221,30 +1433,102 @@ impl<PIO: PinId> fc::SpiSckPin<PIO, flexcomm::Spi5> for Pin<PIO, Special<functio
 impl<PIO: PinId> fc::SpiSckPin<PIO, flexcomm::Spi6> for Pin<PIO, Special<function::FC6_SCK>> {}
 impl<PIO: PinId> fc::SpiSckPin<PIO, flexcomm::Spi7> for Pin<PIO, Special<function::FC7_SCK>> {}
 impl<PIO: PinId> fc::SpiSckPin<PIO, flexcomm::Spi8> for Pin<PIO, Special<function::HS_SPI_SCK>> {}
-impl<PIO: PinId> fc::UsartCtsPin<PIO, flexcomm::Usart0> for Pin<PIO, Special<function::FC0_CTS_SDA_SSEL0>> {}
-impl<PIO: PinId> fc::UsartCtsPin<PIO, flexcomm::Usart1> for Pin<PIO, Special<function::FC1_CTS_SDA_SSEL0>> {}
-impl<PIO: PinId> fc::UsartCtsPin<PIO, flexcomm::Usart2> for Pin<PIO, Special<function::FC2_CTS_SDA_SSEL0>> {}
-impl<PIO: PinId> fc::UsartCtsPin<PIO, flexcomm::Usart3> for Pin<PIO, Special<function::FC3_CTS_SDA_SSEL0>> {}
-impl<PIO: PinId> fc::UsartCtsPin<PIO, flexcomm::Usart4> for Pin<PIO, Special<function::FC4_CTS_SDA_SSEL0>> {}
-impl<PIO: PinId> fc::UsartCtsPin<PIO, flexcomm::Usart5> for Pin<PIO, Special<function::FC5_CTS_SDA_SSEL0>> {}
-impl<PIO: PinId> fc::UsartCtsPin<PIO, flexcomm::Usart6> for Pin<PIO, Special<function::FC6_CTS_SDA_SSEL0>> {}
-impl<PIO: PinId> fc::UsartCtsPin<PIO, flexcomm::Usart7> for Pin<PIO, Special<function::FC7_CTS_SDA_SSEL0>> {}
-impl<PIO: PinId> fc::UsartRtsPin<PIO, flexcomm::Usart0> for Pin<PIO, Special<function::FC0_RTS_SCL_SSEL1>> {}
-impl<PIO: PinId> fc::UsartRtsPin<PIO, flexcomm::Usart1> for Pin<PIO, Special<function::FC1_RTS_SCL_SSEL1>> {}
-impl<PIO: PinId> fc::UsartRtsPin<PIO, flexcomm::Usart2> for Pin<PIO, Special<function::FC2_RTS_SCL_SSEL1>> {}
-impl<PIO: PinId> fc::UsartRtsPin<PIO, flexcomm::Usart3> for Pin<PIO, Special<function::FC3_RTS_SCL_SSEL1>> {}
-impl<PIO: PinId> fc::UsartRtsPin<PIO, flexcomm::Usart4> for Pin<PIO, Special<function::FC4_RTS_SCL_SSEL1>> {}
-impl<PIO: PinId> fc::UsartRtsPin<PIO, flexcomm::Usart5> for Pin<PIO, Special<function::FC5_RTS_SCL_SSEL1>> {}
-impl<PIO: PinId> fc::UsartRtsPin<PIO, flexcomm::Usart6> for Pin<PIO, Special<function::FC6_RTS_SCL_SSEL1>> {}
-impl<PIO: PinId> fc::UsartRtsPin<PIO, flexcomm::Usart7> for Pin<PIO, Special<function::FC7_RTS_SCL_SSEL1>> {}
-impl<PIO: PinId> fc::UsartRxPin<PIO, flexcomm::Usart0> for Pin<PIO, Special<function::FC0_RXD_SDA_MOSI_DATA>> {}
-impl<PIO: PinId> fc::UsartRxPin<PIO, flexcomm::Usart1> for Pin<PIO, Special<function::FC1_RXD_SDA_MOSI_DATA>> {}
-impl<PIO: PinId> fc::UsartRxPin<PIO, flexcomm::Usart2> for Pin<PIO, Special<function::FC2_RXD_SDA_MOSI_DATA>> {}
-impl<PIO: PinId> fc::UsartRxPin<PIO, flexcomm::Usart3> for Pin<PIO, Special<function::FC3_RXD_SDA_MOSI_DATA>> {}
-impl<PIO: PinId> fc::UsartRxPin<PIO, flexcomm::Usart4> for Pin<PIO, Special<function::FC4_RXD_SDA_MOSI_DATA>> {}
-impl<PIO: PinId> fc::UsartRxPin<PIO, flexcomm::Usart5> for Pin<PIO, Special<function::FC5_RXD_SDA_MOSI_DATA>> {}
-impl<PIO: PinId> fc::UsartRxPin<PIO, flexcomm::Usart6> for Pin<PIO, Special<function::FC6_RXD_SDA_MOSI_DATA>> {}
-impl<PIO: PinId> fc::UsartRxPin<PIO, flexcomm::Usart7> for Pin<PIO, Special<function::FC7_RXD_SDA_MOSI_DATA>> {}
+impl<PIO: PinId> fc::UsartCtsPin<PIO, flexcomm::Usart0>
+    for Pin<PIO, Special<function::FC0_CTS_SDA_SSEL0>>
+{
+}
+impl<PIO: PinId> fc::UsartCtsPin<PIO, flexcomm::Usart1>
+    for Pin<PIO, Special<function::FC1_CTS_SDA_SSEL0>>
+{
+}
+impl<PIO: PinId> fc::UsartCtsPin<PIO, flexcomm::Usart2>
+    for Pin<PIO, Special<function::FC2_CTS_SDA_SSEL0>>
+{
+}
+impl<PIO: PinId> fc::UsartCtsPin<PIO, flexcomm::Usart3>
+    for Pin<PIO, Special<function::FC3_CTS_SDA_SSEL0>>
+{
+}
+impl<PIO: PinId> fc::UsartCtsPin<PIO, flexcomm::Usart4>
+    for Pin<PIO, Special<function::FC4_CTS_SDA_SSEL0>>
+{
+}
+impl<PIO: PinId> fc::UsartCtsPin<PIO, flexcomm::Usart5>
+    for Pin<PIO, Special<function::FC5_CTS_SDA_SSEL0>>
+{
+}
+impl<PIO: PinId> fc::UsartCtsPin<PIO, flexcomm::Usart6>
+    for Pin<PIO, Special<function::FC6_CTS_SDA_SSEL0>>
+{
+}
+impl<PIO: PinId> fc::UsartCtsPin<PIO, flexcomm::Usart7>
+    for Pin<PIO, Special<function::FC7_CTS_SDA_SSEL0>>
+{
+}
+impl<PIO: PinId> fc::UsartRtsPin<PIO, flexcomm::Usart0>
+    for Pin<PIO, Special<function::FC0_RTS_SCL_SSEL1>>
+{
+}
+impl<PIO: PinId> fc::UsartRtsPin<PIO, flexcomm::Usart1>
+    for Pin<PIO, Special<function::FC1_RTS_SCL_SSEL1>>
+{
+}
+impl<PIO: PinId> fc::UsartRtsPin<PIO, flexcomm::Usart2>
+    for Pin<PIO, Special<function::FC2_RTS_SCL_SSEL1>>
+{
+}
+impl<PIO: PinId> fc::UsartRtsPin<PIO, flexcomm::Usart3>
+    for Pin<PIO, Special<function::FC3_RTS_SCL_SSEL1>>
+{
+}
+impl<PIO: PinId> fc::UsartRtsPin<PIO, flexcomm::Usart4>
+    for Pin<PIO, Special<function::FC4_RTS_SCL_SSEL1>>
+{
+}
+impl<PIO: PinId> fc::UsartRtsPin<PIO, flexcomm::Usart5>
+    for Pin<PIO, Special<function::FC5_RTS_SCL_SSEL1>>
+{
+}
+impl<PIO: PinId> fc::UsartRtsPin<PIO, flexcomm::Usart6>
+    for Pin<PIO, Special<function::FC6_RTS_SCL_SSEL1>>
+{
+}
+impl<PIO: PinId> fc::UsartRtsPin<PIO, flexcomm::Usart7>
+    for Pin<PIO, Special<function::FC7_RTS_SCL_SSEL1>>
+{
+}
+impl<PIO: PinId> fc::UsartRxPin<PIO, flexcomm::Usart0>
+    for Pin<PIO, Special<function::FC0_RXD_SDA_MOSI_DATA>>
+{
+}
+impl<PIO: PinId> fc::UsartRxPin<PIO, flexcomm::Usart1>
+    for Pin<PIO, Special<function::FC1_RXD_SDA_MOSI_DATA>>
+{
+}
+impl<PIO: PinId> fc::UsartRxPin<PIO, flexcomm::Usart2>
+    for Pin<PIO, Special<function::FC2_RXD_SDA_MOSI_DATA>>
+{
+}
+impl<PIO: PinId> fc::UsartRxPin<PIO, flexcomm::Usart3>
+    for Pin<PIO, Special<function::FC3_RXD_SDA_MOSI_DATA>>
+{
+}
+impl<PIO: PinId> fc::UsartRxPin<PIO, flexcomm::Usart4>
+    for Pin<PIO, Special<function::FC4_RXD_SDA_MOSI_DATA>>
+{
+}
+impl<PIO: PinId> fc::UsartRxPin<PIO, flexcomm::Usart5>
+    for Pin<PIO, Special<function::FC5_RXD_SDA_MOSI_DATA>>
+{
+}
+impl<PIO: PinId> fc::UsartRxPin<PIO, flexcomm::Usart6>
+    for Pin<PIO, Special<function::FC6_RXD_SDA_MOSI_DATA>>
+{
+}
+impl<PIO: PinId> fc::UsartRxPin<PIO, flexcomm::Usart7>
+    for Pin<PIO, Special<function::FC7_RXD_SDA_MOSI_DATA>>
+{
+}
 impl<PIO: PinId> fc::UsartSclkPin<PIO, flexcomm::Usart0> for Pin<PIO, Special<function::FC0_SCK>> {}
 impl<PIO: PinId> fc::UsartSclkPin<PIO, flexcomm::Usart1> for Pin<PIO, Special<function::FC1_SCK>> {}
 impl<PIO: PinId> fc::UsartSclkPin<PIO, flexcomm::Usart2> for Pin<PIO, Special<function::FC2_SCK>> {}
@@ -1253,11 +1537,35 @@ impl<PIO: PinId> fc::UsartSclkPin<PIO, flexcomm::Usart4> for Pin<PIO, Special<fu
 impl<PIO: PinId> fc::UsartSclkPin<PIO, flexcomm::Usart5> for Pin<PIO, Special<function::FC5_SCK>> {}
 impl<PIO: PinId> fc::UsartSclkPin<PIO, flexcomm::Usart6> for Pin<PIO, Special<function::FC6_SCK>> {}
 impl<PIO: PinId> fc::UsartSclkPin<PIO, flexcomm::Usart7> for Pin<PIO, Special<function::FC7_SCK>> {}
-impl<PIO: PinId> fc::UsartTxPin<PIO, flexcomm::Usart0> for Pin<PIO, Special<function::FC0_TXD_SCL_MISO_WS>> {}
-impl<PIO: PinId> fc::UsartTxPin<PIO, flexcomm::Usart1> for Pin<PIO, Special<function::FC1_TXD_SCL_MISO_WS>> {}
-impl<PIO: PinId> fc::UsartTxPin<PIO, flexcomm::Usart2> for Pin<PIO, Special<function::FC2_TXD_SCL_MISO_WS>> {}
-impl<PIO: PinId> fc::UsartTxPin<PIO, flexcomm::Usart3> for Pin<PIO, Special<function::FC3_TXD_SCL_MISO_WS>> {}
-impl<PIO: PinId> fc::UsartTxPin<PIO, flexcomm::Usart4> for Pin<PIO, Special<function::FC4_TXD_SCL_MISO_WS>> {}
-impl<PIO: PinId> fc::UsartTxPin<PIO, flexcomm::Usart5> for Pin<PIO, Special<function::FC5_TXD_SCL_MISO_WS>> {}
-impl<PIO: PinId> fc::UsartTxPin<PIO, flexcomm::Usart6> for Pin<PIO, Special<function::FC6_TXD_SCL_MISO_WS>> {}
-impl<PIO: PinId> fc::UsartTxPin<PIO, flexcomm::Usart7> for Pin<PIO, Special<function::FC7_TXD_SCL_MISO_WS>> {}
+impl<PIO: PinId> fc::UsartTxPin<PIO, flexcomm::Usart0>
+    for Pin<PIO, Special<function::FC0_TXD_SCL_MISO_WS>>
+{
+}
+impl<PIO: PinId> fc::UsartTxPin<PIO, flexcomm::Usart1>
+    for Pin<PIO, Special<function::FC1_TXD_SCL_MISO_WS>>
+{
+}
+impl<PIO: PinId> fc::UsartTxPin<PIO, flexcomm::Usart2>
+    for Pin<PIO, Special<function::FC2_TXD_SCL_MISO_WS>>
+{
+}
+impl<PIO: PinId> fc::UsartTxPin<PIO, flexcomm::Usart3>
+    for Pin<PIO, Special<function::FC3_TXD_SCL_MISO_WS>>
+{
+}
+impl<PIO: PinId> fc::UsartTxPin<PIO, flexcomm::Usart4>
+    for Pin<PIO, Special<function::FC4_TXD_SCL_MISO_WS>>
+{
+}
+impl<PIO: PinId> fc::UsartTxPin<PIO, flexcomm::Usart5>
+    for Pin<PIO, Special<function::FC5_TXD_SCL_MISO_WS>>
+{
+}
+impl<PIO: PinId> fc::UsartTxPin<PIO, flexcomm::Usart6>
+    for Pin<PIO, Special<function::FC6_TXD_SCL_MISO_WS>>
+{
+}
+impl<PIO: PinId> fc::UsartTxPin<PIO, flexcomm::Usart7>
+    for Pin<PIO, Special<function::FC7_TXD_SCL_MISO_WS>>
+{
+}

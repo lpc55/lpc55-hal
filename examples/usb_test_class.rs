@@ -10,17 +10,12 @@ use hal::prelude::*;
 #[allow(unused_imports)]
 use lpc55_hal as hal;
 
+use hal::drivers::{pins, Timer, UsbBus};
+use usb_device::device::{UsbDeviceBuilder, UsbVidPid};
 use usb_device::test_class::TestClass;
-use usb_device::device::{UsbDeviceBuilder,UsbVidPid};
-use hal::drivers::{
-    pins,
-    UsbBus,
-    Timer,
-};
 
 #[entry]
 fn main() -> ! {
-
     let hal = hal::new();
 
     let mut anactrl = hal.anactrl;
@@ -28,7 +23,9 @@ fn main() -> ! {
     let mut pmc = hal.pmc;
 
     let mut iocon = hal.iocon.enabled(&mut syscon);
-    let usb0_vbus_pin = pins::Pio0_22::take().unwrap().into_usb0_vbus_pin(&mut iocon);
+    let usb0_vbus_pin = pins::Pio0_22::take()
+        .unwrap()
+        .into_usb0_vbus_pin(&mut iocon);
     iocon.disabled(&mut syscon); // perfectionist ;)
 
     let clocks = hal::ClockRequirements::default()
@@ -36,8 +33,11 @@ fn main() -> ! {
         .configure(&mut anactrl, &mut pmc, &mut syscon)
         .expect("Clock configuration failed");
 
-
-    let mut _delay_timer = Timer::new(hal.ctimer.0.enabled(&mut syscon, clocks.support_1mhz_fro_token().unwrap()));
+    let mut _delay_timer = Timer::new(
+        hal.ctimer
+            .0
+            .enabled(&mut syscon, clocks.support_1mhz_fro_token().unwrap()),
+    );
 
     // Can use compile to use either the "HighSpeed" or "FullSpeed" USB peripheral.
     // Default is full speed.
@@ -47,8 +47,7 @@ fn main() -> ! {
         &mut pmc,
         &mut syscon,
         &mut _delay_timer,
-        clocks.support_usbhs_token()
-                        .unwrap()
+        clocks.support_usbhs_token().unwrap(),
     );
 
     #[cfg(not(feature = "highspeed-usb-example"))]
@@ -56,10 +55,8 @@ fn main() -> ! {
         &mut anactrl,
         &mut pmc,
         &mut syscon,
-        clocks.support_usbfs_token()
-                        .unwrap()
+        clocks.support_usbfs_token().unwrap(),
     );
-
 
     let usb_bus = UsbBus::new(usb_peripheral, usb0_vbus_pin);
 
@@ -76,7 +73,6 @@ fn main() -> ! {
         .serial_number(SERIAL_NUMBER)
         .max_packet_size_0(64)
         .build();
-
 
     loop {
         if usb_dev.poll(&mut [&mut test]) {

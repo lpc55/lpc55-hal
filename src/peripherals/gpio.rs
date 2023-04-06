@@ -1,8 +1,4 @@
-use crate::{
-    raw,
-    typestates::init_state,
-    peripherals::syscon,
-};
+use crate::{peripherals::syscon, raw, typestates::init_state};
 
 crate::wrap_stateful_peripheral!(Gpio, GPIO);
 

@@ -1,20 +1,18 @@
 use core::fmt;
-use core::ops::Deref;
 use core::marker::PhantomData;
+use core::ops::Deref;
 
 use crate::{
-    typestates::{
-        pin::{
-            flexcomm::{
-                // Trait marking USART peripherals and pins
-                Usart,
-                UsartPins,
-            },
-            PinId,
-        },
-    },
-    traits::wg::serial,
     time::Hertz,
+    traits::wg::serial,
+    typestates::pin::{
+        flexcomm::{
+            // Trait marking USART peripherals and pins
+            Usart,
+            UsartPins,
+        },
+        PinId,
+    },
 };
 
 pub mod config;
@@ -106,45 +104,52 @@ where
         let speed: Hertz = config.speed.into();
         let speed: u32 = speed.0;
 
-        usart.fifocfg.modify(|_, w| w
-            .enabletx().enabled()
-            .enablerx().enabled()
-        );
+        usart
+            .fifocfg
+            .modify(|_, w| w.enabletx().enabled().enablerx().enabled());
 
-        usart.fifotrig.modify(|_, w| unsafe { w
-            .txlvl().bits(0)
-            .txlvlena().enabled()
-            .rxlvl().bits(1)
-            .rxlvlena().enabled()
+        usart.fifotrig.modify(|_, w| unsafe {
+            w.txlvl()
+                .bits(0)
+                .txlvlena()
+                .enabled()
+                .rxlvl()
+                .bits(1)
+                .rxlvlena()
+                .enabled()
         });
 
-        usart.cfg.write(|w| unsafe { w
-            .paritysel().bits(match config.parity {
-                Parity::ParityNone => 0,
-                Parity::ParityEven => 2,
-                Parity::ParityOdd => 3,
-            })
-            .stoplen().bit(match config.stopbits {
-                StopBits::STOP1 => false,
-                StopBits::STOP2 => true,
-            })
-            .datalen().bits(match config.wordlength {
-                WordLength::DataBits7 => 0,
-                WordLength::DataBits8 => 1,
-                WordLength::DataBits9 => 2,
-            })
-
-            // these are just some defaults (of zero)
-
-            // loopback mode
-            .loop_().normal()
-            // asynch mode
-            .syncen().asynchronous_mode()
-            // polarity
-            .clkpol().falling_edge()
-
-            // enable it
-            .enable().enabled()
+        usart.cfg.write(|w| unsafe {
+            w.paritysel()
+                .bits(match config.parity {
+                    Parity::ParityNone => 0,
+                    Parity::ParityEven => 2,
+                    Parity::ParityOdd => 3,
+                })
+                .stoplen()
+                .bit(match config.stopbits {
+                    StopBits::STOP1 => false,
+                    StopBits::STOP2 => true,
+                })
+                .datalen()
+                .bits(match config.wordlength {
+                    WordLength::DataBits7 => 0,
+                    WordLength::DataBits8 => 1,
+                    WordLength::DataBits9 => 2,
+                })
+                // these are just some defaults (of zero)
+                // loopback mode
+                .loop_()
+                .normal()
+                // asynch mode
+                .syncen()
+                .asynchronous_mode()
+                // polarity
+                .clkpol()
+                .falling_edge()
+                // enable it
+                .enable()
+                .enabled()
         });
 
         // baudrate logic from `fsl_usart.c` in SDK
@@ -160,7 +165,11 @@ where
                 continue;
             }
             let realized_speed = Self::CLOCK_SPEED / (osr * brg);
-            let diff = if speed > realized_speed { speed - realized_speed} else { realized_speed - speed };
+            let diff = if speed > realized_speed {
+                speed - realized_speed
+            } else {
+                realized_speed - speed
+            };
             if diff < best_diff {
                 best_diff = diff;
                 best_osr = osr;
@@ -173,8 +182,12 @@ where
             panic!("baudrate not supported");
         }
 
-        usart.brg.write(|w| unsafe { w.brgval().bits(best_brg as u16 - 1) });
-        usart.osr.write(|w| unsafe { w.osrval().bits(best_osr as u8 - 1) });
+        usart
+            .brg
+            .write(|w| unsafe { w.brgval().bits(best_brg as u16 - 1) });
+        usart
+            .osr
+            .write(|w| unsafe { w.osrval().bits(best_osr as u8 - 1) });
 
         Self {
             usart,
@@ -241,7 +254,6 @@ impl<USART: Usart> serial::Read<u8> for Rx<USART> {
         let fifostat = self.fifostat.read();
 
         if fifostat.rxnotempty().bit() {
-
             // SDK uses stat, and e.g. framerrint instead of framerr,
             // but that's not in the SDK
             let fiford = self.fiford.read();
@@ -266,14 +278,12 @@ impl<USART: Usart> serial::Read<u8> for Rx<USART> {
             }
 
             Ok(fiford.rxdata().bits() as u8)
-
         } else {
             // cortex_m_semihosting::hprintln!("not rxnotempty").ok();
             Err(nb::Error::WouldBlock)
         }
     }
 }
-
 
 impl<TX, RX, USART, PINS> serial::Write<u8> for Serial<TX, RX, USART, PINS>
 where
@@ -316,7 +326,7 @@ impl<USART: Usart> serial::Write<u8> for Tx<USART> {
         if self.fifostat.read().txnotfull().bit() {
             // TODO: figure out if we need to perform an 8-bit write
             // This would not be possible via svd2rust API, and need some acrobatics
-            self.fifowr.write(|w| unsafe { w.bits(byte as u32) } );
+            self.fifowr.write(|w| unsafe { w.bits(byte as u32) });
 
             Ok(())
         } else {

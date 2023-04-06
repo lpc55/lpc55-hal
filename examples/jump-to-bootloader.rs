@@ -18,5 +18,7 @@ fn main() -> ! {
     // Conor's trick: make the bootloader think ISP0 is asserted,
     // even though it's not!
     iocon.pio0_5.modify(|_, w| w.invert().set_bit());
-    unsafe { cortex_m::asm::bootload(0x03000000 as *const u32); }
+    unsafe {
+        cortex_m::asm::bootload(0x03000000 as *const u32);
+    }
 }

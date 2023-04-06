@@ -1,29 +1,24 @@
-use core::{
-    cmp::min,
-};
+use core::cmp::min;
 
 #[cfg(not(feature = "nosync"))]
 use core::marker::PhantomData;
 
-use cortex_m::interrupt::{Mutex, CriticalSection};
+use cortex_m::interrupt::{CriticalSection, Mutex};
 
-use usb_device::{
-    Result,
-    UsbError,
-    endpoint::EndpointType,
-};
+use usb_device::{endpoint::EndpointType, Result, UsbError};
 
 use crate::traits::usb::Usb;
 use crate::typestates::init_state;
 
 use super::{
-    endpoint_memory::EndpointBuffer,
-    endpoint_registers::Instance as EndpointRegistersInstance,
+    endpoint_memory::EndpointBuffer, endpoint_registers::Instance as EndpointRegistersInstance,
 };
 
 /// Arbitrates access to the endpoint-specific registers and packet buffer memory.
-pub struct Endpoint  <USB>
-where USB: Usb<init_state::Enabled> {
+pub struct Endpoint<USB>
+where
+    USB: Usb<init_state::Enabled>,
+{
     out_buf: Option<Mutex<EndpointBuffer>>,
     setup_buf: Option<Mutex<EndpointBuffer>>,
     in_buf: Option<Mutex<EndpointBuffer>>,
@@ -31,11 +26,12 @@ where USB: Usb<init_state::Enabled> {
     index: u8,
     pub(crate) _marker: PhantomData<USB>,
 }
-unsafe impl<USB> Send for Endpoint<USB>
-where USB: Usb<init_state::Enabled> + Send {}
+unsafe impl<USB> Send for Endpoint<USB> where USB: Usb<init_state::Enabled> + Send {}
 
-impl<USB> Endpoint <USB>
-where USB: Usb<init_state::Enabled> {
+impl<USB> Endpoint<USB>
+where
+    USB: Usb<init_state::Enabled>,
+{
     pub fn new(index: u8) -> Endpoint<USB> {
         Endpoint::<USB> {
             out_buf: None,
@@ -47,11 +43,17 @@ where USB: Usb<init_state::Enabled> {
         }
     }
 
-    pub fn index(&self) -> u8 {self.index }
+    pub fn index(&self) -> u8 {
+        self.index
+    }
 
-    pub fn ep_type(&self) -> Option<EndpointType> { self.ep_type }
+    pub fn ep_type(&self) -> Option<EndpointType> {
+        self.ep_type
+    }
 
-    pub fn set_ep_type(&mut self, ep_type: EndpointType) { self.ep_type = Some(ep_type); }
+    pub fn set_ep_type(&mut self, ep_type: EndpointType) {
+        self.ep_type = Some(ep_type);
+    }
 
     pub fn buf_addroff(&self, buf: &EndpointBuffer) -> u16 {
         // need to be 64 byte aligned
@@ -61,7 +63,9 @@ where USB: Usb<init_state::Enabled> {
     }
 
     // OUT
-    pub fn is_out_buf_set(&self) -> bool { self.out_buf.is_some() }
+    pub fn is_out_buf_set(&self) -> bool {
+        self.out_buf.is_some()
+    }
 
     pub fn set_out_buf(&mut self, buffer: EndpointBuffer) {
         self.out_buf = Some(Mutex::new(buffer));
@@ -69,20 +73,27 @@ where USB: Usb<init_state::Enabled> {
 
     pub fn reset_out_buf(&self, cs: &CriticalSection, epl: &EndpointRegistersInstance) {
         // hardware modifies the NBytes and Offset entries, need to change them back periodically
-        if !self.is_out_buf_set() { return; };
+        if !self.is_out_buf_set() {
+            return;
+        };
 
         let buf = self.out_buf.as_ref().unwrap().borrow(cs);
         let addroff = self.buf_addroff(buf);
         let len = buf.capacity() as u16;
         let i = self.index as usize;
 
-        epl.eps[i].ep_out[0].modify(|_, w| w
-            .nbytes::<USB>().bits(len)
-            .addroff::<USB>().bits(addroff)
-            .a().active()
-            .d().enabled() // technically, marked as R (for reserved?) for EP0
-            .s().not_stalled()
-        );
+        epl.eps[i].ep_out[0].modify(|_, w| {
+            w.nbytes::<USB>()
+                .bits(len)
+                .addroff::<USB>()
+                .bits(addroff)
+                .a()
+                .active()
+                .d()
+                .enabled() // technically, marked as R (for reserved?) for EP0
+                .s()
+                .not_stalled()
+        });
     }
 
     // pub fn enable_out_interrupt(&self, usb: &USB1) {
@@ -98,7 +109,9 @@ where USB: Usb<init_state::Enabled> {
     // }
 
     // SETUP
-    pub fn is_setup_buf_set(&self) -> bool { self.setup_buf.is_some() }
+    pub fn is_setup_buf_set(&self) -> bool {
+        self.setup_buf.is_some()
+    }
 
     pub fn set_setup_buf(&mut self, buffer: EndpointBuffer) {
         self.setup_buf = Some(Mutex::new(buffer));
@@ -106,7 +119,9 @@ where USB: Usb<init_state::Enabled> {
 
     pub fn reset_setup_buf(&self, cs: &CriticalSection, epl: &EndpointRegistersInstance) {
         // I think this only has to be called once, as hardware never changes ADDROFF
-        if !self.is_setup_buf_set() { return; };
+        if !self.is_setup_buf_set() {
+            return;
+        };
 
         let buf = self.setup_buf.as_ref().unwrap().borrow(cs);
         let addroff = self.buf_addroff(buf);
@@ -115,7 +130,9 @@ where USB: Usb<init_state::Enabled> {
     }
 
     // IN
-    pub fn is_in_buf_set(&self) -> bool { self.in_buf.is_some() }
+    pub fn is_in_buf_set(&self) -> bool {
+        self.in_buf.is_some()
+    }
 
     pub fn set_in_buf(&mut self, buffer: EndpointBuffer) {
         self.in_buf = Some(Mutex::new(buffer));
@@ -124,7 +141,9 @@ where USB: Usb<init_state::Enabled> {
     pub fn reset_in_buf(&self, cs: &CriticalSection, epl: &EndpointRegistersInstance) {
         // hardware modifies the NBytes and Offset entries, need to change them back periodically
 
-        if !self.is_in_buf_set() { return; };
+        if !self.is_in_buf_set() {
+            return;
+        };
 
         let buf = self.in_buf.as_ref().unwrap().borrow(cs);
         let addroff = self.buf_addroff(buf);
@@ -137,33 +156,41 @@ where USB: Usb<init_state::Enabled> {
         }
 
         if i == 0 {
-            epl.eps[0].ep_in[0].modify(|_, w| w
-                .nbytes::<USB>().bits(0)
-                .addroff::<USB>().bits(addroff)
-                .a().not_active()
-                .s().not_stalled()
-            );
+            epl.eps[0].ep_in[0].modify(|_, w| {
+                w.nbytes::<USB>()
+                    .bits(0)
+                    .addroff::<USB>()
+                    .bits(addroff)
+                    .a()
+                    .not_active()
+                    .s()
+                    .not_stalled()
+            });
         } else {
-            epl.eps[i].ep_in[0].modify(|_, w| w
-                .nbytes::<USB>().bits(0)
-                .addroff::<USB>().bits(addroff)
-                .d().enabled()
-                .s().not_stalled()
-            );
+            epl.eps[i].ep_in[0].modify(|_, w| {
+                w.nbytes::<USB>()
+                    .bits(0)
+                    .addroff::<USB>()
+                    .bits(addroff)
+                    .d()
+                    .enabled()
+                    .s()
+                    .not_stalled()
+            });
         }
     }
 
     pub fn configure(&self, cs: &CriticalSection, usb: &USB, epl: &EndpointRegistersInstance) {
         let ep_type = match self.ep_type {
             Some(t) => t,
-            None => { return },
+            None => return,
         };
 
         // no support for Isochronous endpoints
         debug_assert!(ep_type != EndpointType::Isochronous);
 
         // clear all the interrupts
-        usb.intstat.write(|w| unsafe { w.bits(!0) } );
+        usb.intstat.write(|w| unsafe { w.bits(!0) });
         debug_assert!(usb.intstat.read().bits() == 0);
 
         self.reset_out_buf(cs, epl);
@@ -173,8 +200,15 @@ where USB: Usb<init_state::Enabled> {
         self.reset_in_buf(cs, epl);
     }
 
-    pub fn write(&self, buf: &[u8], cs: &CriticalSection, epl: &EndpointRegistersInstance) -> Result<usize> {
-        if !self.is_in_buf_set() { return Err(UsbError::WouldBlock); }
+    pub fn write(
+        &self,
+        buf: &[u8],
+        cs: &CriticalSection,
+        epl: &EndpointRegistersInstance,
+    ) -> Result<usize> {
+        if !self.is_in_buf_set() {
+            return Err(UsbError::WouldBlock);
+        }
         let in_buf = self.in_buf.as_ref().unwrap().borrow(cs);
 
         if buf.len() > in_buf.capacity() {
@@ -184,16 +218,18 @@ where USB: Usb<init_state::Enabled> {
         let i = self.index as usize;
 
         if i == 0 {
-            epl.eps[0].ep_in[0].modify(|_, w| w
-                .a().not_active()
-            );
+            epl.eps[0].ep_in[0].modify(|_, w| w.a().not_active());
             in_buf.write(buf);
-            epl.eps[0].ep_in[0].modify(|_, w| w
-                .nbytes::<USB>().bits(buf.len() as u16)
-                .addroff::<USB>().bits(self.buf_addroff(in_buf))
-                .s().not_stalled()
-                .a().active()
-            );
+            epl.eps[0].ep_in[0].modify(|_, w| {
+                w.nbytes::<USB>()
+                    .bits(buf.len() as u16)
+                    .addroff::<USB>()
+                    .bits(self.buf_addroff(in_buf))
+                    .s()
+                    .not_stalled()
+                    .a()
+                    .active()
+            });
         } else {
             if epl.eps[i].ep_in[0].read().a().is_active() {
                 // NB: With this test in place, `bench_bulk_read` from TestClass fails.
@@ -203,21 +239,33 @@ where USB: Usb<init_state::Enabled> {
                 return Err(UsbError::WouldBlock);
             }
             in_buf.write(buf);
-            epl.eps[i].ep_in[0].modify(|_, w| w
-                .nbytes::<USB>().bits(buf.len() as u16)
-                .addroff::<USB>().bits(self.buf_addroff(in_buf))
-                .d().enabled()
-                .s().not_stalled()
-                .a().active()
-            );
+            epl.eps[i].ep_in[0].modify(|_, w| {
+                w.nbytes::<USB>()
+                    .bits(buf.len() as u16)
+                    .addroff::<USB>()
+                    .bits(self.buf_addroff(in_buf))
+                    .d()
+                    .enabled()
+                    .s()
+                    .not_stalled()
+                    .a()
+                    .active()
+            });
         }
 
         Ok(buf.len())
     }
 
-    pub fn read(&self, buf: &mut [u8], cs: &CriticalSection, usb: &USB, epl: &EndpointRegistersInstance) -> Result<usize> {
-
-        if !self.is_out_buf_set() { return Err(UsbError::WouldBlock); }
+    pub fn read(
+        &self,
+        buf: &mut [u8],
+        cs: &CriticalSection,
+        usb: &USB,
+        epl: &EndpointRegistersInstance,
+    ) -> Result<usize> {
+        if !self.is_out_buf_set() {
+            return Err(UsbError::WouldBlock);
+        }
 
         let i = self.index as usize;
 
@@ -249,20 +297,20 @@ where USB: Usb<init_state::Enabled> {
             unsafe { usb.intstat.write(|w| w.bits(ep_out_mask)) };
 
             // self.reset_out_buf(cs, epl);
-            epl.eps[i].ep_out[0].modify(|_, w| w
-                .nbytes::<USB>().bits(out_buf.capacity() as u16)
-                .addroff::<USB>().bits(self.buf_addroff(out_buf))
-                .a().active()
-                // .d().enabled()
-                // .s().not_stalled()
+            epl.eps[i].ep_out[0].modify(
+                |_, w| {
+                    w.nbytes::<USB>()
+                        .bits(out_buf.capacity() as u16)
+                        .addroff::<USB>()
+                        .bits(self.buf_addroff(out_buf))
+                        .a()
+                        .active()
+                }, // .d().enabled()
+                   // .s().not_stalled()
             );
 
             Ok(count)
-
-
-
-
-        } else  {
+        } else {
             let intstat_r = usb.intstat.read();
             let devcmdstat_r = usb.devcmdstat.read();
             if !(intstat_r.ep0out().bit_is_set() || devcmdstat_r.setup().bit_is_set()) {
@@ -270,7 +318,9 @@ where USB: Usb<init_state::Enabled> {
             }
 
             if devcmdstat_r.setup().bit_is_set() {
-                if !self.is_setup_buf_set() { return Err(UsbError::WouldBlock); }
+                if !self.is_setup_buf_set() {
+                    return Err(UsbError::WouldBlock);
+                }
 
                 let setup_buf = self.setup_buf.as_ref().unwrap().borrow(cs);
                 if buf.len() < 8 {
@@ -295,7 +345,6 @@ where USB: Usb<init_state::Enabled> {
                 // prepare to receive more
                 self.reset_out_buf(cs, epl);
                 Ok(8)
-
             } else {
                 let out_buf = self.out_buf.as_ref().unwrap().borrow(cs);
                 let nbytes = epl.eps[0].ep_out[0].read().nbytes::<USB>().bits() as usize;
@@ -310,5 +359,4 @@ where USB: Usb<init_state::Enabled> {
             }
         }
     }
-
 }

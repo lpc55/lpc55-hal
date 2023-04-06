@@ -1,12 +1,4 @@
-use crate::{
-    raw,
-    peripherals::{
-        syscon,
-    },
-    typestates::{
-        init_state,
-    }
-};
+use crate::{peripherals::syscon, raw, typestates::init_state};
 
 // use crate::pins::{
 //     Pins,
@@ -75,20 +67,26 @@ impl Iocon<init_state::Enabled> {
         self.raw.pio0_10.modify(|_, w| w.func().alt6());
     }
 
-
     pub fn get_pio_0_22_config(&self) -> u32 {
         self.raw.pio0_22.read().bits()
     }
 
     pub fn configure_pio_0_22_as_usb0_vbus(&self) {
-        self.raw.pio0_22.modify(|_, w|
-            w
-            .func().alt7() // FUNC7, pin configured as USB0_VBUS
-            .mode().inactive() // MODE_INACT, no additional pin function
-            .slew().standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
-            .invert().disabled() // INV_DI, input function is not inverted
-            .digimode().digital() // DIGITAL_EN, enable digital fucntion
-            .od().normal() // OPENDRAIN_DI, open drain is disabled
+        self.raw.pio0_22.modify(
+            |_, w| {
+                w.func()
+                    .alt7() // FUNC7, pin configured as USB0_VBUS
+                    .mode()
+                    .inactive() // MODE_INACT, no additional pin function
+                    .slew()
+                    .standard() // SLEW_STANDARD, standard mode, slew rate control is enabled
+                    .invert()
+                    .disabled() // INV_DI, input function is not inverted
+                    .digimode()
+                    .digital() // DIGITAL_EN, enable digital fucntion
+                    .od()
+                    .normal()
+            }, // OPENDRAIN_DI, open drain is disabled
         );
     }
 }

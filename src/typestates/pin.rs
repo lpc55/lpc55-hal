@@ -31,8 +31,8 @@ pub enum PinType {
 
 /// Contains types that indicate pin states
 pub mod state {
-    use super::gpio::direction::Direction;
     use super::function::Function;
+    use super::gpio::direction::Direction;
     use crate::typestates::reg_proxy::RegClusterProxy;
 
     /// Implemented by types that indicate pin state
@@ -65,7 +65,6 @@ pub mod state {
         pub(crate) _direction: D,
     }
 
-
     impl<D> PinState for Gpio<D> where D: Direction {}
     impl<D> PinState for Analog<D> where D: Direction {}
 
@@ -91,7 +90,7 @@ pub mod gpio {
         impl Direction for Output {}
 
         pub struct AnalogInput;
-        impl Direction for AnalogInput{}
+        impl Direction for AnalogInput {}
 
         pub struct AnalogOutput;
         impl Direction for AnalogOutput {}

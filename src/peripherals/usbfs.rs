@@ -1,10 +1,5 @@
-use core::ops::Deref;
+use crate::peripherals::{anactrl, pmc, syscon};
 use crate::raw;
-use crate::peripherals::{
-    anactrl,
-    pmc,
-    syscon,
-};
 use crate::typestates::{
     init_state,
     usbfs_mode,
@@ -12,16 +7,15 @@ use crate::typestates::{
     // Fro96MHzEnabledToken,
     ClocksSupportUsbfsToken,
 };
+use core::ops::Deref;
 
-use crate::traits::usb::{
-    Usb,
-    UsbSpeed,
-};
-
-
+use crate::traits::usb::{Usb, UsbSpeed};
 
 // Main struct
-pub struct Usbfs<State: init_state::InitState = init_state::Unknown, Mode: usbfs_mode::UsbfsMode = usbfs_mode::Unknown> {
+pub struct Usbfs<
+    State: init_state::InitState = init_state::Unknown,
+    Mode: usbfs_mode::UsbfsMode = usbfs_mode::Unknown,
+> {
     pub(crate) raw_fsd: raw::USB0,
     pub(crate) raw_fsh: raw::USBFSH,
     _state: State,
@@ -69,7 +63,6 @@ impl<State: init_state::InitState, Mode: usbfs_mode::UsbfsMode> Usbfs<State, Mod
         // lock_fro_to_sof: bool, // we always lock to SOF
         _clocks_token: ClocksSupportUsbfsToken,
     ) -> EnabledUsbfsDevice {
-
         // Configure clock input: Fro96MHz divided by 2 = 48MHz
         // TODO: disable this again in `self.disable`.
         unsafe { syscon.raw.usb0clkdiv.modify(|_, w| w.div().bits(1)) };
@@ -87,7 +80,9 @@ impl<State: init_state::InitState, Mode: usbfs_mode::UsbfsMode> Usbfs<State, Mod
         // Switch USB0 to "device" mode (default is "host")
         syscon.enable_clock(&mut self.raw_fsh);
         // NB!!! This will crash your debugger soo bad if usb0clk is not setup !!!
-        self.raw_fsh.portmode.modify(|_, w| w.dev_enable().set_bit());
+        self.raw_fsh
+            .portmode
+            .modify(|_, w| w.dev_enable().set_bit());
         syscon.disable_clock(&mut self.raw_fsh);
 
         // Turn on USB1 SRAM
@@ -98,10 +93,12 @@ impl<State: init_state::InitState, Mode: usbfs_mode::UsbfsMode> Usbfs<State, Mod
 
         // Lock Fro192MHz to USB SOF packets
         // if lock_fro_to_sof {
-            anactrl.raw.fro192m_ctrl.modify(|_, w| w.usbclkadj().set_bit());
-            while anactrl.raw.fro192m_ctrl.read().usbmodchg().bit_is_set() {}
+        anactrl
+            .raw
+            .fro192m_ctrl
+            .modify(|_, w| w.usbclkadj().set_bit());
+        while anactrl.raw.fro192m_ctrl.read().usbmodchg().bit_is_set() {}
         // }
-
 
         Usbfs {
             raw_fsd: self.raw_fsd,
@@ -110,7 +107,6 @@ impl<State: init_state::InitState, Mode: usbfs_mode::UsbfsMode> Usbfs<State, Mod
             _mode: usbfs_mode::Device,
         }
     }
-
 }
 
 #[derive(Debug)]

@@ -1,8 +1,8 @@
 #![no_main]
 #![no_std]
 
-use panic_semihosting as _;  // 4004 bytes
-// extern crate panic_halt; // 672 bytes
+use panic_semihosting as _; // 4004 bytes
+                            // extern crate panic_halt; // 672 bytes
 
 // #[macro_use(block)]
 // extern crate nb;
@@ -10,25 +10,15 @@ use panic_semihosting as _;  // 4004 bytes
 use cortex_m_rt::entry;
 use cortex_m_semihosting::heprintln;
 
-use lpc55_hal as hal;
 use hal::prelude::*;
 use hal::{
-    drivers::{
-        Pins,
-    },
-    peripherals::{
-        pint::{
-            Mode,
-            Slot,
-        },
-    },
+    drivers::Pins,
+    peripherals::pint::{Mode, Slot},
 };
-
-
+use lpc55_hal as hal;
 
 #[entry]
 fn main() -> ! {
-
     heprintln!("External interrupts").unwrap();
 
     let mut hal = hal::new();
@@ -43,11 +33,14 @@ fn main() -> ! {
     let pins = Pins::take().unwrap();
 
     // // NFC IRQ pin for Solo-bee
-    let input = pins.pio0_0.into_gpio_pin(&mut iocon, &mut gpio).into_input();
+    let input = pins
+        .pio0_0
+        .into_gpio_pin(&mut iocon, &mut gpio)
+        .into_input();
 
     // Add pullup for Pio0_0
     let iocon = iocon.release();
-    iocon.pio0_0.modify(|_,w| { w.mode().pull_up() } );
+    iocon.pio0_0.modify(|_, w| w.mode().pull_up());
 
     let mut mux = hal.inputmux.enabled(&mut hal.syscon);
     let mut pint = hal.pint.enabled(&mut hal.syscon);
@@ -63,7 +56,6 @@ fn main() -> ! {
     pint.fall.write(|w| unsafe { w.bits(1) });
 
     loop {
-
         if (pint.rise.read().bits() & 1) != 0 {
             pint.rise.write(|w| unsafe { w.bits(1) });
             heprintln!("Rising edge detected").unwrap();
@@ -73,6 +65,5 @@ fn main() -> ! {
             pint.fall.write(|w| unsafe { w.bits(1) });
             heprintln!("Falling edge detected").unwrap();
         }
-
     }
 }

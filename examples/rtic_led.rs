@@ -5,13 +5,8 @@ extern crate panic_semihosting;
 // extern crate panic_halt;
 use cortex_m_semihosting::dbg;
 
+use hal::{drivers::pins, drivers::pins::Level, prelude::*, typestates::pin};
 use lpc55_hal as hal;
-use hal::{
-    prelude::*,
-    drivers::pins::Level,
-    drivers::pins,
-    typestates::pin,
-};
 
 type RedLed = hal::Pin<pins::Pio1_6, pin::state::Gpio<pin::gpio::direction::Output>>;
 
@@ -35,7 +30,8 @@ const APP: () = {
         let mut iocon = hal::Iocon::from(dp.IOCON).enabled(&mut syscon);
 
         let pins = hal::Pins::take().unwrap();
-        let red_led = pins.pio1_6
+        let red_led = pins
+            .pio1_6
             .into_gpio_pin(&mut iocon, &mut gpio)
             .into_output(Level::High);
 

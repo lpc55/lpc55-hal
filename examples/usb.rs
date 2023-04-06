@@ -11,17 +11,12 @@ use hal::prelude::*;
 #[allow(unused_imports)]
 use lpc55_hal as hal;
 
-use usbd_serial::{CdcAcmClass, /*SerialPort*/};
+use hal::drivers::{pins, Timer, UsbBus};
 use usb_device::device::{UsbDeviceBuilder, UsbVidPid};
-use hal::drivers::{
-    pins,
-    UsbBus,
-    Timer,
-};
+use usbd_serial::CdcAcmClass;
 
 #[entry]
 fn main() -> ! {
-
     let hal = hal::new();
 
     let mut anactrl = hal.anactrl;
@@ -31,15 +26,16 @@ fn main() -> ! {
     let mut gpio = hal.gpio.enabled(&mut syscon);
     let mut iocon = hal.iocon.enabled(&mut syscon);
 
-    let mut red_led = pins::Pio1_6::take().unwrap()
+    let mut red_led = pins::Pio1_6::take()
+        .unwrap()
         .into_gpio_pin(&mut iocon, &mut gpio)
         .into_output(hal::drivers::pins::Level::High); // start turned off
 
-    let usb0_vbus_pin = pins::Pio0_22::take().unwrap()
+    let usb0_vbus_pin = pins::Pio0_22::take()
+        .unwrap()
         .into_usb0_vbus_pin(&mut iocon);
 
     iocon.disabled(&mut syscon).release(); // save the environment :)
-
 
     let clocks = hal::ClockRequirements::default()
         // .system_frequency(24.mhz())
@@ -48,7 +44,11 @@ fn main() -> ! {
         .configure(&mut anactrl, &mut pmc, &mut syscon)
         .unwrap();
 
-    let mut _delay_timer = Timer::new(hal.ctimer.0.enabled(&mut syscon, clocks.support_1mhz_fro_token().unwrap()));
+    let mut _delay_timer = Timer::new(
+        hal.ctimer
+            .0
+            .enabled(&mut syscon, clocks.support_1mhz_fro_token().unwrap()),
+    );
 
     // Can use compile to use either the "HighSpeed" or "FullSpeed" USB peripheral.
     // Default is full speed.
@@ -58,8 +58,7 @@ fn main() -> ! {
         &mut pmc,
         &mut syscon,
         &mut _delay_timer,
-        clocks.support_usbhs_token()
-                        .unwrap()
+        clocks.support_usbhs_token().unwrap(),
     );
 
     #[cfg(not(feature = "highspeed-usb-example"))]
@@ -67,10 +66,8 @@ fn main() -> ! {
         &mut anactrl,
         &mut pmc,
         &mut syscon,
-        clocks.support_usbfs_token()
-                        .unwrap()
+        clocks.support_usbfs_token().unwrap(),
     );
-
 
     let usb_bus = UsbBus::new(usb_peripheral, usb0_vbus_pin);
 
@@ -107,7 +104,7 @@ fn main() -> ! {
                     // if count > 1 {
                     //     dbg!(count);
                     // }
-                },
+                }
                 _ => {}
             }
         }
@@ -119,7 +116,7 @@ fn main() -> ! {
                     assert!(count == size);
                     buf_in_use = false;
                     need_zlp = size == 8;
-                },
+                }
                 _ => {}
             }
             red_led.set_high().ok(); // Turn off
@@ -130,11 +127,10 @@ fn main() -> ! {
                 Ok(count) => {
                     assert!(count == 0);
                     need_zlp = false;
-                },
+                }
                 _ => {}
             }
         }
-
 
         // let mut buf = [0u8; 512];
 
@@ -174,5 +170,4 @@ fn main() -> ! {
 
         // red_led.set_high().ok(); // Turn off
     }
-
 }
