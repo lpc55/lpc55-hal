@@ -5,8 +5,26 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
-- Add INPUTMUX and PINT peripherals
-- Add example using PINT + INPUTMUX to make an external interrupt on a pin
+-
+
+## [v0.3.1](https://github.com/lpc55/lpc55-hal/releases/tag/0.3.1) - 2024-10-09
+
+- Update `littlefs2` to 0.4 ([#60](https://github.com/lpc55/lpc55-hal/pull/60))
+- Fix PUF peripheral:
+  - Add PUF to peripherals ([#61](https://github.com/lpc55/lpc55-hal/pull/61))
+  - Check state after enabling PUF ([#63](https://github.com/lpc55/lpc55-hal/issues/63))
+  - Support started PUF peripherals ([#64](https://github.com/lpc55/lpc55-hal/issues/64))
+- Remove unnecessary `as_ref` call to fix compilation ([#66](https://github.com/lpc55/lpc55-hal/pull/66))
+
+[All Changes](https://github.com/lpc55/lpc55-hal/compare/0.3.0...0.3.1)
+
+## [v0.3.0](https://github.com/lpc55/lpc55-hal/releases/tag/0.3.0) - 2021-06-10
+
+- Update dependencies:
+  - Update `embedded-time` to 0.12
+  - Update `littlefs2` to 0.3.1
+  
+[All Changes](https://github.com/lpc55/lpc55-hal/compare/0.2.1...0.3.0)
 
 ## [v0.2.1] - 2021-05-02
 Fix the "lap" naming
