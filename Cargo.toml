@@ -1,6 +1,6 @@
 [package]
 name = "lpc55-hal"
-version = "0.3.1"
+version = "0.4.0"
 edition = "2018"
 description   = "Hardware Abstraction Layer (HAL) for the NXP LPC55S6x ARM Cortex-33 microcontrollers"
 repository = "https://github.com/lpc55/lpc55-hal"

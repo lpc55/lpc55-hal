@@ -5,7 +5,13 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+-
+
+## [v0.4.0](https://github.com/lpc55/lpc55-hal/releases/tag/0.4.0) - 2024-10-25
+
 - Update `littlefs2` to 0.5
+
+[All Changes](https://github.com/lpc55/lpc55-hal/compare/0.3.1...0.4.0)
 
 ## [v0.3.1](https://github.com/lpc55/lpc55-hal/releases/tag/0.3.1) - 2024-10-09
 
