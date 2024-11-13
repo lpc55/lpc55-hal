@@ -439,13 +439,13 @@ macro_rules! littlefs2_filesystem {
             type LOOKAHEAD_SIZE = $crate::drivers::flash::littlefs_params::LOOKAHEAD_SIZE;
 
 
-            fn read(&mut self, off: usize, buf: &mut [u8]) -> LfsResult<usize> {
+            fn read(&mut self, off: usize, buf: &mut [u8]) -> littlefs2::io::Result<usize> {
                 <$crate::drivers::flash::FlashGordon as $crate::traits::flash::Read<$crate::drivers::flash::U16>>
                     ::read(&self.flash_gordon, Self::BASE_OFFSET + off, buf);
                 Ok(buf.len())
             }
 
-            fn write(&mut self, off: usize, data: &[u8]) -> LfsResult<usize> {
+            fn write(&mut self, off: usize, data: &[u8]) -> littlefs2::io::Result<usize> {
                 let ret = <$crate::drivers::flash::FlashGordon as $crate::traits::flash::WriteErase<$crate::drivers::flash::U512, $crate::drivers::flash::U512>>
                     ::write(&mut self.flash_gordon, Self::BASE_OFFSET + off, data);
                 ret
@@ -453,7 +453,7 @@ macro_rules! littlefs2_filesystem {
                     .map_err(|_| littlefs2::io::Error::IO)
             }
 
-            fn erase(&mut self, off: usize, len: usize) -> LfsResult<usize> {
+            fn erase(&mut self, off: usize, len: usize) -> littlefs2::io::Result<usize> {
                 let first_page = (Self::BASE_OFFSET + off) / 512;
                 let pages = len / 512;
                 for i in 0..pages {
@@ -523,7 +523,7 @@ macro_rules! littlefs2_prince_filesystem {
             type LOOKAHEAD_SIZE = $crate::drivers::flash::littlefs_params::LOOKAHEAD_SIZE;
 
 
-            fn read(&mut self, off: usize, buf: &mut [u8]) -> LfsResult<usize> {
+            fn read(&mut self, off: usize, buf: &mut [u8]) -> littlefs2::io::Result<usize> {
                 self.prince.enable_region_2_for(||{
                     let flash: *const u8 = (Self::BASE_OFFSET + off) as *const u8;
                     for i in 0 .. buf.len() {
@@ -533,7 +533,7 @@ macro_rules! littlefs2_prince_filesystem {
                 Ok(buf.len())
             }
 
-            fn write(&mut self, off: usize, data: &[u8]) -> LfsResult<usize> {
+            fn write(&mut self, off: usize, data: &[u8]) -> littlefs2::io::Result<usize> {
                 let prince = &mut self.prince;
                 let flash_gordon = &mut self.flash_gordon;
                 let ret = prince.write_encrypted(|prince| {
@@ -548,7 +548,7 @@ macro_rules! littlefs2_prince_filesystem {
                     .map_err(|_| littlefs2::io::Error::IO)
             }
 
-            fn erase(&mut self, off: usize, len: usize) -> LfsResult<usize> {
+            fn erase(&mut self, off: usize, len: usize) -> littlefs2::io::Result<usize> {
                 let first_page = (Self::BASE_OFFSET + off) / 512;
                 let pages = len / 512;
                 for i in 0..pages {
