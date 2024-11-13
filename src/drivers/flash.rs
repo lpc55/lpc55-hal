@@ -450,7 +450,7 @@ macro_rules! littlefs2_filesystem {
                     ::write(&mut self.flash_gordon, Self::BASE_OFFSET + off, data);
                 ret
                     .map(|_| data.len())
-                    .map_err(|_| littlefs2::io::Error::Io)
+                    .map_err(|_| littlefs2::io::Error::IO)
             }
 
             fn erase(&mut self, off: usize, len: usize) -> LfsResult<usize> {
@@ -459,7 +459,7 @@ macro_rules! littlefs2_filesystem {
                 for i in 0..pages {
                     <$crate::drivers::flash::FlashGordon as $crate::traits::flash::WriteErase<$crate::drivers::flash::U512, $crate::drivers::flash::U512>>
                         ::erase_page(&mut self.flash_gordon, first_page + i)
-                        .map_err(|_| littlefs2::io::Error::Io)?;
+                        .map_err(|_| littlefs2::io::Error::IO)?;
                 }
                 Ok(512 * len)
             }
@@ -545,7 +545,7 @@ macro_rules! littlefs2_prince_filesystem {
                 });
                 ret
                     .map(|_| data.len())
-                    .map_err(|_| littlefs2::io::Error::Io)
+                    .map_err(|_| littlefs2::io::Error::IO)
             }
 
             fn erase(&mut self, off: usize, len: usize) -> LfsResult<usize> {
@@ -555,7 +555,7 @@ macro_rules! littlefs2_prince_filesystem {
                     <$crate::drivers::flash::FlashGordon as
                         $crate::traits::flash::WriteErase<$crate::drivers::flash::U512, $crate::drivers::flash::U512>>
                         ::erase_page(&mut self.flash_gordon, first_page + i)
-                        .map_err(|_| littlefs2::io::Error::Io)?;
+                        .map_err(|_| littlefs2::io::Error::IO)?;
                 }
                 Ok(512 * len)
             }
