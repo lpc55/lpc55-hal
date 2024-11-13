@@ -222,3 +222,6 @@ fn main() -> ! {
         continue;
     }
 }
+
+#[cfg(feature = "littlefs")]
+lpc55_hal::littlefs2_filesystem!(InternalFilesystem: (0, 10));
