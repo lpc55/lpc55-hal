@@ -35,6 +35,12 @@ jobs:
       - name: Build
         run: cargo build --release --verbose --target ${{ matrix.target }}
 
+      - name: Lint
+        run: cargo clippy --release --verbose --target ${{ matrix.target }} -- -D warnings
+
+      - name: fmt
+        run: cargo fmt --check
+
       - name: Build examples
         run: cargo build --verbose --examples --target ${{ matrix.target }}
         if: matrix.target != 'x86_64-unknown-linux-gnu'

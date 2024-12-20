@@ -83,7 +83,12 @@ where
                     *endpoint = mem::MaybeUninit::new(Endpoint::<USB>::new(i as u8));
                 }
 
-                unsafe { mem::transmute::<_, [Endpoint<USB>; NUM_ENDPOINTS]>(endpoints) }
+                unsafe {
+                    mem::transmute::<
+                        [mem::MaybeUninit<Endpoint<USB>>; NUM_ENDPOINTS],
+                        [Endpoint<USB>; NUM_ENDPOINTS],
+                    >(endpoints)
+                }
             },
         };
 

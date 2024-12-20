@@ -9,16 +9,9 @@ use crate::{
 };
 use core::ops::Deref;
 
+#[derive(Default)]
 pub struct Config {
     pub conversion_delay: u16,
-}
-
-impl Default for Config {
-    fn default() -> Self {
-        Config {
-            conversion_delay: 0,
-        }
-    }
 }
 
 pub enum ChannelType {
@@ -48,6 +41,9 @@ impl Adc {
         }
     }
 
+    /// # Safety
+    ///
+    /// Must only be called once for the entire duration of the program
     pub unsafe fn steal() -> Self {
         // seems a little wastefule to steal the full peripherals but ok..
         Self::new(raw::Peripherals::steal().ADC0)

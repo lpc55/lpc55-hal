@@ -53,7 +53,7 @@ impl Syscon {
 
     /// Check if peripheral clock is enabled
     pub fn is_clock_enabled<P: ClockControl>(&self, peripheral: &P) -> bool {
-        peripheral.is_clock_enabled(&self)
+        peripheral.is_clock_enabled(self)
     }
 
     /// Reset a peripheral
@@ -64,6 +64,10 @@ impl Syscon {
 
     /// Steals syscon and asserts reset to all peripherals that won't immediately cause a crash.
     /// Flash, Fmc, and AnalogCtrl are not reset.
+    ///
+    /// # Safety
+    ///
+    /// Steals the syscon, must not be called if Syscon is owned
     pub unsafe fn reset_all_noncritical_peripherals() -> Syscon {
         let syscon = Syscon::steal().release();
         syscon.presetctrl0.write(|w| {

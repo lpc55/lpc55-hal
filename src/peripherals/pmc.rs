@@ -49,7 +49,7 @@ impl Pmc {
 
     /// Check if peripheral is powered
     pub fn is_powered<P: PowerControl>(&self, peripheral: &P) -> bool {
-        peripheral.is_powered(&self)
+        peripheral.is_powered(self)
     }
 }
 

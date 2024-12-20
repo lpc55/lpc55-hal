@@ -1,4 +1,5 @@
 #![no_std]
+#![allow(static_mut_refs)]
 
 //! This HAL takes a layered approach.
 //!
@@ -46,6 +47,8 @@ pub mod time;
 pub mod traits;
 
 pub mod typestates;
+use core::ptr::copy_nonoverlapping;
+
 pub use typestates::init_state::Enabled;
 
 pub mod peripherals;
@@ -446,6 +449,10 @@ impl Peripherals {
     // }
 
     #[cfg(not(feature = "rtic-peripherals"))]
+    /// # Safety
+    ///
+    /// Steals peripherals, must not be used if one of the peripherals
+    /// is already owned
     pub unsafe fn steal() -> Self {
         Self::from((raw::Peripherals::steal(), raw::CorePeripherals::steal()))
     }
@@ -456,7 +463,7 @@ pub fn enable_cycle_counter() {
 }
 
 pub fn get_cycle_count() -> u32 {
-    raw::DWT::get_cycle_count()
+    raw::DWT::cycle_count()
 }
 
 pub fn count_cycles<Output>(f: impl FnOnce() -> Output) -> (u32, Output) {
@@ -502,8 +509,8 @@ pub fn chip_revision() -> &'static str {
 pub fn uuid() -> [u8; 16] {
     const UUID: *const u8 = 0x0009_FC70 as _;
     let mut uuid: [u8; 16] = [0; 16];
-    for i in 0..16 {
-        uuid[i] = unsafe { *UUID.offset(i as isize) };
+    unsafe {
+        copy_nonoverlapping(UUID, uuid.as_mut_ptr(), 16);
     }
     uuid
 }

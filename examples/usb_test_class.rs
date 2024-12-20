@@ -62,9 +62,9 @@ fn main() -> ! {
 
     const VID: u16 = 0x16c0;
     const PID: u16 = 0x05dc;
-    const MANUFACTURER: &'static str = "TestClass Manufacturer";
-    const PRODUCT: &'static str = "virkkunen.net usb-device TestClass";
-    const SERIAL_NUMBER: &'static str = "TestClass Serial";
+    const MANUFACTURER: &str = "TestClass Manufacturer";
+    const PRODUCT: &str = "virkkunen.net usb-device TestClass";
+    const SERIAL_NUMBER: &str = "TestClass Serial";
 
     let mut test = TestClass::new(&usb_bus);
     let mut usb_dev = UsbDeviceBuilder::new(&usb_bus, UsbVidPid(VID, PID))

@@ -28,7 +28,7 @@ fn main() -> ! {
     // dbg!(UUID);
     let mut uuid: [u32; 4] = [0; 4];
     for i in 0..4 {
-        uuid[i] = unsafe { dbg!(UUID.offset(i as isize).read_volatile()) };
+        uuid[i] = unsafe { dbg!(UUID.add(i).read_volatile()) };
     }
     // dbg!(uuid);
 

@@ -96,7 +96,7 @@ fn main() -> ! {
         }
 
         for i in 0..3 {
-            let duty = (sin(duties[i] * 3.14159265f32 / 180f32) * 255f32) as u16;
+            let duty = (sin(duties[i] * 3.141_592_7_f32 / 180f32) * 255f32) as u16;
             match i {
                 0 => {
                     // need to tune down red some

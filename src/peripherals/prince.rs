@@ -126,13 +126,19 @@ impl Prince<init_state::Enabled> {
         result
     }
 
+    /// # Safety
+    ///
     /// marked unsafe to discourage unpaired use; prefer `write_encrypted`
+    // TODO: Remove unsafe, it's not meant to be used like that
     pub unsafe fn enable_encrypted_write(&mut self) {
         // Immediately prior to flash programming, set the ENC_ENABLE.EN bit
         self.raw.enc_enable.write(|w| w.en().set_bit());
     }
 
+    /// # Safety
+    ///
     /// marked unsafe to discourage unpaired use; prefer `write_encrypted`
+    // TODO: Remove unsafe, it's not meant to be used like that
     pub unsafe fn disable_encrypted_write(&mut self) {
         // After completion of flash programming clear ENC_ENABLE.EN, to prevent
         // unintended PRINCE encryption of writes

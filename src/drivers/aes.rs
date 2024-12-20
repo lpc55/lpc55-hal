@@ -162,7 +162,7 @@ impl<'a, Size: KeySize> Aes<'a, Size> {
 
     fn one_block(&self, block: &mut Block<Self>) {
         // needs to be word-aligned
-        let aligned_block: Aligned<A4, Block<Self>> = Aligned(block.clone());
+        let aligned_block: Aligned<A4, Block<Self>> = Aligned(*block);
         let addr: u32 = &aligned_block as *const _ as _;
 
         self.memaddr.write(|w| unsafe { w.bits(addr) });
@@ -182,12 +182,12 @@ impl<'a, Size: KeySize> Aes<'a, Size> {
 
 // the `block-cipher` traits
 
-impl<'a, Size: KeySize> BlockCipher for Aes<'a, Size> {
+impl<Size: KeySize> BlockCipher for Aes<'_, Size> {
     type BlockSize = U16;
     type ParBlocks = U1;
 }
 
-impl<'a, Size: KeySize> BlockEncrypt for Aes<'a, Size> {
+impl<Size: KeySize> BlockEncrypt for Aes<'_, Size> {
     fn encrypt_block(&self, block: &mut Block<Self>) {
         // unfortunate implementation detail
         if self.cryptcfg.read().aesdecrypt().is_decrypt() {
@@ -197,7 +197,7 @@ impl<'a, Size: KeySize> BlockEncrypt for Aes<'a, Size> {
     }
 }
 
-impl<'a, Size: KeySize> BlockDecrypt for Aes<'a, Size> {
+impl<Size: KeySize> BlockDecrypt for Aes<'_, Size> {
     fn decrypt_block(&self, block: &mut Block<Self>) {
         // unfortunate implementation detail
         if self.cryptcfg.read().aesdecrypt().is_encrypt() {
@@ -210,12 +210,12 @@ impl<'a, Size: KeySize> BlockDecrypt for Aes<'a, Size> {
 impl<Size: KeySize> core::ops::Deref for Aes<'_, Size> {
     type Target = Hashcrypt<Enabled>;
     fn deref(&self) -> &Self::Target {
-        &self.inner
+        self.inner
     }
 }
 
 impl<Size: KeySize> core::ops::DerefMut for Aes<'_, Size> {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.inner
+        self.inner
     }
 }

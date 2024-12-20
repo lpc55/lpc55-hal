@@ -19,6 +19,7 @@ pub mod config;
 
 /// Serial error
 #[derive(Debug)]
+#[non_exhaustive]
 pub enum Error {
     /// Framing error
     Framing,
@@ -28,8 +29,6 @@ pub enum Error {
     Overrun,
     /// Parity check error
     Parity,
-    #[doc(hidden)]
-    _Extensible,
 }
 
 // /// Interrupt event
@@ -101,7 +100,7 @@ where
     pub fn new(usart: USART, pins: PINS, config: config::Config) -> Self {
         use self::config::*;
 
-        let speed: Hertz = config.speed.into();
+        let speed: Hertz = config.speed;
         let speed: u32 = speed.0;
 
         usart

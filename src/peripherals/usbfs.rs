@@ -111,10 +111,10 @@ impl<State: init_state::InitState, Mode: usbfs_mode::UsbfsMode> Usbfs<State, Mod
 
 #[derive(Debug)]
 pub struct UsbFsDevInfo {
-    maj_rev: u8,
-    min_rev: u8,
-    err_code: u8,
-    frame_nr: u16,
+    pub maj_rev: u8,
+    pub min_rev: u8,
+    pub err_code: u8,
+    pub frame_nr: u16,
 }
 
 impl EnabledUsbfsDevice {

@@ -8,11 +8,8 @@ use crate::{peripherals::syscon::Syscon, raw, typestates::init_state};
 // 2. The KC is a fixed 4-byte header with formation on key index, length, etc.
 // 3. Derive a real key using `GetKey` and an input `KC`.  The key will be generated and given to the proper
 //    IP via secure bus, or given raw if that was the index in `KC`.
-trait PufStates {}
 pub struct Started;
 pub struct Enrolled;
-impl PufStates for Started {}
-impl PufStates for Enrolled {}
 
 /// PUF error
 #[derive(Debug)]
@@ -117,13 +114,11 @@ impl<T> Puf<init_state::Enabled<T>> {
         assert!(key_size >= 64);
         assert!(key_index < 16);
 
-        for i in 0..key_code.len() {
-            key_code[i] = 0;
-        }
+        key_code.fill(0);
 
         self.raw
             .keysize
-            .write(|w| unsafe { w.bits(((key_size >> 6) & 0x3f) as u32) });
+            .write(|w| unsafe { w.bits((key_size >> 6) & 0x3f) });
         self.raw
             .keyindex
             .write(|w| unsafe { w.bits(((key_index) & 0x0f) as u32) });
@@ -153,7 +148,7 @@ impl<T> Puf<init_state::Enabled<T>> {
     }
 
     // Put PUF into reset state.
-    pub fn reset(&self) -> () {
+    pub fn reset(&self) {
         unimplemented!();
     }
 }
@@ -166,9 +161,7 @@ impl Puf<init_state::Enabled> {
             return Err(Error::NotAllowed);
         }
 
-        for i in 0..ac_buffer.len() {
-            ac_buffer[i] = 0;
-        }
+        ac_buffer.fill(0);
 
         self.raw.ctrl.write(|w| w.enroll().set_bit());
 
@@ -280,7 +273,7 @@ impl Puf<init_state::Enabled<Started>> {
 
 impl<State> core::fmt::Debug for Puf<State> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        writeln!(f, "").unwrap();
+        writeln!(f).unwrap();
         writeln!(f, "  control  = x{:X}", self.raw.ctrl.read().bits()).unwrap();
         writeln!(f, "  ramstatus= x{:X}", self.raw.pwrctrl.read().bits()).unwrap();
         writeln!(f, "  status   = x{:X}", self.raw.stat.read().bits()).unwrap();

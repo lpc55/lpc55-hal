@@ -175,12 +175,12 @@ fn main() -> ! {
     buf[..4].copy_from_slice(&data);
 
     flash
-        .write_native(WHERE, &generic_array::GenericArray::from_slice(&buf))
+        .write_native(WHERE, generic_array::GenericArray::from_slice(&buf))
         .unwrap();
     buf[0] = 37;
     // // buf[3] = 37;
     flash
-        .write_native(WHERE, &generic_array::GenericArray::from_slice(&buf))
+        .write_native(WHERE, generic_array::GenericArray::from_slice(&buf))
         .unwrap();
     flash.write_u8(0x4_000F, 69).ok();
     flash.read(WHERE, &mut read_buf);

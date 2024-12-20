@@ -58,7 +58,7 @@ fn main() -> ! {
 
     let button_pins = ButtonPins(but1, but2, but3);
 
-    let adc = hal::Adc::from(hal.adc).enabled(&mut hal.pmc, &mut hal.syscon);
+    let adc = hal.adc.enabled(&mut hal.pmc, &mut hal.syscon);
 
     let touch_timer = hal
         .ctimer
@@ -70,7 +70,7 @@ fn main() -> ! {
         .enabled(&mut hal.syscon, clocks.support_1mhz_fro_token().unwrap());
     let charge_pin = pins.pio1_16.into_match_output(&mut iocon);
 
-    let mut dma = hal::Dma::from(hal.dma).enabled(&mut hal.syscon);
+    let mut dma = hal.dma.enabled(&mut hal.syscon);
 
     let touch_sensor = TouchSensor::new(
         [13_900, 13_900, 13_900],

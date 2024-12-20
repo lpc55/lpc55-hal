@@ -202,12 +202,12 @@ where
         });
 
         Self {
-            adc: adc,
-            adc_timer: adc_timer,
-            sample_timer: sample_timer,
+            adc,
+            adc_timer,
+            sample_timer,
             _buttons: buttons,
-            threshold: threshold,
-            confidence: confidence,
+            threshold,
+            confidence,
             // _state: init_state::Unknown,
         }
     }
@@ -286,8 +286,8 @@ where
     }
 
     /// For debugging
-    pub(crate) fn get_results(&self) -> &mut [u32] {
-        return unsafe { &mut RESULTS };
+    pub(crate) fn get_results<'a>(&self) -> &'a mut [u32] {
+        unsafe { &mut RESULTS }
     }
 
     /// Used after an edge is detected to prevent the same
@@ -296,9 +296,9 @@ where
         let results = unsafe { &mut RESULTS };
         // match button {
         // buttons::ButtonTop => {
-        for i in 0..RESULTS_LEN {
-            if (results[i] & (0xf << 24)) == ((channel as u32) << 24) {
-                results[i] = (results[i] & (!0xffff))
+        for item in results {
+            if (*item & (0xf << 24)) == ((channel as u32) << 24) {
+                *item = (*item & (!0xffff))
                     | (self.threshold[(channel as usize) - 3] as i32 + offset) as u32;
             }
         }
@@ -381,7 +381,9 @@ where
         let mut streak = 0u32;
 
         match ctype {
-            Compare::AboveThreshold => {
+            Compare::AboveThreshold =>
+            {
+                #[allow(clippy::needless_range_loop)]
                 for i in 0..(40 - AVERAGES) {
                     if filtered[i] > self.threshold[(5 - bufsel) as usize] {
                         streak += 1;
@@ -394,7 +396,9 @@ where
                     }
                 }
             }
-            Compare::BelowThreshold => {
+            Compare::BelowThreshold =>
+            {
+                #[allow(clippy::needless_range_loop)]
                 for i in 0..(40 - AVERAGES) {
                     if filtered[i] < self.threshold[(5 - bufsel) as usize] {
                         streak += 1;

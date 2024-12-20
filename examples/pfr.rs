@@ -67,7 +67,7 @@ fn main() -> ! {
     dump_cfpa(&cfpa);
 
     heprintln!("Increment the version and write back cfpa!").ok();
-    cfpa.version = cfpa.version + 1;
+    cfpa.version += 1;
     cfpa.secure_fw_version += 1;
     cfpa.ns_fw_version += 1;
     // increment a byte of customer data (with overflow)
