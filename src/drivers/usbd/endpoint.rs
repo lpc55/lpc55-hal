@@ -1,6 +1,5 @@
 use core::cmp::min;
 
-#[cfg(not(feature = "nosync"))]
 use core::marker::PhantomData;
 
 use cortex_m::interrupt::{CriticalSection, Mutex};

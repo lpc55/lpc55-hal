@@ -8,11 +8,8 @@ use crate::{peripherals::syscon::Syscon, raw, typestates::init_state};
 // 2. The KC is a fixed 4-byte header with formation on key index, length, etc.
 // 3. Derive a real key using `GetKey` and an input `KC`.  The key will be generated and given to the proper
 //    IP via secure bus, or given raw if that was the index in `KC`.
-trait PufStates {}
 pub struct Started;
 pub struct Enrolled;
-impl PufStates for Started {}
-impl PufStates for Enrolled {}
 
 /// PUF error
 #[derive(Debug)]
@@ -151,7 +148,7 @@ impl<T> Puf<init_state::Enabled<T>> {
     }
 
     // Put PUF into reset state.
-    pub fn reset(&self) -> () {
+    pub fn reset(&self) {
         unimplemented!();
     }
 }

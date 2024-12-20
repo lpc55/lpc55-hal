@@ -25,7 +25,7 @@ where
     TIMER: Ctimer<init_state::Enabled>,
 {
     pub fn new(timer: TIMER) -> Self {
-        Self { timer: timer }
+        Self { timer }
     }
 
     pub fn release(self) -> TIMER {

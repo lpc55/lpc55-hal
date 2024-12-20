@@ -32,7 +32,7 @@ macro_rules! reg_cluster {
 #[macro_export]
 macro_rules! wrap_always_on_peripheral {
     ($hal_name:ident, $pac_name:ident) => {
-        use crate::raw;
+        use $crate::raw;
         // /// Entry point to the $hal_name API
         pub struct $hal_name {
             pub(crate) raw: raw::$pac_name,
@@ -50,6 +50,9 @@ macro_rules! wrap_always_on_peripheral {
                 $hal_name { raw }
             }
 
+            /// # Safety
+            ///
+            /// Must only be called once for the entire duration of the program
             pub unsafe fn steal() -> Self {
                 // seems a little wastefule to steal the full peripherals but ok..
                 Self::new(raw::Peripherals::steal().$pac_name)
@@ -84,6 +87,9 @@ macro_rules! wrap_stateful_peripheral {
                 }
             }
 
+            /// # Safety
+            ///
+            /// Must only be called once for the entire duration of the program
             pub unsafe fn steal() -> Self {
                 // seems a little wastefule to steal the full peripherals but ok..
                 Self::new(raw::Peripherals::steal().$pac_name)

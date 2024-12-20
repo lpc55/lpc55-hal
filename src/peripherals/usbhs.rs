@@ -151,17 +151,17 @@ impl<State: init_state::InitState, Mode: usbhs_mode::UsbhsMode> Usbhs<State, Mod
         }
     }
 
-    pub fn borrow<F: Fn(&mut Self) -> ()>(&mut self, func: F) {
+    pub fn borrow<F: Fn(&mut Self)>(&mut self, func: F) {
         func(self);
     }
 }
 
 #[derive(Debug)]
 pub struct UsbHsDevInfo {
-    maj_rev: u8,
-    min_rev: u8,
-    err_code: u8,
-    frame_nr: u16,
+    pub maj_rev: u8,
+    pub min_rev: u8,
+    pub err_code: u8,
+    pub frame_nr: u16,
 }
 
 impl EnabledUsbhsDevice {
