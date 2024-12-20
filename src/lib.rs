@@ -193,6 +193,9 @@ pub struct Peripherals {
     /// System Control Block (SCB) - core peripheral
     pub SCB: raw::SCB,
 
+    /// Watchdog
+    pub wwdt: raw::WWDT,
+
     #[cfg(not(feature = "rtic-peripherals"))]
     /// SysTick: System Timer - core peripheral
     #[cfg(not(feature = "rtic-peripherals"))]
@@ -415,6 +418,7 @@ impl From<(raw::Peripherals, raw::CorePeripherals)> for Peripherals {
             FLASH_CFPA0: p.FLASH_CFPA0,
             SAU: p.SAU,
             SCT0: p.SCT0,
+            wwdt: p.WWDT,
 
             // Core peripherals
             CPUID: cp.CPUID,
