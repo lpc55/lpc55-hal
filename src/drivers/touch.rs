@@ -287,7 +287,7 @@ where
 
     /// For debugging
     pub(crate) fn get_results<'a>(&self) -> &'a mut [u32] {
-        return unsafe { &mut RESULTS };
+        unsafe { &mut RESULTS }
     }
 
     /// Used after an edge is detected to prevent the same

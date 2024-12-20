@@ -127,7 +127,7 @@ impl<Size: OutputSize> Sha<'_, Size> {
     // relevant code is ~line 800 in fsl_hashcrypt.c
     fn process_block(peripheral: &mut Hashcrypt<Enabled>, input: &GenericArray<u8, BlockSize>) {
         // input must be word-aligned
-        let input: Aligned<A4, GenericArray<u8, BlockSize>> = Aligned(input.clone());
+        let input: Aligned<A4, GenericArray<u8, BlockSize>> = Aligned(*input);
         let addr: u32 = &input[0] as *const _ as _;
         assert_eq!(addr & 0x3, 0);
         while peripheral.raw.status.read().waiting().is_not_waiting() {

@@ -79,6 +79,11 @@ pub fn attach() -> Option<Instance> {
 }
 
 /// Does not zero the memory
+///
+/// # Safety
+///
+/// Steals the registers instance, must not be called if
+/// the registers are owned somewhere
 pub unsafe fn steal() -> Instance {
     ENDPOINT_REGISTERS_ATTACHED = true;
     Instance {
@@ -595,7 +600,7 @@ pub mod epr {
         pub fn addroff<USB: Usb<init_state::Enabled>>(&self) -> ADDROFFR {
             let field = AddrOffField::from(USB::SPEED);
             ADDROFFR {
-                bits: ((self.bits >> field.offset) & field.mask as u32) as u16,
+                bits: ((self.bits >> field.offset) & field.mask) as u16,
             }
         }
         #[doc = "Bits 16:25 - Endpoint buffer NBytes while in full speed operation, or bits 11:25 for high speed operation."]
@@ -603,7 +608,7 @@ pub mod epr {
         pub fn nbytes<USB: Usb<init_state::Enabled>>(&self) -> NBYTESR {
             let field = NbytesField::from(USB::SPEED);
             NBYTESR {
-                bits: ((self.bits >> field.offset) & field.mask as u32) as u16,
+                bits: ((self.bits >> field.offset) & field.mask) as u16,
             }
         }
         #[doc = "Bit 26 - Endpoint type"]
@@ -671,6 +676,8 @@ pub mod epr {
             W { bits: 1 << 30 }
         }
         #[doc = r"Writes raw bits to the register"]
+        #[doc = r"# Safety"]
+        #[doc = r"Bit value must be valid"]
         #[inline]
         pub unsafe fn bits(&mut self, bits: u32) -> &mut Self {
             self.bits = bits;

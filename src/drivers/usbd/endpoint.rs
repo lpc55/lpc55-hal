@@ -289,7 +289,7 @@ where
             let nbytes = epl.eps[i].ep_out[0].read().nbytes::<USB>().bits() as usize;
 
             // let count = min((out_buf.capacity() - nbytes) as usize, buf.len());
-            let count = (out_buf.capacity() - nbytes) as usize;
+            let count = out_buf.capacity() - nbytes;
 
             out_buf.read(&mut buf[..count]);
 
@@ -347,7 +347,7 @@ where
             } else {
                 let out_buf = self.out_buf.as_ref().unwrap().borrow(cs);
                 let nbytes = epl.eps[0].ep_out[0].read().nbytes::<USB>().bits() as usize;
-                let count = min((out_buf.capacity() - nbytes) as usize, buf.len());
+                let count = min(out_buf.capacity() - nbytes, buf.len());
 
                 out_buf.read(&mut buf[..count]);
 

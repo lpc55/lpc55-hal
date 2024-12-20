@@ -118,7 +118,7 @@ impl<T> Puf<init_state::Enabled<T>> {
 
         self.raw
             .keysize
-            .write(|w| unsafe { w.bits(((key_size >> 6) & 0x3f) as u32) });
+            .write(|w| unsafe { w.bits((key_size >> 6) & 0x3f) });
         self.raw
             .keyindex
             .write(|w| unsafe { w.bits(((key_index) & 0x0f) as u32) });
@@ -273,7 +273,7 @@ impl Puf<init_state::Enabled<Started>> {
 
 impl<State> core::fmt::Debug for Puf<State> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        writeln!(f, "").unwrap();
+        writeln!(f).unwrap();
         writeln!(f, "  control  = x{:X}", self.raw.ctrl.read().bits()).unwrap();
         writeln!(f, "  ramstatus= x{:X}", self.raw.pwrctrl.read().bits()).unwrap();
         writeln!(f, "  status   = x{:X}", self.raw.stat.read().bits()).unwrap();

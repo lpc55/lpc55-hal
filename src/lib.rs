@@ -449,6 +449,10 @@ impl Peripherals {
     // }
 
     #[cfg(not(feature = "rtic-peripherals"))]
+    /// # Safety
+    ///
+    /// Steals peripherals, must not be used if one of the peripherals
+    /// is already owned
     pub unsafe fn steal() -> Self {
         Self::from((raw::Peripherals::steal(), raw::CorePeripherals::steal()))
     }

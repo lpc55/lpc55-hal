@@ -1,10 +1,10 @@
-///!* API to configure the clocks.
-///!
-///! This is very incomplete (e.g., no support for PLL clocks).
-///! It is also likely buggy, and more complex than needed
-///!
-///! It is currently used to prepare for using the USBFSD and
-///! Flexcomm peripherals.
+//!* API to configure the clocks.
+//!
+//! This is very incomplete (e.g., no support for PLL clocks).
+//! It is also likely buggy, and more complex than needed
+//!
+//! It is currently used to prepare for using the USBFSD and
+//! Flexcomm peripherals.
 use core::{cmp::min, convert::TryFrom};
 use embedded_time::rate::Extensions;
 
@@ -114,6 +114,9 @@ pub struct Pll {
 
 impl Pll {
     // allow user to override if they know better...
+    /// # Safety
+    ///
+    /// Input values must be valid for PLL
     pub unsafe fn new(n: u8, m: u16, p: u8) -> Pll {
         // UM 4.6.6.3.2
         let selp = min((m >> 2) + 1, 31) as u8;
@@ -441,6 +444,9 @@ impl ClockRequirements {
     }
 
     /// Same as above, but allows clock to be changed after an initial configuration.
+    ///
+    /// # Safety
+    ///
     /// This is unsafe because it's up to the developer to ensure the new configuration is okay for
     /// the device peripherals being used.
     pub unsafe fn reconfigure(self, _clocks: Clocks, pmc: &mut Pmc, syscon: &mut Syscon) -> Clocks {

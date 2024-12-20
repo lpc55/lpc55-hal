@@ -1,11 +1,10 @@
-///! There are 8 "normal" SPIs and on high-speed SPI.
-///! The high-speed SPI is tied to Flexcomm8, which it does not
-///! share with any other peripherals.
-///!
-///! SPI3, SPI4, and this high-speed SPI8 have 4 possible chip selects,
-///! whereas the others have two.
-///
-///
+//! There are 8 "normal" SPIs and on high-speed SPI.
+//! The high-speed SPI is tied to Flexcomm8, which it does not
+//! share with any other peripherals.
+//!
+//! SPI3, SPI4, and this high-speed SPI8 have 4 possible chip selects,
+//! whereas the others have two.
+
 use core::marker::PhantomData;
 
 use crate::time::Hertz;
@@ -29,6 +28,7 @@ pub mod prelude {
 /// SPI error
 /// TODO: Use the actual ones from the chip
 #[derive(Debug)]
+#[non_exhaustive]
 pub enum Error {
     /// Overrun occurred
     Overrun,
@@ -36,8 +36,6 @@ pub enum Error {
     ModeFault,
     /// CRC error
     Crc,
-    #[doc(hidden)]
-    _Extensible,
 }
 
 pub type Result<T> = nb::Result<T, Error>;

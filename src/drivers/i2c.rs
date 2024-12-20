@@ -19,6 +19,7 @@ pub mod prelude {
 
 /// I2C error
 #[derive(Debug)]
+#[non_exhaustive]
 pub enum Error {
     /// Bus error (catch-all)
     Bus,
@@ -30,9 +31,6 @@ pub enum Error {
     NackData,
     /// Start/Stop error
     StartStop,
-
-    #[doc(hidden)]
-    _Extensible,
 }
 
 pub type Result<T> = core::result::Result<T, Error>;
