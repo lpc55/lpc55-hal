@@ -13,6 +13,7 @@ struct Descriptor {
     next: u32,
 }
 
+#[allow(unused)]
 #[repr(align(512))]
 struct Align512(
     Descriptor,

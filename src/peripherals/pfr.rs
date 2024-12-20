@@ -93,13 +93,10 @@ pub struct Cmpa {
 }
 
 // This compile time guarantees that Cmpa and Cfpa are 512 bytes.
-#[allow(unreachable_code)]
-fn _compile_time_assert() {
-    unsafe {
-        core::mem::transmute::<Cmpa, [u8; 512]>(panic!());
-        core::mem::transmute::<Cfpa, [u8; 512]>(panic!());
-    }
-}
+const _: () = {
+    assert!(size_of::<Cmpa>() == 512);
+    assert!(size_of::<Cfpa>() == 512);
+};
 
 // #define BOOTLOADER_API_TREE_POINTER (bootloader_tree_t*) 0x130010f0
 #[repr(C)]
@@ -264,7 +261,7 @@ impl Pfr {
     }
 
     pub fn enabled(mut self, clock_config: &Clocks) -> Result<Pfr<init_state::Enabled>, u32> {
-        self.flash_config = FlashConfig::new(clock_config.system_frequency.0 / 1000_000);
+        self.flash_config = FlashConfig::new(clock_config.system_frequency.0 / 1_000_000);
 
         let flash_init = Self::bootloader_api_tree().flash_driver.flash_init;
         let ffr_init = Self::bootloader_api_tree().flash_driver.ffr_init;

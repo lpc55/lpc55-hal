@@ -202,12 +202,12 @@ where
         });
 
         Self {
-            adc: adc,
-            adc_timer: adc_timer,
-            sample_timer: sample_timer,
+            adc,
+            adc_timer,
+            sample_timer,
             _buttons: buttons,
-            threshold: threshold,
-            confidence: confidence,
+            threshold,
+            confidence,
             // _state: init_state::Unknown,
         }
     }
@@ -286,7 +286,7 @@ where
     }
 
     /// For debugging
-    pub(crate) fn get_results(&self) -> &mut [u32] {
+    pub(crate) fn get_results<'a>(&self) -> &'a mut [u32] {
         return unsafe { &mut RESULTS };
     }
 

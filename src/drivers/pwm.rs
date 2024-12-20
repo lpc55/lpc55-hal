@@ -56,7 +56,7 @@ where
         // Start timer
         timer.tcr.write(|w| w.crst().clear_bit().cen().set_bit());
 
-        Self { timer: timer }
+        Self { timer }
     }
 
     pub fn release(self) -> TIMER {

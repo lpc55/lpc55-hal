@@ -39,12 +39,12 @@ impl<State> Hashcrypt<State> {
 
 impl Hashcrypt<init_state::Enabled> {
     /// SHA-1, as in RustCrypto  `digest` trait
-    pub fn sha1<'a>(&'a mut self) -> Sha1<'a> {
+    pub fn sha1(&mut self) -> Sha1 {
         Sha1::from(self)
     }
 
     /// SHA-256, as in RustCrypto  `digest` trait
-    pub fn sha256<'a>(&'a mut self) -> Sha256<'a> {
+    pub fn sha256(&mut self) -> Sha256 {
         Sha256::from(self)
     }
 
@@ -70,7 +70,7 @@ impl Hashcrypt<init_state::Enabled> {
     ///
     /// DOES NOT PROPERLY CHECK IF PUF AES KEY IS SETUP YET!
     /// TODO: have user pass in some token signaling PUF AES key is setup
-    pub fn puf_aes<'a>(&'a mut self) -> aes::Aes256<'a> {
+    pub fn puf_aes(&mut self) -> aes::Aes256 {
         Aes::new(self, AesKey::Puf, aes::Mode::Encrypt)
     }
 }

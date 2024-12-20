@@ -16,6 +16,12 @@ impl<T: Reg> RegProxy<T> {
     }
 }
 
+impl<T: Reg> Default for RegProxy<T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 unsafe impl<T> Send for RegProxy<T> where T: Reg {}
 
 impl<T: Reg> Deref for RegProxy<T> {
@@ -41,6 +47,12 @@ impl<T: RegCluster> RegClusterProxy<T> {
         RegClusterProxy {
             _marker: PhantomData,
         }
+    }
+}
+
+impl<T: RegCluster> Default for RegClusterProxy<T> {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
