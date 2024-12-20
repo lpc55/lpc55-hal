@@ -15,7 +15,6 @@ use hal::{
     time::Hertz,
 };
 
-use ssd1306;
 use ssd1306::prelude::*;
 
 #[entry]
