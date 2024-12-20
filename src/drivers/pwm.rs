@@ -80,7 +80,7 @@ where
 
     fn enable(&mut self, channel: Self::Channel) {
         match channel {
-            0 | 1 | 2 => {}
+            0..=2 => {}
             _ => {
                 panic!("Cannot use channel outside 0-2 for PWM.");
             }

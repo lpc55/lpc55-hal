@@ -118,6 +118,9 @@ macro_rules! pins {
                 Self::set_all_released();
             }
 
+            /// # Safety
+            ///
+            /// Steals the PIN, must not be called if the PIN is already owned
             pub unsafe fn steal() -> Self {
                 Self {
                     $(
@@ -185,6 +188,9 @@ macro_rules! pins {
                     unsafe { PIN_TAKEN[$port][$number] = false; }
                 }
 
+                /// # Safety
+                ///
+                /// Steals the PIN, must not be called if the PIN is already owned
                 pub unsafe fn steal() -> Pin<Self, $default_state_ty> {
                     PIN_TAKEN[$port][$number] = true;
                     Pin {

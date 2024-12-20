@@ -242,7 +242,10 @@ pub struct Pfr<State = init_state::Unknown> {
 }
 impl<State> Pfr<State> {
     fn bootloader_api_tree() -> &'static mut BootloaderTree {
-        unsafe { core::mem::transmute(0x130010f0u32 as *const ()) }
+        #[allow(clippy::transmute_ptr_to_ref)]
+        unsafe {
+            core::mem::transmute(0x130010f0u32 as *const ())
+        }
     }
     fn check_error(err: u32) -> Result<(), u32> {
         if err == 0 {
@@ -250,6 +253,12 @@ impl<State> Pfr<State> {
         } else {
             Err(err)
         }
+    }
+}
+
+impl Default for Pfr {
+    fn default() -> Self {
+        Self::new()
     }
 }
 impl Pfr {
@@ -290,7 +299,7 @@ impl Pfr<init_state::Enabled> {
         // heprintln!("cfpa:").ok();
         // dump_hex!(cfpa_bytes, 512);
 
-        let cmpa: &Cmpa = unsafe { core::mem::transmute(cmpa_bytes.as_ptr()) };
+        let cmpa: &Cmpa = unsafe { &*(cmpa_bytes.as_ptr() as *const _) };
 
         Ok(*cmpa)
     }
@@ -308,6 +317,7 @@ impl Pfr<init_state::Enabled> {
     /// - Immediately after CFPA is updated, this method returns the latest CFPA data.
     /// - After boot/reset, this method will potentially return expected old versions of CFPA.
     /// - There is a pattern of how to increment VERSION to result in this method returning old CFPA versions or not which is impractical.
+    ///
     /// It's almost like there is some other cfpa page storage not documented and this bootrom method mismanages the VERSION.
     pub fn read_cfpa_with_bootrom(&mut self) -> Result<Cfpa, u32> {
         let mut cfpa_bytes = [0u8; 512];
@@ -322,7 +332,7 @@ impl Pfr<init_state::Enabled> {
         // heprintln!("cfpa:").ok();
         // dump_hex!(cfpa_bytes, 512);
 
-        let cfpa: &Cfpa = unsafe { core::mem::transmute(cfpa_bytes.as_ptr()) };
+        let cfpa: &Cfpa = unsafe { &*(cfpa_bytes.as_ptr() as *const _) };
 
         Ok(*cfpa)
     }
@@ -350,7 +360,7 @@ impl Pfr<init_state::Enabled> {
             copy_nonoverlapping(cfpa_ptr, cfpa_bytes.as_mut_ptr(), 128);
         }
 
-        let cfpa: &Cfpa = unsafe { core::mem::transmute(cfpa_bytes.as_ptr()) };
+        let cfpa: &Cfpa = unsafe { &*(cfpa_bytes.as_ptr() as *const _) };
 
         Ok(*cfpa)
     }
@@ -363,7 +373,7 @@ impl Pfr<init_state::Enabled> {
             copy_nonoverlapping(CFPA_PTR, cfpa_bytes.as_mut_ptr(), 128);
         }
 
-        let cfpa: &Cfpa = unsafe { core::mem::transmute(cfpa_bytes.as_ptr()) };
+        let cfpa: &Cfpa = unsafe { &*(cfpa_bytes.as_ptr() as *const _) };
 
         Ok(*cfpa)
     }
@@ -376,7 +386,7 @@ impl Pfr<init_state::Enabled> {
             copy_nonoverlapping(CFPA_PTR, cfpa_bytes.as_mut_ptr(), 128);
         }
 
-        let cfpa: &Cfpa = unsafe { core::mem::transmute(cfpa_bytes.as_ptr()) };
+        let cfpa: &Cfpa = unsafe { &*(cfpa_bytes.as_ptr() as *const _) };
 
         Ok(*cfpa)
     }
