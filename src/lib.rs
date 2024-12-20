@@ -46,6 +46,8 @@ pub mod time;
 pub mod traits;
 
 pub mod typestates;
+use core::ptr::copy_nonoverlapping;
+
 pub use typestates::init_state::Enabled;
 
 pub mod peripherals;
@@ -502,8 +504,8 @@ pub fn chip_revision() -> &'static str {
 pub fn uuid() -> [u8; 16] {
     const UUID: *const u8 = 0x0009_FC70 as _;
     let mut uuid: [u8; 16] = [0; 16];
-    for i in 0..16 {
-        uuid[i] = unsafe { *UUID.offset(i as isize) };
+    unsafe {
+        copy_nonoverlapping(UUID, uuid.as_mut_ptr(), 16);
     }
     uuid
 }
