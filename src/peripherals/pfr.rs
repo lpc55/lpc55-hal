@@ -1,6 +1,7 @@
 use core::result::Result;
 // use cortex_m_semihosting::{heprint,heprintln};
 use crate::{drivers::clocks::Clocks, typestates::init_state};
+use core::ptr::copy_nonoverlapping;
 
 #[derive(Copy, Clone, PartialEq)]
 pub enum KeyType {
@@ -333,6 +334,7 @@ impl Pfr<init_state::Enabled> {
     /// returns previous versions of the CFPA page (not seen on scratch, ping, or pong pages).
     /// This method always returns the most recently updated Cfpa from ping or pong pages.
     pub fn read_latest_cfpa(&mut self) -> Result<Cfpa, u32> {
+        use core::ptr::copy_nonoverlapping;
         let mut cfpa_bytes = [0u32; 128];
 
         let ping_ptr = (0x0009_DE00 + 512) as *const u32;
@@ -347,8 +349,8 @@ impl Pfr<init_state::Enabled> {
             pong_ptr
         };
 
-        for i in 0..128 {
-            cfpa_bytes[i] = unsafe { *cfpa_ptr.offset(i as isize) };
+        unsafe {
+            copy_nonoverlapping(cfpa_ptr, cfpa_bytes.as_mut_ptr(), 128);
         }
 
         let cfpa: &Cfpa = unsafe { core::mem::transmute(cfpa_bytes.as_ptr()) };
@@ -360,8 +362,8 @@ impl Pfr<init_state::Enabled> {
         let mut cfpa_bytes = [0u32; 128];
 
         const CFPA_PTR: *const u32 = (0x0009_DE00 + 512) as *const u32;
-        for i in 0..128 {
-            cfpa_bytes[i] = unsafe { *CFPA_PTR.offset(i as isize) };
+        unsafe {
+            copy_nonoverlapping(CFPA_PTR, cfpa_bytes.as_mut_ptr(), 128);
         }
 
         let cfpa: &Cfpa = unsafe { core::mem::transmute(cfpa_bytes.as_ptr()) };
@@ -373,8 +375,8 @@ impl Pfr<init_state::Enabled> {
         let mut cfpa_bytes = [0u32; 128];
 
         const CFPA_PTR: *const u32 = (0x0009_DE00 + 512 + 512) as *const u32;
-        for i in 0..128 {
-            cfpa_bytes[i] = unsafe { *CFPA_PTR.offset(i as isize) };
+        unsafe {
+            copy_nonoverlapping(CFPA_PTR, cfpa_bytes.as_mut_ptr(), 128);
         }
 
         let cfpa: &Cfpa = unsafe { core::mem::transmute(cfpa_bytes.as_ptr()) };

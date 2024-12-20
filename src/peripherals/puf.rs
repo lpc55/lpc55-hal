@@ -117,9 +117,7 @@ impl<T> Puf<init_state::Enabled<T>> {
         assert!(key_size >= 64);
         assert!(key_index < 16);
 
-        for i in 0..key_code.len() {
-            key_code[i] = 0;
-        }
+        key_code.fill(0);
 
         self.raw
             .keysize
@@ -166,9 +164,7 @@ impl Puf<init_state::Enabled> {
             return Err(Error::NotAllowed);
         }
 
-        for i in 0..ac_buffer.len() {
-            ac_buffer[i] = 0;
-        }
+        ac_buffer.fill(0);
 
         self.raw.ctrl.write(|w| w.enroll().set_bit());
 
