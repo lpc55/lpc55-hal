@@ -29,7 +29,7 @@ fn main() -> ! {
     let mut syscon = hal.syscon;
 
     // prince region 2 (128KB)
-    const DATA_ADDR: usize = 0x00080000 + 0;
+    const DATA_ADDR: usize = 0x00080000;
 
     let _clocks = hal::ClockRequirements::default()
         .system_frequency(12.MHz())
@@ -47,7 +47,7 @@ fn main() -> ! {
 
     hprintln!("writing AA's to flash data.").ok();
 
-    flash.erase_page((DATA_ADDR / 512) + 0).unwrap();
+    flash.erase_page((DATA_ADDR / 512)).unwrap();
     flash.erase_page((DATA_ADDR / 512) + 1).unwrap();
 
     prince.write_encrypted(|_prince| {
@@ -60,7 +60,7 @@ fn main() -> ! {
 
     for i in 0..buf.len() {
         let ptr = DATA_ADDR as *const u8;
-        buf[i] = unsafe { *ptr.offset(i as isize) };
+        buf[i] = unsafe { *ptr.add(i) };
     }
 
     dump_hex!(&buf[0..32]);
@@ -70,7 +70,7 @@ fn main() -> ! {
 
     for i in 0..buf.len() {
         let ptr = DATA_ADDR as *const u8;
-        buf[i] = unsafe { *ptr.offset(i as isize) };
+        buf[i] = unsafe { *ptr.add(i) };
     }
 
     hprintln!("Read bytes PRINCE OFF:").ok();
