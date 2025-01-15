@@ -42,3 +42,4 @@ pub mod syscon;
 pub mod usbfs;
 pub mod usbhs;
 pub mod utick;
+pub mod wwdt;
