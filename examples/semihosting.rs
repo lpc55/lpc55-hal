@@ -27,6 +27,7 @@ fn main() -> ! {
     const UUID: *mut u32 = 0x0009_FC70 as *mut u32;
     // dbg!(UUID);
     let mut uuid: [u32; 4] = [0; 4];
+    #[allow(clippy::needless_range_loop)]
     for i in 0..4 {
         uuid[i] = unsafe { dbg!(UUID.add(i).read_volatile()) };
     }

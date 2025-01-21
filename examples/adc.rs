@@ -143,5 +143,7 @@ fn main() -> ! {
     }
 
     heprintln!("looping").unwrap();
-    loop {}
+    loop {
+        heprintln!("looping").unwrap();
+    }
 }

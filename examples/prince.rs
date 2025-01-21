@@ -39,15 +39,15 @@ fn main() -> ! {
     let flash = hal.flash.enabled(&mut syscon);
     let mut flash = hal::FlashGordon::new(flash);
 
-    let mut rng = hal.rng.enabled(&mut syscon);
+    let rng = hal.rng.enabled(&mut syscon);
 
-    let mut prince = hal.prince.enabled(&mut rng);
+    let mut prince = hal.prince.enabled(&rng);
 
     prince.enable_all_region_2();
 
     hprintln!("writing AA's to flash data.").ok();
 
-    flash.erase_page((DATA_ADDR / 512)).unwrap();
+    flash.erase_page(DATA_ADDR / 512).unwrap();
     flash.erase_page((DATA_ADDR / 512) + 1).unwrap();
 
     prince.write_encrypted(|_prince| {
@@ -58,6 +58,7 @@ fn main() -> ! {
     hprintln!("Read bytes PRINCE ON:").ok();
     let mut buf = [0u8; 1024];
 
+    #[allow(clippy::needless_range_loop)]
     for i in 0..buf.len() {
         let ptr = DATA_ADDR as *const u8;
         buf[i] = unsafe { *ptr.add(i) };
@@ -68,6 +69,7 @@ fn main() -> ! {
     // Turn off PRINCE.
     prince.disable_all_region_2();
 
+    #[allow(clippy::needless_range_loop)]
     for i in 0..buf.len() {
         let ptr = DATA_ADDR as *const u8;
         buf[i] = unsafe { *ptr.add(i) };

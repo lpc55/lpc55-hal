@@ -94,7 +94,7 @@ fn main() -> ! {
         // write first 512-byte chunk
         write_buf[0..4].copy_from_slice(&(State::Enrolled as u32).to_ne_bytes());
         write_buf[16..].copy_from_slice(&ac[..496]);
-        flash.write(PUF_STATE_FLASH + 0, &write_buf).unwrap();
+        flash.write(PUF_STATE_FLASH, &write_buf).unwrap();
 
         // // write 2nd chunk
         write_buf.copy_from_slice(&ac[496..1008]);
@@ -117,10 +117,10 @@ fn main() -> ! {
         }
 
         for i in 0..kc1.len() {
-            assert!(kc1[i] == check_buf[1192 + 52 * 0 + i])
+            assert!(kc1[i] == check_buf[1192 + i])
         }
         for i in 0..kc2.len() {
-            assert!(kc2[i] == check_buf[1192 + 52 * 1 + i])
+            assert!(kc2[i] == check_buf[1192 + 52 + i])
         }
         for i in 0..kc3.len() {
             assert!(kc3[i] == check_buf[1192 + 52 * 2 + i])
@@ -133,23 +133,12 @@ fn main() -> ! {
     } else {
         dbg!("The device is already enrolled.");
         flash.read(PUF_STATE_FLASH + 16, &mut check_buf);
-        for i in 0..1192 {
-            ac[i] = check_buf[i];
-        }
+        ac.copy_from_slice(&check_buf[..1192]);
 
-        for i in 0..kc1.len() {
-            kc1[i] = check_buf[1192 + 52 * 0 + i];
-        }
-        for i in 0..kc2.len() {
-            kc2[i] = check_buf[1192 + 52 * 1 + i];
-        }
-        for i in 0..kc3.len() {
-            kc3[i] = check_buf[1192 + 52 * 2 + i];
-        }
-        for i in 0..kc4.len() {
-            kc4[i] = check_buf[1192 + 52 * 3 + i];
-        }
-
+        kc1.copy_from_slice(&check_buf[1192..][..52]);
+        kc2.copy_from_slice(&check_buf[1192 + 52..][..52]);
+        kc3.copy_from_slice(&check_buf[1192 + 52 * 2..][..52]);
+        kc4.copy_from_slice(&check_buf[1192 + 52 * 3..][..52]);
         dump_hex!(ac[..16], 16);
         dump_hex!(ac[1192 - 16..], 16);
 
@@ -203,5 +192,7 @@ fn main() -> ! {
     }
 
     dbg!("Looping");
-    loop {}
+    loop {
+        dbg!("Loop");
+    }
 }
