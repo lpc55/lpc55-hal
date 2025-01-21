@@ -3,23 +3,27 @@
 
 extern crate panic_semihosting;
 // extern crate panic_halt;
-use cortex_m_semihosting::dbg;
 
-use hal::{drivers::pins, drivers::pins::Level, prelude::*, typestates::pin};
-use lpc55_hal as hal;
+#[rtic::app(device = lpc55_hal::raw, peripherals = true)]
+mod app {
+    use cortex_m_semihosting::dbg;
 
-type RedLed = hal::Pin<pins::Pio1_6, pin::state::Gpio<pin::gpio::direction::Output>>;
+    use hal::{drivers::pins, drivers::pins::Level, prelude::*, typestates::pin};
+    use lpc55_hal as hal;
 
-#[rtic::app(device = crate::hal::raw, peripherals = true)]
-const APP: () = {
-    struct Resources {
+    type RedLed = hal::Pin<pins::Pio1_6, pin::state::Gpio<pin::gpio::direction::Output>>;
+    #[shared]
+    struct SharedResources {}
+
+    #[local]
+    struct LocalResources {
         led: RedLed,
         // delay: hal::clock::Ticks<'static, hal::syscon::Fro1MhzUtickClock<states::init_state::Enabled>>,
         // sleep: hal::sleep::Busy<'static, 'static>,
     }
 
     #[init]
-    fn init(c: init::Context) -> init::LateResources {
+    fn init(c: init::Context) -> (SharedResources, LocalResources, init::Monotonics) {
         // dbg!("init");
         let _cp = c.core;
         let dp = c.device;
@@ -48,18 +52,21 @@ const APP: () = {
         // let mut utick = hal::utick::wrap(dp.UTICK).enabled(&mut syscon, &clock);
         // // let mut sleep = hal::sleep::Busy::prepare(&mut utick);
         // let mut sleep = hal::sleep::Busy::wrap(&mut utick);
-
-        init::LateResources {
-            led: red_led,
-            // delay,
-            // sleep,
-        }
+        (
+            SharedResources {},
+            LocalResources {
+                led: red_led,
+                // delay,
+                // sleep,
+            },
+            init::Monotonics(),
+        )
     }
 
     // #[idle(resources = [led, delay, sleep])]
-    #[idle(resources = [led])]
-    fn idle(c: idle::Context) -> ! {
-        let led = c.resources.led;
+    #[idle(local = [led])]
+    fn idle(ctx: idle::Context) -> ! {
+        let led = ctx.local.led;
         loop {
             dbg!("low");
             led.set_low().unwrap();
@@ -70,4 +77,4 @@ const APP: () = {
             // c.resources.sleep.sleep(c.resources.delay);
         }
     }
-};
+}

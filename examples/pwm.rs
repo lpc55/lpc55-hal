@@ -7,6 +7,8 @@ extern crate panic_semihosting; // 4004 bytes
 #[macro_use(block)]
 extern crate nb;
 
+use core::f32;
+
 use cortex_m_rt::entry;
 
 use hal::drivers::{Pins, Pwm, Timer};
@@ -95,8 +97,9 @@ fn main() -> ! {
             }
         }
 
+        #[allow(clippy::needless_range_loop)]
         for i in 0..3 {
-            let duty = (sin(duties[i] * 3.141_592_7_f32 / 180f32) * 255f32) as u16;
+            let duty = (sin(duties[i] * f32::consts::PI / 180f32) * 255f32) as u16;
             match i {
                 0 => {
                     // need to tune down red some

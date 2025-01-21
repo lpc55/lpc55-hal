@@ -84,7 +84,7 @@ fn main() -> ! {
     let mut touch_sensor = touch_sensor.enabled(&mut dma, touch_token);
 
     // Used to get tunning information for capacitive touch
-    if 1 == 1 {
+    {
         let mut counts = [0u32; 3];
         let mut times = [0u32; 128];
         let mut results = [0u32; 128];

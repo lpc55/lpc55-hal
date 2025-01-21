@@ -36,8 +36,8 @@ fn main() -> ! {
     //
     // via software
     //
-    let mut sw_block = block.clone();
-    let cipher = aes::Aes256::new(&key);
+    let mut sw_block = block;
+    let cipher = aes::Aes256::new(key);
 
     let (sw_cyc_enc, _) = hal::count_cycles(|| {
         cipher.encrypt_block(&mut sw_block);
@@ -57,7 +57,7 @@ fn main() -> ! {
     //
     // via hardware
     //
-    let mut hw_block = block.clone();
+    let mut hw_block = block;
     let cipher = hashcrypt.aes256(&raw_key);
 
     cipher.prime_for_encryption();

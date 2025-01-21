@@ -96,39 +96,30 @@ fn main() -> ! {
         }
 
         if !(buf_in_use || need_zlp) {
-            match cdc_acm.read_packet(&mut buf) {
-                Ok(count) => {
-                    size = count;
-                    buf_in_use = true;
-                    // dbg!(&buf[..count]);
-                    // if count > 1 {
-                    //     dbg!(count);
-                    // }
-                }
-                _ => {}
+            if let Ok(count) = cdc_acm.read_packet(&mut buf) {
+                size = count;
+                buf_in_use = true;
+                // dbg!(&buf[..count]);
+                // if count > 1 {
+                //     dbg!(count);
+                // }
             }
         }
 
         if buf_in_use {
             red_led.set_low().ok(); // Turn on
-            match cdc_acm.write_packet(&buf[..size]) {
-                Ok(count) => {
-                    assert!(count == size);
-                    buf_in_use = false;
-                    need_zlp = size == 8;
-                }
-                _ => {}
+            if let Ok(count) = cdc_acm.write_packet(&buf[..size]) {
+                assert!(count == size);
+                buf_in_use = false;
+                need_zlp = size == 8;
             }
             red_led.set_high().ok(); // Turn off
         }
 
         if need_zlp {
-            match cdc_acm.write_packet(&[]) {
-                Ok(count) => {
-                    assert!(count == 0);
-                    need_zlp = false;
-                }
-                _ => {}
+            if let Ok(count) = cdc_acm.write_packet(&[]) {
+                assert!(count == 0);
+                need_zlp = false;
             }
         }
 
