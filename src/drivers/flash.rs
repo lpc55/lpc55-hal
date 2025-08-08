@@ -234,7 +234,7 @@ impl Read<U16> for FlashGordon {
     // address is in bytes, whereas starta expects address in flash words
     // so starta = address / 16 = address >> 4
     fn read_native(&self, address: usize, array: &mut GenericArray<u8, U16>) {
-        // hprintln!("native read from {} of {:?} (first 16)", address, &array[..16]).ok();
+        // hprintln!("native read from {} of {:?} (first 16)", address, &array[..16]);
         let flash = &self.flash.raw;
 
         assert!(flash.int_status.read().done().bit_is_set());
@@ -279,7 +279,7 @@ impl WriteErase<U512, U512> for FlashGordon {
     fn erase_page(&mut self, page: usize) -> Result {
         // starta is still in flash words, of which a page has 32
         let starta = page * 32;
-        // hprintln!("native erase page {}", page).ok();
+        // hprintln!("native erase page {}", page);
 
         let flash = &self.flash.raw;
         assert!(flash.int_status.read().done().bit_is_set());
@@ -311,7 +311,7 @@ impl WriteErase<U512, U512> for FlashGordon {
         array: &GenericArray<u8, U512>,
         // cs: &CriticalSection,
     ) -> Result {
-        // hprintln!("native write to {} of {:?} (first 16)", address, &array[..16]).ok();
+        // hprintln!("native write to {} of {:?} (first 16)", address, &array[..16]);
         let flash = &self.flash.raw;
         assert!(flash.int_status.read().done().bit_is_set());
         self.clear_status();

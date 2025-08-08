@@ -75,16 +75,6 @@ pub fn take() -> Option<Peripherals> {
     )))
 }
 
-#[cfg(not(feature = "rtic-peripherals"))]
-pub fn from(raw: (raw::Peripherals, raw::CorePeripherals)) -> Peripherals {
-    Peripherals::from(raw)
-}
-
-#[cfg(feature = "rtic-peripherals")]
-pub fn from(raw: (raw::Peripherals, rtic::Peripherals)) -> Peripherals {
-    Peripherals::from(raw)
-}
-
 /// This is the entry point to the HAL API.
 ///
 /// Before you can do anything else, you need to get an instance of this struct,
@@ -196,124 +186,8 @@ pub struct Peripherals {
     /// Watchdog
     pub wwdt: raw::WWDT,
 
-    #[cfg(not(feature = "rtic-peripherals"))]
     /// SysTick: System Timer - core peripheral
-    #[cfg(not(feature = "rtic-peripherals"))]
     pub SYST: raw::SYST,
-}
-
-#[cfg(feature = "rtic-peripherals")]
-impl From<(raw::Peripherals, rtic::Peripherals)> for Peripherals {
-    fn from(raw: (raw::Peripherals, rtic::Peripherals)) -> Self {
-        let cp = raw.1;
-        let p = raw.0;
-        Peripherals {
-            // HAL peripherals
-            adc: Adc::from(p.ADC0),
-            anactrl: Anactrl::from(p.ANACTRL),
-            casper: Casper::from(p.CASPER),
-            ctimer: (
-                peripherals::ctimer::Ctimer0::from(p.CTIMER0),
-                peripherals::ctimer::Ctimer1::from(p.CTIMER1),
-                peripherals::ctimer::Ctimer2::from(p.CTIMER2),
-                peripherals::ctimer::Ctimer3::from(p.CTIMER3),
-                peripherals::ctimer::Ctimer4::from(p.CTIMER4),
-            ),
-            dma: Dma::from(p.DMA0),
-            flash: Flash::from(p.FLASH),
-            flexcomm: (
-                peripherals::flexcomm::Flexcomm0::from((
-                    p.FLEXCOMM0,
-                    p.I2C0,
-                    p.I2S0,
-                    p.SPI0,
-                    p.USART0,
-                )),
-                peripherals::flexcomm::Flexcomm1::from((
-                    p.FLEXCOMM1,
-                    p.I2C1,
-                    p.I2S1,
-                    p.SPI1,
-                    p.USART1,
-                )),
-                peripherals::flexcomm::Flexcomm2::from((
-                    p.FLEXCOMM2,
-                    p.I2C2,
-                    p.I2S2,
-                    p.SPI2,
-                    p.USART2,
-                )),
-                peripherals::flexcomm::Flexcomm3::from((
-                    p.FLEXCOMM3,
-                    p.I2C3,
-                    p.I2S3,
-                    p.SPI3,
-                    p.USART3,
-                )),
-                peripherals::flexcomm::Flexcomm4::from((
-                    p.FLEXCOMM4,
-                    p.I2C4,
-                    p.I2S4,
-                    p.SPI4,
-                    p.USART4,
-                )),
-                peripherals::flexcomm::Flexcomm5::from((
-                    p.FLEXCOMM5,
-                    p.I2C5,
-                    p.I2S5,
-                    p.SPI5,
-                    p.USART5,
-                )),
-                peripherals::flexcomm::Flexcomm6::from((
-                    p.FLEXCOMM6,
-                    p.I2C6,
-                    p.I2S6,
-                    p.SPI6,
-                    p.USART6,
-                )),
-                peripherals::flexcomm::Flexcomm7::from((
-                    p.FLEXCOMM7,
-                    p.I2C7,
-                    p.I2S7,
-                    p.SPI7,
-                    p.USART7,
-                )),
-                peripherals::flexcomm::Flexcomm8::from((p.FLEXCOMM8, p.SPI8)),
-            ),
-            gint: Gint::from((p.GINT0, p.GINT1)),
-            gpio: Gpio::from(p.GPIO),
-            hashcrypt: Hashcrypt::from(p.HASHCRYPT),
-            inputmux: InputMux::from(p.INPUTMUX),
-            iocon: Iocon::from(p.IOCON),
-            pint: Pint::from(p.PINT),
-            pfr: Pfr::new(),
-            pmc: Pmc::from(p.PMC),
-            prince: Prince::from(p.PRINCE),
-            puf: Puf::from(p.PUF),
-            rng: Rng::from(p.RNG),
-            rtc: Rtc::from(p.RTC),
-            syscon: Syscon::from(p.SYSCON),
-            usbfs: Usbfs::from((p.USB0, p.USBFSH)),
-            usbhs: Usbhs::from((p.USBPHY, p.USB1, p.USBHSH)),
-            utick: Utick::from(p.UTICK0),
-
-            // Raw peripherals
-            AHB_SECURE_CTRL: p.AHB_SECURE_CTRL,
-            CRC_ENGINE: p.CRC_ENGINE,
-            FLASH_CMPA: p.FLASH_CMPA,
-            FLASH_CFPA0: p.FLASH_CFPA0,
-            SAU: p.SAU,
-            SCT0: p.SCT0,
-
-            // Core peripherals
-            CPUID: cp.CPUID,
-            DCB: cp.DCB,
-            DWT: cp.DWT,
-            MPU: cp.MPU,
-            NVIC: cp.NVIC,
-            SCB: cp.SCB,
-        }
-    }
 }
 
 impl From<(raw::Peripherals, raw::CorePeripherals)> for Peripherals {
@@ -427,14 +301,12 @@ impl From<(raw::Peripherals, raw::CorePeripherals)> for Peripherals {
             MPU: cp.MPU,
             NVIC: cp.NVIC,
             SCB: cp.SCB,
-            #[cfg(not(feature = "rtic-peripherals"))]
             SYST: cp.SYST,
         }
     }
 }
 
 impl Peripherals {
-    #[cfg(not(feature = "rtic-peripherals"))]
     pub fn take() -> Option<Self> {
         Some(Self::from((
             raw::Peripherals::take()?,
@@ -442,17 +314,6 @@ impl Peripherals {
         )))
     }
 
-    // rtic::Peripherals::take does not exist
-    //
-    // #[cfg(feature = "rtic-peripherals")]
-    // pub fn take() -> Option<Self> {
-    //     Some(Self::from((
-    //         raw::Peripherals::take()?,
-    //         rtic::Peripherals::take()?,
-    //     )))
-    // }
-
-    #[cfg(not(feature = "rtic-peripherals"))]
     /// # Safety
     ///
     /// Steals peripherals, must not be used if one of the peripherals

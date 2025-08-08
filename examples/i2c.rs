@@ -32,7 +32,7 @@ fn main() -> ! {
         .configure(&mut anactrl, &mut pmc, &mut syscon)
         .unwrap();
 
-    // cortex_m_semihosting::hprintln!("clocks = {:?}", &clocks).ok();
+    // cortex_m_semihosting::hprintln!("clocks = {:?}", &clocks);
 
     let token = clocks.support_flexcomm_token().unwrap();
 
@@ -60,7 +60,7 @@ fn main() -> ! {
         for c in (97..123).chain(65..91) {
             if let Err(_err) = display.write_str(unsafe { core::str::from_utf8_unchecked(&[c]) }) {
                 // use cortex_m_semihosting::hprintln;
-                // hprintln!("error {}, resetting display", err).ok();
+                // hprintln!("error {}, resetting display", err);
                 // display.init().unwrap();
                 // display.clear().unwrap();
             }

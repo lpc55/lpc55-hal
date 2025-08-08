@@ -41,6 +41,10 @@ rustup:
 	rustup target add thumbv8m.main-none-eabihf
 	rustup update
 
+build-examples:
+	cargo build --examples
+	cargo build --examples --release
+
 build-examples-verbosely:
 	cargo build --verbose --examples
 	cargo build --verbose --examples --release

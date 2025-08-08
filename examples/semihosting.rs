@@ -20,9 +20,9 @@ use lpc55_hal as hal;
 
 #[entry]
 fn main() -> ! {
-    hprint!("a").unwrap();
-    hprint!("b").unwrap();
-    hprintln!("c").unwrap();
+    hprint!("a");
+    hprint!("b");
+    hprintln!("c");
 
     const UUID: *mut u32 = 0x0009_FC70 as *mut u32;
     // dbg!(UUID);
@@ -52,21 +52,21 @@ fn main() -> ! {
     let peripherals = hal::raw::Peripherals::take().unwrap();
     // const SYSCON: *mut u32 =
     let device_id = peripherals.SYSCON.device_id0.read().bits();
-    hprintln!("device_id0 = {:x?}", device_id).unwrap();
+    hprintln!("device_id0 = {:x?}", device_id);
     let dieid = peripherals.SYSCON.dieid.read().bits();
-    hprintln!("dieid = {:x?}", dieid).unwrap();
+    hprintln!("dieid = {:x?}", dieid);
     dbg!(peripherals.SYSCON.dieid.read().rev_id().bits());
     dbg!(peripherals.SYSCON.dieid.read().mco_num_in_die_id().bits());
     let cpstat = peripherals.SYSCON.cpstat.read().bits();
-    hprintln!("cpstat = {:x?}", cpstat).unwrap();
+    hprintln!("cpstat = {:x?}", cpstat);
 
     #[allow(non_snake_case)]
     let DEVICE_ID0: *mut u32 = 0x4000_0ff8 as *mut u32;
-    hprintln!("{:x?}", unsafe { DEVICE_ID0.read_volatile() }).unwrap();
+    hprintln!("{:x?}", unsafe { DEVICE_ID0.read_volatile() });
 
     #[allow(non_snake_case)]
     let DIEID: *mut u32 = 0x4000_0ffc as *mut u32;
-    hprintln!("{:x?}", unsafe { DIEID.read_volatile() }).unwrap();
+    hprintln!("{:x?}", unsafe { DIEID.read_volatile() });
 
     dbg!(peripherals.SYSCON.device_id0.read().rom_rev_minor().bits());
 

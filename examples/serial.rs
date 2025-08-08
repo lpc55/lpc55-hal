@@ -30,7 +30,7 @@ fn main() -> ! {
         .configure(&mut anactrl, &mut pmc, &mut syscon)
         .unwrap();
 
-    // cortex_m_semihosting::hprintln!("clocks = {:?}", &clocks).ok();
+    // cortex_m_semihosting::hprintln!("clocks = {:?}", &clocks);
 
     let token = clocks.support_flexcomm_token().unwrap();
 
@@ -42,7 +42,7 @@ fn main() -> ! {
     let rx = pins.pio1_24.into_usart2_rx_pin(&mut iocon);
 
     let config = hal::drivers::serial::config::Config::default().speed(19_200.Hz());
-    hprintln!("config = {:?}", config).ok();
+    hprintln!("config = {:?}", config);
 
     let serial = Serial::new(usart, (tx, rx), config);
 
@@ -55,16 +55,16 @@ fn main() -> ! {
     // The `block!` macro makes an operation block until it finishes
 
     block!(tx.write(sent)).ok();
-    hprintln!("sent").ok();
+    hprintln!("sent");
 
     block!(tx.flush()).ok();
-    hprintln!("flushed").ok();
+    hprintln!("flushed");
 
     let received = block!(rx.read()).unwrap();
-    hprintln!("received").ok();
+    hprintln!("received");
 
     assert_eq!(received, sent);
-    hprintln!("equal").ok();
+    hprintln!("equal");
 
     loop {
         continue;

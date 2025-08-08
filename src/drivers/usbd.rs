@@ -174,7 +174,7 @@ where
     }
 
     fn enable(&mut self) {
-        // cortex_m_semihosting::hprintln!("Enabling UsbBus").ok();
+        // cortex_m_semihosting::hprintln!("Enabling UsbBus");
         interrupt::free(|cs| {
             let usb = self.usb_regs.borrow(cs);
             let eps = self.ep_regs.borrow(cs);
@@ -229,7 +229,7 @@ where
     }
 
     fn reset(&self) {
-        // cortex_m_semihosting::hprintln!("Resetting UsbBus").ok();
+        // cortex_m_semihosting::hprintln!("Resetting UsbBus");
         interrupt::free(|cs| {
             // set device address to 0
             let usb = self.usb_regs.borrow(cs);

@@ -48,7 +48,7 @@ mod app {
     fn idle(ctx: idle::Context) -> ! {
         loop {
             if let Some(byte) = ctx.local.c.dequeue() {
-                hprintln!("received message: {}", byte).unwrap();
+                hprintln!("received message: {}", byte);
             // cortex_m::asm::wfi();
             } else {
                 rtic::pend(Interrupt::ADC0);

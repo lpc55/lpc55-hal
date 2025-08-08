@@ -32,7 +32,7 @@ fn sin(x: f32) -> f32 {
 
 fn print_type_of<T>(_: &T) {
     use cortex_m_semihosting::hprintln;
-    hprintln!("{}", core::any::type_name::<T>()).ok();
+    hprintln!("{}", core::any::type_name::<T>());
 }
 
 #[entry]

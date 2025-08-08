@@ -133,39 +133,39 @@ fn main() -> ! {
     // debug_assert!(flash.int_status.read().fail().bit_is_clear());
 
     // let x: u8 = unsafe { core::ptr::read_volatile(0x0004_0000 as *const u8) } ;
-    // hprintln!("{:x}", x).ok();
+    // hprintln!("{:x}", x);
     // let x: u32 = unsafe { core::ptr::read_volatile(0x0004_0004 as *const u32) } ;
-    // hprintln!("{:x}", x).ok();
+    // hprintln!("{:x}", x);
 
     dbg!("before erasing");
-    hprintln!("{:#034x}", flash.read_u128(0x4_0000)).ok();
+    hprintln!("{:#034x}", flash.read_u128(0x4_0000));
     const WHERE: usize = 0x0004_0000; // 256kB offset
 
     dbg!("after erasing");
     flash.erase_page(WHERE >> 4).unwrap();
-    hprintln!("{:#034x}", flash.read_u128(0x4_0000)).ok();
+    hprintln!("{:#034x}", flash.read_u128(0x4_0000));
 
     dbg!("after writing");
     flash.write_u32(WHERE, 0x1234_5678).unwrap();
-    hprintln!("{:#034x}", flash.read_u128(0x4_0000)).ok();
+    hprintln!("{:#034x}", flash.read_u128(0x4_0000));
 
     dbg!("after erasing again");
     flash.erase_page(WHERE >> 4).unwrap();
-    hprintln!("{:#034x}", flash.read_u128(0x4_0000)).ok();
+    hprintln!("{:#034x}", flash.read_u128(0x4_0000));
 
     dbg!("after writing with offset 4");
     flash.write_u32(WHERE + 4, 0x1234_5678).unwrap();
-    hprintln!("{:#034x}", flash.read_u128(0x4_0000)).ok();
+    hprintln!("{:#034x}", flash.read_u128(0x4_0000));
 
-    hprintln!("{:#034x}", flash.read_u128(0x4_0010)).ok();
-    hprintln!("{:#034x}", flash.read_u128(0x4_0020)).ok();
+    hprintln!("{:#034x}", flash.read_u128(0x4_0010));
+    hprintln!("{:#034x}", flash.read_u128(0x4_0020));
 
     let mut read_buf = [0u8; 16];
     flash.read(WHERE, &mut read_buf);
     // dbg!(read_buf);
 
     flash.erase_page(0x4_0200).unwrap();
-    hprintln!("supposedly erased").ok();
+    hprintln!("supposedly erased");
     // dbg!(flash.status());
     flash.read(WHERE, &mut read_buf);
     // dbg!(read_buf);
@@ -192,20 +192,20 @@ fn main() -> ! {
     // flash.read(0x4_0200, &mut read_buf);
     // dbg!(read_buf);
     // flash.write_u32(0x4_0200, 32).ok();
-    // hprintln!("{:#x}", flash.read_u128(0x4_0200)).ok();
+    // hprintln!("{:#x}", flash.read_u128(0x4_0200));
     // flash.read(0x4_0200, &mut read_buf);
     // dbg!(read_buf);
     // // flash.write_u8(0x4_0206, 64).ok();
     // flash.write_u32(0x4_0204, 128).ok();
-    // hprintln!("{:#x}", flash.read_u128(0x4_0200)).ok();
+    // hprintln!("{:#x}", flash.read_u128(0x4_0200));
     // flash.read(0x4_0200, &mut read_buf);
     // dbg!(read_buf);
     // // flash.read(0x4_0210, &mut read_buf);
     // // dbg!(read_buf);
 
-    hprintln!("{:#034x}", flash.read_u128(0x4_0200)).ok();
-    hprintln!("{:#034x}", flash.read_u128(0x4_0210)).ok();
-    hprintln!("{:#034x}", flash.read_u128(0x4_0220)).ok();
+    hprintln!("{:#034x}", flash.read_u128(0x4_0200));
+    hprintln!("{:#034x}", flash.read_u128(0x4_0210));
+    hprintln!("{:#034x}", flash.read_u128(0x4_0220));
 
     flash.write_u128(0x4_0200, 0x1234567).unwrap();
     // hal::wait_at_least(1_000_000);
@@ -213,11 +213,11 @@ fn main() -> ! {
     // hal::wait_at_least(1_000_000);
     // flash.write_u128(0x4_0200, 0x1234567).unwrap();
 
-    hprintln!("{:#034x}", flash.read_u128(0x4_0200)).ok();
-    hprintln!("{:#034x}", flash.read_u128(0x4_0210)).ok();
-    hprintln!("{:#034x}", flash.read_u128(0x4_0220)).ok();
+    hprintln!("{:#034x}", flash.read_u128(0x4_0200));
+    hprintln!("{:#034x}", flash.read_u128(0x4_0210));
+    hprintln!("{:#034x}", flash.read_u128(0x4_0220));
 
-    hprintln!("loop-continue").ok();
+    hprintln!("loop-continue");
     loop {
         continue;
     }

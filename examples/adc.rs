@@ -39,7 +39,7 @@ fn autocal(adc: &hal::raw::ADC0) {
 
 #[entry]
 fn main() -> ! {
-    heprintln!("Hello ADC").unwrap();
+    heprintln!("Hello ADC");
 
     // Get pointer to all device peripherals.
     let mut hal = hal::new();
@@ -81,7 +81,7 @@ fn main() -> ! {
     // turn on!
     adc.ctrl.modify(|_, w| w.adcen().set_bit());
 
-    heprintln!("Auto calibrating..").unwrap();
+    heprintln!("Auto calibrating..");
     autocal(&adc);
 
     // channel 13 (1V ref), single ended A, high res
@@ -110,9 +110,9 @@ fn main() -> ! {
             .bits(1)
     });
 
-    heprintln!("ADC CTRL. {:02X}", adc.ctrl.read().bits()).unwrap();
-    heprintln!("ADC  CFG. {:02X}", adc.cfg.read().bits()).unwrap();
-    heprintln!("ADC stat: {:02X}", adc.stat.read().bits()).unwrap();
+    heprintln!("ADC CTRL. {:02X}", adc.ctrl.read().bits());
+    heprintln!("ADC  CFG. {:02X}", adc.cfg.read().bits());
+    heprintln!("ADC stat: {:02X}", adc.stat.read().bits());
 
     // SW trigger the trigger event 0
     adc.swtrig.write(|w| unsafe { w.bits(1) });
@@ -121,16 +121,16 @@ fn main() -> ! {
 
     let count0 = adc.fctrl[0].read().fcount().bits();
 
-    heprintln!("FIFO0 conversions {}", count0).unwrap();
+    heprintln!("FIFO0 conversions {}", count0);
 
     let result = adc.resfifo[0].read().bits();
     let valid = result & 0x80000000;
     let sample = (result & 0xffff) as u16;
 
     if valid != 0 {
-        heprintln!("sample = {:02x}", sample).unwrap();
+        heprintln!("sample = {:02x}", sample);
     } else {
-        heprintln!("No result from ADC!").unwrap();
+        heprintln!("No result from ADC!");
     }
 
     for i in 0..10 {
@@ -139,11 +139,11 @@ fn main() -> ! {
         let result = adc.resfifo[0].read().bits();
         assert!((result & 0x80000000) != 0);
         let sample = (result & 0xffff) as u16;
-        heprintln!("sample{} = {:02x}", i, sample).unwrap();
+        heprintln!("sample{} = {:02x}", i, sample);
     }
 
-    heprintln!("looping").unwrap();
+    heprintln!("looping");
     loop {
-        heprintln!("looping").unwrap();
+        heprintln!("looping");
     }
 }

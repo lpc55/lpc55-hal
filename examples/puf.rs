@@ -23,11 +23,11 @@ pub enum State {
 
 macro_rules! dump_hex {
     ($array:expr, $length:expr ) => {
-        heprint!("{:?} = ", stringify!($array)).unwrap();
+        heprint!("{:?} = ", stringify!($array));
         for i in 0..$length {
-            heprint!("{:02X}", $array[i]).unwrap();
+            heprint!("{:02X}", $array[i]);
         }
-        heprintln!("").unwrap();
+        heprintln!("");
     };
 }
 
