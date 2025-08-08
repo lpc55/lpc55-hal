@@ -36,7 +36,7 @@ lpc55-rtic = { version = "0.5.7", optional = true }
 littlefs2 = { version = "0.5", optional = true }
 
 [dev-dependencies]
-aes = "0.7"
+aes = "0.8"
 cortex-m-rt = "0.6"
 rtic = { package = "cortex-m-rtic", version = "1" }
 cortex-m-semihosting = "0.3"
