@@ -16,13 +16,13 @@ build = "build.rs"
 targets = []
 
 [dependencies]
-block-buffer = "0.9"
-cipher = "0.3"
+block-buffer = "0.10"
+cipher = "0.4"
 cortex-m = "0.7"
-digest = "0.9"
+digest = "0.10"
 embedded-hal = { version = "0.2", features = ["unproven"] }
 embedded-time = "0.12"
-generic-array = "0.14.2"
+generic-array = "1.0.0"
 lpc55-pac = "0.4"
 nb = "1"
 rand_core = "0.6"
@@ -44,9 +44,9 @@ heapless = "0.7"
 panic-halt  = "0.2"
 panic-semihosting = { version = "0.5", features = ["jlink-quirks"] }
 rtt-target = { version = "0.3", features = ["cortex-m"] }
-sha2 = { version = "0.9", default-features = false }
+sha2 = { version = "0.10", default-features = false }
 ssd1306 = "0.3"
-sha-1 = { version = "0.9", default-features = false }
+sha-1 = { version = "0.10", default-features = false }
 usbd-serial = "0.1"
 
 [features]

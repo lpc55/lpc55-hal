@@ -25,6 +25,7 @@ mod sealed {
     impl KeySize for super::U32 {}
 }
 
+use cipher::{BlockBackend, BlockSizeUser, ParBlocksSizeUser};
 use sealed::KeySize;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -160,7 +161,8 @@ impl<'a, Size: KeySize> Aes<'a, Size> {
         assert!(self.status.read().needkey().is_not_need());
     }
 
-    fn one_block(&self, block: &mut Block<Self>) {
+    fn one_block(&self, mut block: cipher::inout::InOut<'_, '_, Block<Self>>) {
+        let block = block.get_out();
         // needs to be word-aligned
         let aligned_block: Aligned<A4, Block<Self>> = Aligned(*block);
         let addr: u32 = &aligned_block as *const _ as _;
@@ -182,28 +184,63 @@ impl<'a, Size: KeySize> Aes<'a, Size> {
 
 // the `block-cipher` traits
 
-impl<Size: KeySize> BlockCipher for Aes<'_, Size> {
+struct AesEncrypt<'a, 'b, Size: KeySize>(&'a Aes<'b, Size>);
+struct AesDecrypt<'a, 'b, Size: KeySize>(&'a Aes<'b, Size>);
+
+impl<Size: KeySize> BlockCipher for Aes<'_, Size> {}
+
+impl<Size: KeySize> ParBlocksSizeUser for Aes<'_, Size> {
+    type ParBlocksSize = U1;
+}
+
+impl<Size: KeySize> BlockSizeUser for Aes<'_, Size> {
     type BlockSize = U16;
-    type ParBlocks = U1;
+}
+
+impl<Size: KeySize> BlockSizeUser for AesEncrypt<'_, '_, Size> {
+    type BlockSize = U16;
+}
+
+impl<Size: KeySize> ParBlocksSizeUser for AesEncrypt<'_, '_, Size> {
+    type ParBlocksSize = U1;
+}
+
+impl<Size: KeySize> BlockSizeUser for AesDecrypt<'_, '_, Size> {
+    type BlockSize = U16;
+}
+impl<Size: KeySize> ParBlocksSizeUser for AesDecrypt<'_, '_, Size> {
+    type ParBlocksSize = U1;
+}
+
+impl<Size: KeySize> BlockBackend for AesEncrypt<'_, '_, Size> {
+    fn proc_block(&mut self, block: cipher::inout::InOut<'_, '_, Block<Self>>) {
+        // unfortunate implementation detail
+        if self.0.cryptcfg.read().aesdecrypt().is_decrypt() {
+            self.0.configure(Mode::Encrypt);
+        }
+        self.0.one_block(block);
+    }
+}
+
+impl<Size: KeySize> BlockBackend for AesDecrypt<'_, '_, Size> {
+    fn proc_block(&mut self, block: cipher::inout::InOut<'_, '_, Block<Self>>) {
+        // unfortunate implementation detail
+        if self.0.cryptcfg.read().aesdecrypt().is_encrypt() {
+            self.0.configure(Mode::Decrypt);
+        }
+        self.0.one_block(block);
+    }
 }
 
 impl<Size: KeySize> BlockEncrypt for Aes<'_, Size> {
-    fn encrypt_block(&self, block: &mut Block<Self>) {
-        // unfortunate implementation detail
-        if self.cryptcfg.read().aesdecrypt().is_decrypt() {
-            self.configure(Mode::Encrypt);
-        }
-        self.one_block(block);
+    fn encrypt_with_backend(&self, f: impl cipher::BlockClosure<BlockSize = Self::BlockSize>) {
+        f.call(&mut AesEncrypt(self))
     }
 }
 
 impl<Size: KeySize> BlockDecrypt for Aes<'_, Size> {
-    fn decrypt_block(&self, block: &mut Block<Self>) {
-        // unfortunate implementation detail
-        if self.cryptcfg.read().aesdecrypt().is_encrypt() {
-            self.configure(Mode::Decrypt);
-        }
-        self.one_block(block);
+    fn decrypt_with_backend(&self, f: impl cipher::BlockClosure<BlockSize = Self::BlockSize>) {
+        f.call(&mut AesDecrypt(self))
     }
 }
 

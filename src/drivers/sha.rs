@@ -1,7 +1,8 @@
 use core::marker::PhantomData;
 
 use crate::traits::aligned::{Aligned, A4};
-use block_buffer::BlockBuffer;
+use block_buffer::{BlockBuffer, Eager};
+use digest::{FixedOutput, Output, OutputSizeUser};
 
 use crate::{
     peripherals::hashcrypt::Hashcrypt,
@@ -10,7 +11,7 @@ use crate::{
             typenum::{U20, U32, U64},
             GenericArray,
         },
-        digest::{BlockInput, FixedOutputDirty, Update /*, Reset*/},
+        digest::{Update /*, Reset*/},
     },
     typestates::init_state::Enabled,
 };
@@ -33,7 +34,7 @@ mod sealed {
 use sealed::OutputSize;
 
 pub struct Sha<'a, Size: OutputSize> {
-    buffer: Aligned<A4, BlockBuffer<BlockSize>>,
+    buffer: Aligned<A4, BlockBuffer<BlockSize, Eager>>,
     inner: &'a mut Hashcrypt<Enabled>,
     len: u64,
     size: PhantomData<Size>,
@@ -88,14 +89,12 @@ impl<'a, Size: OutputSize> From<&'a mut Hashcrypt<Enabled>> for Sha<'a, Size> {
 
 // the `digest` traits
 
-impl<Size: OutputSize> BlockInput for Sha<'_, Size> {
-    type BlockSize = BlockSize;
+impl<Size: OutputSize> OutputSizeUser for Sha<'_, Size> {
+    type OutputSize = Size;
 }
 
-impl<Size: OutputSize> FixedOutputDirty for Sha<'_, Size> {
-    type OutputSize = Size;
-
-    fn finalize_into_dirty(&mut self, out: &mut GenericArray<u8, Self::OutputSize>) {
+impl<Size: OutputSize> FixedOutput for Sha<'_, Size> {
+    fn finalize_into(mut self, out: &mut Output<Self>) {
         self.finish();
         // cf `hashcrypt_get_data` ~line 315 of `fsl_hashcrypt.c`
         for i in 0..Size::to_usize() / 4 {
@@ -106,7 +105,7 @@ impl<Size: OutputSize> FixedOutputDirty for Sha<'_, Size> {
 }
 
 impl<Size: OutputSize> Update for Sha<'_, Size> {
-    fn update(&mut self, data: impl AsRef<[u8]>) {
+    fn update(&mut self, data: &[u8]) {
         self.update(data.as_ref());
     }
 }
@@ -120,8 +119,11 @@ impl<Size: OutputSize> Sha<'_, Size> {
         // need to convince compiler we're using buffer and peripheral
         // independently, and not doing a double &mut
         let peripheral = &mut self.inner;
-        self.buffer
-            .input_block(data, |data| Self::process_block(peripheral, data));
+        self.buffer.digest_blocks(data, |data| {
+            for b in data {
+                Self::process_block(peripheral, b)
+            }
+        });
     }
 
     // relevant code is ~line 800 in fsl_hashcrypt.c
