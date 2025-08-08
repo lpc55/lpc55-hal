@@ -116,6 +116,7 @@ struct BootloaderTree {
     reserved_skboot_authenticate_interface: u32,
 }
 
+#[allow(non_snake_case)]
 #[repr(C)]
 struct FlashDriverInterface {
     version: u32,

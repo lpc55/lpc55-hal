@@ -685,7 +685,7 @@ pub mod epr {
         }
         #[doc = "Bits 0:15 - Endpoint buffer address offset for full speed, or bits 0:10 for high speed"]
         #[inline]
-        pub fn addroff<USB: Usb<init_state::Enabled>>(&mut self) -> _ADDROFFW {
+        pub fn addroff<USB: Usb<init_state::Enabled>>(&mut self) -> _ADDROFFW<'_> {
             _ADDROFFW {
                 w: self,
                 field: AddrOffField::from(USB::SPEED),
@@ -693,7 +693,7 @@ pub mod epr {
         }
         #[doc = "Bits 16:25 - Endpoint buffer NBytes for full speed, or bits 25:11 for high speed"]
         #[inline]
-        pub fn nbytes<USB: Usb<init_state::Enabled>>(&mut self) -> _NBYTESW {
+        pub fn nbytes<USB: Usb<init_state::Enabled>>(&mut self) -> _NBYTESW<'_> {
             _NBYTESW {
                 w: self,
                 field: NbytesField::from(USB::SPEED),
@@ -701,7 +701,7 @@ pub mod epr {
         }
         #[doc = "Bit 26 - Endpoint type"]
         #[inline]
-        pub fn t(&mut self) -> _TW {
+        pub fn t(&mut self) -> _TW<'_> {
             _TW { w: self }
         }
         // #[doc = "Bit 27 - Rate Feedback mode / Toggle Value"]
@@ -716,17 +716,17 @@ pub mod epr {
         // }
         #[doc = "Bit 29 - Stall"]
         #[inline]
-        pub fn s(&mut self) -> _SW {
+        pub fn s(&mut self) -> _SW<'_> {
             _SW { w: self }
         }
         #[doc = "Bit 30 - Disabled"]
         #[inline]
-        pub fn d(&mut self) -> _DW {
+        pub fn d(&mut self) -> _DW<'_> {
             _DW { w: self }
         }
         #[doc = "Bit 31 - Active"]
         #[inline]
-        pub fn a(&mut self) -> _AW {
+        pub fn a(&mut self) -> _AW<'_> {
             _AW { w: self }
         }
     }
