@@ -20,7 +20,7 @@ use hal::drivers::Timer;
 
 #[entry]
 fn main() -> ! {
-    heprintln!("Hello ctimer").unwrap();
+    heprintln!("Hello ctimer");
 
     // Get pointer to all device peripherals.
     let mut hal = hal::new();
@@ -36,7 +36,7 @@ fn main() -> ! {
         .enabled(&mut hal.syscon, clocks.support_1mhz_fro_token().unwrap());
     let mut cdriver = Timer::new(ctimer);
 
-    heprintln!("looping 1 Hz").unwrap();
+    heprintln!("looping 1 Hz");
     let mut c = 0;
     loop {
         cdriver.start(1_000_000.microseconds());

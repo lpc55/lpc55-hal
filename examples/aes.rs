@@ -41,14 +41,14 @@ fn main() -> ! {
     let (sw_cyc_enc, _) = hal::count_cycles(|| {
         cipher.encrypt_block(&mut sw_block);
     });
-    hprintln!("encrypting with aes-soft took {} cycles", sw_cyc_enc).unwrap();
+    hprintln!("encrypting with aes-soft took {} cycles", sw_cyc_enc);
 
     let sw_encrypted_block: [u8; 16] = sw_block[..].try_into().unwrap();
 
     let (sw_cyc_dec, _) = hal::count_cycles(|| {
         cipher.decrypt_block(&mut sw_block);
     });
-    hprintln!("decrypting with aes-soft took {} cycles", sw_cyc_dec).unwrap();
+    hprintln!("decrypting with aes-soft took {} cycles", sw_cyc_dec);
 
     // check sw decrypt⚬encrypt = id
     assert_eq!(sw_block, block);
@@ -64,8 +64,8 @@ fn main() -> ! {
     let (hw_cyc_enc, _) = hal::count_cycles(|| {
         cipher.encrypt_block(&mut hw_block);
     });
-    hprintln!("encrypting with hashcrypt took {} cycles", hw_cyc_enc).unwrap();
-    hprintln!("speedup: {}x", sw_cyc_enc / hw_cyc_enc).unwrap();
+    hprintln!("encrypting with hashcrypt took {} cycles", hw_cyc_enc);
+    hprintln!("speedup: {}x", sw_cyc_enc / hw_cyc_enc);
     // dbg!(hw_block);
 
     let hw_encrypted_block: [u8; 16] = hw_block.as_slice().try_into().unwrap();
@@ -78,8 +78,8 @@ fn main() -> ! {
     let (hw_cyc_dec, _) = hal::count_cycles(|| {
         cipher.decrypt_block(&mut hw_block);
     });
-    hprintln!("decrypting with hashcrypt took {} cycles", hw_cyc_dec).unwrap();
-    hprintln!("speedup: {}x", sw_cyc_dec / hw_cyc_dec).unwrap();
+    hprintln!("decrypting with hashcrypt took {} cycles", hw_cyc_dec);
+    hprintln!("speedup: {}x", sw_cyc_dec / hw_cyc_dec);
 
     // check hw decrypt⚬encrypt = id
     assert_eq!(hw_block, block);

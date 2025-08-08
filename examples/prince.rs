@@ -12,11 +12,11 @@ use lpc55_hal as hal;
 
 macro_rules! dump_hex {
     ($array:expr) => {
-        hprint!("{:?} = ", stringify!($array)).unwrap();
+        hprint!("{:?} = ", stringify!($array));
         for i in 0..$array.len() {
-            hprint!("{:02X}", $array[i]).unwrap();
+            hprint!("{:02X}", $array[i]);
         }
-        hprintln!("").unwrap();
+        hprintln!("");
     };
 }
 
@@ -45,7 +45,7 @@ fn main() -> ! {
 
     prince.enable_all_region_2();
 
-    hprintln!("writing AA's to flash data.").ok();
+    hprintln!("writing AA's to flash data.");
 
     flash.erase_page(DATA_ADDR / 512).unwrap();
     flash.erase_page((DATA_ADDR / 512) + 1).unwrap();
@@ -55,7 +55,7 @@ fn main() -> ! {
         flash.write(DATA_ADDR, &vector).unwrap();
     });
 
-    hprintln!("Read bytes PRINCE ON:").ok();
+    hprintln!("Read bytes PRINCE ON:");
     let mut buf = [0u8; 1024];
 
     #[allow(clippy::needless_range_loop)]
@@ -75,10 +75,10 @@ fn main() -> ! {
         buf[i] = unsafe { *ptr.add(i) };
     }
 
-    hprintln!("Read bytes PRINCE OFF:").ok();
+    hprintln!("Read bytes PRINCE OFF:");
     dump_hex!(&buf[0..32]);
 
-    hprintln!("done.").ok();
+    hprintln!("done.");
     loop {
         continue;
     }

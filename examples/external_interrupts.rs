@@ -19,7 +19,7 @@ use lpc55_hal as hal;
 
 #[entry]
 fn main() -> ! {
-    heprintln!("External interrupts").unwrap();
+    heprintln!("External interrupts");
 
     let mut hal = hal::new();
 
@@ -58,12 +58,12 @@ fn main() -> ! {
     loop {
         if (pint.rise.read().bits() & 1) != 0 {
             pint.rise.write(|w| unsafe { w.bits(1) });
-            heprintln!("Rising edge detected").unwrap();
+            heprintln!("Rising edge detected");
         }
 
         if (pint.fall.read().bits() & 1) != 0 {
             pint.fall.write(|w| unsafe { w.bits(1) });
-            heprintln!("Falling edge detected").unwrap();
+            heprintln!("Falling edge detected");
         }
     }
 }

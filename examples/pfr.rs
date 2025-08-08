@@ -15,11 +15,11 @@ use lpc55_hal as hal;
 
 macro_rules! dump_hex {
     ($array:expr, $length:expr ) => {
-        heprint!("{:?} = ", stringify!($array)).unwrap();
+        heprint!("{:?} = ", stringify!($array));
         for i in 0..$length {
-            heprint!("{:02X}", $array[i]).unwrap();
+            heprint!("{:02X}", $array[i]);
         }
-        heprintln!("").unwrap();
+        heprintln!("");
     };
 }
 
@@ -36,13 +36,13 @@ fn boot_to_bootrom() -> ! {
 }
 
 fn dump_cfpa(cfpa: &Cfpa) {
-    heprintln!("header = {:08X}", cfpa.header).ok();
-    heprintln!("version = {:08X}", cfpa.version).ok();
-    heprintln!("secureVersion = {:08X}", cfpa.secure_fw_version).ok();
-    heprintln!("notSecureVersion = {:08X}", cfpa.ns_fw_version).ok();
+    heprintln!("header = {:08X}", cfpa.header);
+    heprintln!("version = {:08X}", cfpa.version);
+    heprintln!("secureVersion = {:08X}", cfpa.secure_fw_version);
+    heprintln!("notSecureVersion = {:08X}", cfpa.ns_fw_version);
 
-    heprintln!("imageKeyRevoke = {:08X}", cfpa.image_key_revoke).ok();
-    heprintln!("rotkhRevoke = {:08X}", cfpa.rotkh_revoke).ok();
+    heprintln!("imageKeyRevoke = {:08X}", cfpa.image_key_revoke);
+    heprintln!("rotkhRevoke = {:08X}", cfpa.rotkh_revoke);
     dump_hex!(cfpa.customer_data, 10);
 }
 
@@ -60,13 +60,13 @@ fn main() -> ! {
         .unwrap();
 
     dump_hex!(hal::uuid(), 16);
-    heprintln!("chip revision: {}", hal::chip_revision()).ok();
+    heprintln!("chip revision: {}", hal::chip_revision());
     let mut pfr = hal.pfr.enabled(&clocks).unwrap();
     let mut cfpa = pfr.read_latest_cfpa().unwrap();
-    heprintln!("CFPA:").ok();
+    heprintln!("CFPA:");
     dump_cfpa(&cfpa);
 
-    heprintln!("Increment the version and write back cfpa!").ok();
+    heprintln!("Increment the version and write back cfpa!");
     cfpa.version += 1;
     cfpa.secure_fw_version += 1;
     cfpa.ns_fw_version += 1;
@@ -74,19 +74,19 @@ fn main() -> ! {
     cfpa.customer_data[0] = ((1 + (cfpa.customer_data[0] as u16)) & 0xff) as u8;
     pfr.write_cfpa(&cfpa).unwrap();
 
-    heprintln!("Rerun this program and check that Version, firmware versions, and custom data byte all increment.").ok();
+    heprintln!("Rerun this program and check that Version, firmware versions, and custom data byte all increment.");
 
     let cmpa = pfr.read_cmpa().unwrap();
-    heprintln!("\r\nCMPA:").ok();
-    heprintln!("boot_cfg = {:08X}", cmpa.boot_cfg).ok();
-    heprintln!("usb.vid = {:08X}", cmpa.usb_vid).ok();
-    heprintln!("usb.pid = {:08X}", cmpa.usb_pid).ok();
-    heprintln!("secure_boot_cfg = {:08X}", cmpa.secure_boot_cfg).ok();
+    heprintln!("\r\nCMPA:");
+    heprintln!("boot_cfg = {:08X}", cmpa.boot_cfg);
+    heprintln!("usb.vid = {:08X}", cmpa.usb_vid);
+    heprintln!("usb.pid = {:08X}", cmpa.usb_pid);
+    heprintln!("secure_boot_cfg = {:08X}", cmpa.secure_boot_cfg);
     dump_hex!(cmpa.rotkh, cmpa.rotkh.len());
     dump_hex!(cfpa.customer_data, 10);
     dump_hex!(cmpa.customer_data, cmpa.customer_data.len());
 
-    heprintln!("\r\nKeyStore:").ok();
+    heprintln!("\r\nKeyStore:");
     let key_code = pfr.read_key_code(KeyType::User).unwrap();
     dump_hex!(key_code, key_code.len());
 
@@ -95,7 +95,7 @@ fn main() -> ! {
 
     pfr.lock_all().unwrap();
 
-    heprintln!("done.  Must reboot to see CFPA changes take effect.").ok();
+    heprintln!("done.  Must reboot to see CFPA changes take effect.");
 
     loop {
         // done, insert NOP to avoid optimization weirdness

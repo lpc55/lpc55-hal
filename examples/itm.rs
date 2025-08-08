@@ -21,23 +21,22 @@ fn main() -> ! {
     let mut cp = unsafe { hal::raw::CorePeripherals::steal() };
     let dp = unsafe { hal::raw::Peripherals::steal() };
 
-    hprintln!("traceclksel = {:x?}", dp.SYSCON.traceclksel.read().bits()).ok();
-    hprintln!("traceclkdiv = {:x?}", dp.SYSCON.traceclkdiv.read().bits()).ok();
+    hprintln!("traceclksel = {:x?}", dp.SYSCON.traceclksel.read().bits());
+    hprintln!("traceclkdiv = {:x?}", dp.SYSCON.traceclkdiv.read().bits());
     hprintln!(
         "traceclkdiv.div = {:x?}",
         dp.SYSCON.traceclkdiv.read().div().bits()
-    )
-    .ok();
+    );
     hprintln!(
         "traceclkdiv.halt = {:x?}",
         dp.SYSCON.traceclkdiv.read().halt().bits()
-    )
-    .ok();
+    );
     // unsafe { dp.SYSCON.traceclksel.write(|w| w.sel().bits(0)); }
     // unsafe { dp.SYSCON.traceclkdiv.write(|w| w.div().bits(1)); }
 
     // iocon.set_pio_0_8_swo_func();
     iocon.set_pio_0_10_swo_func();
+
     // hprintln!("pio_0_8 = {:?}", iocon.get_pio_0_8_func());
     // hprintln!("pio_0_10 = {:?}", iocon.get_pio_0_10_func());
     // hprintln!("traceclkdiv = {:?}", dp.SYSCON.traceclkdiv.read().bits());

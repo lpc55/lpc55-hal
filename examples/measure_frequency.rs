@@ -59,6 +59,6 @@ fn main() -> ! {
         let us = timer.elapsed().0;
         timer.cancel().ok();
 
-        heprintln!("{} MHz", 10_000_000 / us).ok();
+        heprintln!("{} MHz", 10_000_000 / us);
     }
 }

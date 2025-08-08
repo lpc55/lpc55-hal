@@ -49,6 +49,6 @@ fn main() -> ! {
 
     loop {
         delay_cycles(10_000_000);
-        heprintln!("{:?}", rtc.uptime()).ok();
+        heprintln!("{:?}", rtc.uptime());
     }
 }
