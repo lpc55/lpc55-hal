@@ -164,11 +164,7 @@ where
                 continue;
             }
             let realized_speed = Self::CLOCK_SPEED / (osr * brg);
-            let diff = if speed > realized_speed {
-                speed - realized_speed
-            } else {
-                realized_speed - speed
-            };
+            let diff = speed.abs_diff(realized_speed);
             if diff < best_diff {
                 best_diff = diff;
                 best_osr = osr;
