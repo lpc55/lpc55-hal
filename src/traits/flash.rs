@@ -28,7 +28,7 @@ pub type Result = core::result::Result<(), Error>;
 
 // pub trait FlashOps: Locking + WriteErase + Read {}
 
-pub trait Read<ReadSize: ArrayLength<u8>> {
+pub trait Read<ReadSize: ArrayLength> {
     // Address alignment?
     fn read_native(&self, address: usize, array: &mut GenericArray<u8, ReadSize>);
 
@@ -51,7 +51,7 @@ pub trait Read<ReadSize: ArrayLength<u8>> {
     }
 }
 
-pub trait WriteErase<EraseSize: ArrayLength<u8>, WriteSize: ArrayLength<u8>> {
+pub trait WriteErase<EraseSize: ArrayLength, WriteSize: ArrayLength> {
     /// check flash status
     fn status(&self) -> Result;
 
