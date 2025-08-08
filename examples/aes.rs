@@ -14,10 +14,9 @@ use hal::prelude::*;
 #[allow(unused_imports)]
 use lpc55_hal as hal;
 
-use aes::cipher::NewBlockCipher;
-use hal::traits::cipher::{BlockDecrypt, BlockEncrypt};
+use hal::traits::cipher::{BlockDecrypt, BlockEncrypt, KeyInit};
 
-use generic_array::GenericArray;
+use cipher::generic_array::GenericArray;
 
 use cortex_m_semihosting::{dbg, hprintln};
 
@@ -31,7 +30,7 @@ fn main() -> ! {
     let key = GenericArray::from_slice(&raw_key);
 
     let raw_block = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
-    let block = GenericArray::clone_from_slice(&raw_block);
+    let block = GenericArray::from(raw_block);
 
     //
     // via software
