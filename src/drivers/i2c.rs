@@ -1,5 +1,8 @@
+use embedded_hal::i2c::{NoAcknowledgeSource, Operation};
+
 use crate::time::Hertz;
 use crate::traits::wg::blocking::i2c::{Read, Write, WriteRead};
+use crate::traits::wg1::i2c::{Error as ErrorTrait, ErrorType, I2c as I2cTrait};
 use crate::typestates::pin::{
     flexcomm::{
         // Trait marking I2C peripherals and pins
@@ -31,6 +34,29 @@ pub enum Error {
     NackData,
     /// Start/Stop error
     StartStop,
+}
+
+impl ErrorTrait for Error {
+    fn kind(&self) -> embedded_hal::i2c::ErrorKind {
+        use embedded_hal::i2c::ErrorKind;
+        match self {
+            Self::Bus => ErrorKind::Bus,
+            Self::ArbitrationLoss => ErrorKind::ArbitrationLoss,
+            Self::NackAddress => ErrorKind::NoAcknowledge(NoAcknowledgeSource::Address),
+            Self::NackData => ErrorKind::NoAcknowledge(NoAcknowledgeSource::Data),
+            Self::StartStop => ErrorKind::Other,
+        }
+    }
+}
+
+impl<PIO1, PIO2, I2C, PINS> ErrorType for I2cMaster<PIO1, PIO2, I2C, PINS>
+where
+    PIO1: PinId,
+    PIO2: PinId,
+    I2C: I2c,
+    PINS: I2cPins<PIO1, PIO2, I2C>,
+{
+    type Error = Error;
 }
 
 pub type Result<T> = core::result::Result<T, Error>;
@@ -153,27 +179,7 @@ where
         Ok(())
     }
 
-    fn write_without_stop(&mut self, addr: u8, bytes: &[u8]) -> Result<()> {
-        self.return_on_error()?;
-
-        // Write the slave address with the RW bit set to 0 to the master data register MSTDAT.
-        self.i2c
-            .mstdat
-            .modify(|_, w| unsafe { w.data().bits(addr << 1) });
-        // Start the transmission by setting the MSTSTART bit to 1 in the master control register.
-        self.i2c.mstctl.write(|w| w.mststart().start());
-        // Wait for the pending status to be set (MSTPENDING = 1) by polling the STAT register
-        // TODO: Consider implementing a timeout (loop at most N times...) :TODO
-        while self.i2c.stat.read().mstpending().is_in_progress() {
-            continue;
-        }
-
-        self.return_on_error()?;
-        if !self.i2c.stat.read().mststate().is_transmit_ready() {
-            // dbg!(Error::Bus);
-            return Err(Error::Bus);
-        }
-
+    fn write_inner_bytes(&mut self, bytes: &[u8]) -> Result<()> {
         // Send bytes
         for byte in bytes {
             // write a byte
@@ -194,6 +200,35 @@ where
                 return Err(Error::Bus);
             }
         }
+        Ok(())
+    }
+
+    fn start_write(&mut self, addr: u8) -> Result<()> {
+        self.return_on_error()?;
+
+        // Write the slave address with the RW bit set to 0 to the master data register MSTDAT.
+        self.i2c
+            .mstdat
+            .modify(|_, w| unsafe { w.data().bits(addr << 1) });
+        // Start the transmission by setting the MSTSTART bit to 1 in the master control register.
+        self.i2c.mstctl.write(|w| w.mststart().start());
+        // Wait for the pending status to be set (MSTPENDING = 1) by polling the STAT register
+        // TODO: Consider implementing a timeout (loop at most N times...) :TODO
+        while self.i2c.stat.read().mstpending().is_in_progress() {
+            continue;
+        }
+
+        self.return_on_error()?;
+        if !self.i2c.stat.read().mststate().is_transmit_ready() {
+            // dbg!(Error::Bus);
+            return Err(Error::Bus);
+        }
+        Ok(())
+    }
+
+    fn write_without_stop(&mut self, addr: u8, bytes: &[u8]) -> Result<()> {
+        self.start_write(addr)?;
+        self.write_inner_bytes(bytes)?;
 
         // Fallthrough is success
         Ok(())
@@ -214,6 +249,62 @@ where
         // Fallthrough is success
         Ok(())
     }
+
+    fn read_byte(&mut self) -> u8 {
+        self.i2c.mstdat.read().data().bits()
+    }
+
+    fn wait_for_byte_ready(&mut self) -> Result<()> {
+        // Wait for next byte
+        while self.i2c.stat.read().mstpending().is_in_progress() {}
+
+        self.return_on_error()?;
+        if !self.i2c.stat.read().mststate().is_receive_ready() {
+            return Err(Error::Bus);
+        }
+
+        Ok(())
+    }
+
+    fn wait_for_next_byte(&mut self) -> Result<u8> {
+        // Instruct master to continue
+        self.i2c.mstctl.write(|w| w.mstcontinue().continue_());
+
+        self.wait_for_byte_ready()?;
+        Ok(self.read_byte())
+    }
+
+    fn start_read(&mut self, addr: u8) -> Result<()> {
+        // Write the slave address with the RW bit set to 1 to the master data register MSTDAT.
+        self.i2c
+            .mstdat
+            .modify(|_, w| unsafe { w.data().bits((addr << 1) | 1) });
+        // Start the transmission by setting the MSTSTART bit to 1 in the master control register.
+        self.i2c.mstctl.write(|w| w.mststart().start());
+        Ok(())
+    }
+
+    fn read_inner_bytes(&mut self, buffer: &mut [u8]) -> Result<()> {
+        for byte in buffer {
+            // Read a byte
+            *byte = self.wait_for_next_byte()?;
+        }
+        Ok(())
+    }
+
+    fn read_without_stop(&mut self, addr: u8, buffer: &mut [u8]) -> Result<()> {
+        if let Some((first, buffer)) = buffer.split_first_mut() {
+            self.start_read(addr)?;
+
+            self.wait_for_byte_ready()?;
+            // read first byte
+            *first = self.read_byte();
+            self.read_inner_bytes(buffer)?;
+        }
+
+        // Reading to an empty buffer is a noop
+        Ok(())
+    }
 }
 
 impl<PIO1, PIO2, I2C, PINS> Write for I2cMaster<PIO1, PIO2, I2C, PINS>
@@ -226,8 +317,7 @@ where
     type Error = Error;
 
     fn write(&mut self, addr: u8, bytes: &[u8]) -> Result<()> {
-        self.write_without_stop(addr, bytes)?;
-        self.stop()
+        <Self as I2cTrait>::write(self, addr, bytes)
     }
 }
 
@@ -241,45 +331,7 @@ where
     type Error = Error;
 
     fn read(&mut self, addr: u8, buffer: &mut [u8]) -> Result<()> {
-        if let Some((last, buffer)) = buffer.split_last_mut() {
-            // Write the slave address with the RW bit set to 1 to the master data register MSTDAT.
-            self.i2c
-                .mstdat
-                .modify(|_, w| unsafe { w.data().bits((addr << 1) | 1) });
-            // Start the transmission by setting the MSTSTART bit to 1 in the master control register.
-            self.i2c.mstctl.write(|w| w.mststart().start());
-
-            // Wait for the pending status to be set (MSTPENDING = 1) by polling the STAT register
-            while self.i2c.stat.read().mstpending().is_in_progress() {}
-
-            self.return_on_error()?;
-            if !self.i2c.stat.read().mststate().is_receive_ready() {
-                return Err(Error::Bus);
-            }
-
-            for byte in buffer {
-                // Read a byte
-                *byte = self.i2c.mstdat.read().data().bits();
-                // Instruct master to continue
-                self.i2c.mstctl.write(|w| w.mstcontinue().continue_());
-
-                // Wait for next byte
-                while self.i2c.stat.read().mstpending().is_in_progress() {}
-
-                self.return_on_error()?;
-                if !self.i2c.stat.read().mststate().is_receive_ready() {
-                    return Err(Error::Bus);
-                }
-            }
-
-            // Read last byte
-            *last = self.i2c.mstdat.read().data().bits();
-
-            self.stop()?;
-        }
-
-        // Fallthrough is success
-        Ok(())
+        <Self as I2cTrait>::read(self, addr, buffer)
     }
 }
 
@@ -293,10 +345,66 @@ where
     type Error = Error;
 
     fn write_read(&mut self, addr: u8, bytes: &[u8], buffer: &mut [u8]) -> Result<()> {
-        self.write_without_stop(addr, bytes)?;
-        self.read(addr, buffer)?;
+        <Self as I2cTrait>::write_read(self, addr, bytes, buffer)
+    }
+}
 
-        Ok(())
+impl<PIO1, PIO2, I2C, PINS> I2cTrait for I2cMaster<PIO1, PIO2, I2C, PINS>
+where
+    PIO1: PinId,
+    PIO2: PinId,
+    I2C: I2c,
+    PINS: I2cPins<PIO1, PIO2, I2C>,
+{
+    fn transaction(
+        &mut self,
+        address: u8,
+        operations: &mut [embedded_hal::i2c::Operation<'_>],
+    ) -> core::result::Result<(), Self::Error> {
+        let [ref mut current, ref mut rem @ ..] = operations else {
+            // No operations mean noop
+            return Ok(());
+        };
+
+        // mut ref mut doesn't work above
+        let mut current = current;
+        let mut rem = rem;
+        // None: first iteration
+        // Some(true) iterating after a read
+        // Some(false) iterating after a write
+        let mut previous_was_read = None;
+
+        loop {
+            match current {
+                Operation::Read(buf) => {
+                    if previous_was_read == Some(true) {
+                        self.read_inner_bytes(buf)?;
+                    } else {
+                        self.read_without_stop(address, buf)?;
+                    }
+
+                    previous_was_read = Some(true);
+                }
+                Operation::Write(buf) => {
+                    if previous_was_read == Some(false) {
+                        self.write_inner_bytes(buf)?;
+                    } else {
+                        self.write_without_stop(address, buf)?;
+                    }
+
+                    previous_was_read = Some(false);
+                }
+            }
+
+            let [ref mut new_current, ref mut new_rem @ ..] = rem else {
+                // No operations left
+                self.stop()?;
+                return Ok(());
+            };
+
+            current = new_current;
+            rem = new_rem;
+        }
     }
 }
 
