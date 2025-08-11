@@ -10,8 +10,8 @@
 // TODO: move this to drivers section,
 // possibly merge with ctimers when they're implemented
 
+use crate::traits::wg::timer;
 use core::convert::Infallible;
-use embedded_hal::timer;
 use nb;
 use void::Void;
 

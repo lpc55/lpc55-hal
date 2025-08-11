@@ -20,7 +20,8 @@ block-buffer = "0.10"
 cipher = "0.4"
 cortex-m = "0.7"
 digest = "0.10"
-embedded-hal = { version = "0.2", features = ["unproven"] }
+embedded-hal = { version = "1" }
+embedded-hal-027 = { package = "embedded-hal", version = "0.2.7", features = ["unproven"] }
 embedded-time = "0.12"
 generic-array = "1.0.0"
 lpc55-pac = "0.5"
