@@ -9,7 +9,8 @@ pub use digest;
 // TODO: this pulls in the not-very-well-organised
 // entire library, in particular not just traits and types.
 // Would be worth being more explicit.
-pub use embedded_hal as wg;
+pub use embedded_hal as wg1;
+pub use embedded_hal_027 as wg;
 
 pub use rand_core;
 
