@@ -7,15 +7,14 @@
 
 use core::marker::PhantomData;
 
+use embedded_hal::spi::SpiBus;
+
 use crate::time::Hertz;
-pub use crate::traits::wg::spi::{FullDuplex, Mode, Phase, Polarity};
+pub use crate::traits::wg1::spi::{
+    Error as ErrorTrait, ErrorKind, ErrorType, Mode, Operation, Phase, Polarity, SpiDevice,
+};
 use crate::typestates::pin::{
-    flexcomm::{
-        ChipSelect,
-        // Trait marking I2C peripherals and pins
-        Spi,
-        SpiPins,
-    },
+    flexcomm::{ChipSelect, NoPio, Spi, SpiPins},
     PinId,
 };
 
@@ -38,7 +37,7 @@ pub enum Error {
     Crc,
 }
 
-pub type Result<T> = nb::Result<T, Error>;
+pub type Result<T, E = Error> = core::result::Result<T, E>;
 
 /// SPI peripheral operating in master mode
 pub struct SpiMaster<SCK, MOSI, MISO, CS, SPI, PINS>
@@ -136,7 +135,17 @@ where
     }
 }
 
-impl<SCK, MOSI, MISO, CS, SPI, PINS> FullDuplex<u8> for SpiMaster<SCK, MOSI, MISO, CS, SPI, PINS>
+impl ErrorTrait for Error {
+    fn kind(&self) -> ErrorKind {
+        match self {
+            Self::Overrun => ErrorKind::Overrun,
+            Self::ModeFault => ErrorKind::ModeFault,
+            Self::Crc => ErrorKind::FrameFormat,
+        }
+    }
+}
+
+impl<SCK, MOSI, MISO, CS, SPI, PINS> ErrorType for SpiMaster<SCK, MOSI, MISO, CS, SPI, PINS>
 where
     SCK: PinId,
     MOSI: PinId,
@@ -147,8 +156,18 @@ where
     // CSPIN: SpiSselPin<CS, SPI>,
 {
     type Error = Error;
+}
 
-    fn read(&mut self) -> Result<u8> {
+impl<SCK, MOSI, MISO, CS, SPI, PINS> SpiMaster<SCK, MOSI, MISO, CS, SPI, PINS>
+where
+    SCK: PinId,
+    MOSI: PinId,
+    MISO: PinId,
+    CS: PinId,
+    SPI: Spi,
+    PINS: SpiPins<SCK, MOSI, MISO, CS, SPI>,
+{
+    fn read_one(&mut self) -> nb::Result<u8, Error> {
         // self.return_on_error()?;
         if self.spi.fifostat.read().rxnotempty().bit_is_set() {
             // TODO: not sure how to turn this from u32 (or u16??) into u8
@@ -160,7 +179,7 @@ where
         }
     }
 
-    fn send(&mut self, byte: u8) -> Result<()> {
+    fn send_one(&mut self, byte: u8) -> nb::Result<(), Error> {
         // NB: UM says "Do not read-modify-write the register."
         // - writing 0 to upper-half word means: keep previous control settings
 
@@ -241,28 +260,52 @@ where
     }
 }
 
-impl<SCK, MOSI, MISO, CS, SPI, PINS> crate::traits::wg::blocking::spi::transfer::Default<u8>
-    for SpiMaster<SCK, MOSI, MISO, CS, SPI, PINS>
+impl<SCK, MOSI, MISO, SPI, PINS> SpiBus<u8> for SpiMaster<SCK, MOSI, MISO, NoPio, SPI, PINS>
 where
     SCK: PinId,
     MOSI: PinId,
     MISO: PinId,
-    CS: PinId,
     SPI: Spi,
-    PINS: SpiPins<SCK, MOSI, MISO, CS, SPI>,
+    PINS: SpiPins<SCK, MOSI, MISO, NoPio, SPI>,
+    // CSPIN: SpiSselPin<CS, SPI>,
 {
-}
+    fn read(&mut self, words: &mut [u8]) -> Result<()> {
+        for w in words {
+            *w = nb::block!(self.read_one())?;
+        }
+        Ok(())
+    }
+    fn write(&mut self, words: &[u8]) -> Result<()> {
+        for w in words {
+            nb::block!(self.send_one(*w))?;
+        }
+        Ok(())
+    }
 
-impl<SCK, MOSI, MISO, CS, SPI, PINS> crate::traits::wg::blocking::spi::write::Default<u8>
-    for SpiMaster<SCK, MOSI, MISO, CS, SPI, PINS>
-where
-    SCK: PinId,
-    MOSI: PinId,
-    MISO: PinId,
-    CS: PinId,
-    SPI: Spi,
-    PINS: SpiPins<SCK, MOSI, MISO, CS, SPI>,
-{
+    fn transfer(&mut self, read: &mut [u8], write: &[u8]) -> Result<()> {
+        for i in 0..read.len().max(write.len()) {
+            let w = write.get(i).copied().unwrap_or(0xFF);
+            nb::block!(self.send_one(w))?;
+            let r = nb::block!(self.read_one())?;
+            if let Some(w) = read.get_mut(i) {
+                *w = r;
+            }
+        }
+        Ok(())
+    }
+
+    fn transfer_in_place(&mut self, words: &mut [u8]) -> Result<()> {
+        for w in words {
+            // Corresponds to the previous implementation through embedded_hal_027::blocking::spi::transfer::Default
+            nb::block!(self.send_one(*w))?;
+            *w = nb::block!(self.read_one())?;
+        }
+        Ok(())
+    }
+
+    fn flush(&mut self) -> core::result::Result<(), Self::Error> {
+        Ok(())
+    }
 }
 
 // impl<SPI, PINS> crate::traits::wg::blocking::spi::transfer::Default<u8> for SpiMaster<SPI, PINS>
