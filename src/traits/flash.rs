@@ -39,8 +39,8 @@ pub trait Read<ReadSize: ArrayLength> {
         // TODO: offer a version without restrictions?
         // can round down address, round up buffer length,
         // but where to get the buffer from?
-        assert!(buf.len() % ReadSize::to_usize() == 0);
-        assert!(address % ReadSize::to_usize() == 0);
+        assert!(buf.len().is_multiple_of(ReadSize::to_usize()));
+        assert!(address.is_multiple_of(ReadSize::to_usize()));
 
         for i in (0..buf.len()).step_by(ReadSize::to_usize()) {
             self.read_native(
@@ -69,8 +69,8 @@ pub trait WriteErase<EraseSize: ArrayLength, WriteSize: ArrayLength> {
 
     fn write(&mut self, address: usize, data: &[u8]) -> Result {
         let write_size = WriteSize::to_usize();
-        assert!(data.len() % write_size == 0);
-        assert!(address % write_size == 0);
+        assert!(data.len().is_multiple_of(write_size));
+        assert!(address.is_multiple_of(write_size));
 
         // interrupt::free(|cs| {
         for i in (0..data.len()).step_by(write_size) {
