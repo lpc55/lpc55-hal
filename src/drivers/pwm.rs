@@ -1,4 +1,9 @@
-use crate::{peripherals::ctimer::Ctimer, time::Microseconds, traits::wg, typestates::init_state};
+use crate::{
+    peripherals::ctimer::Ctimer,
+    time::Microseconds,
+    traits::{wg, wg1},
+    typestates::init_state,
+};
 
 pub struct Pwm<TIMER>
 where
@@ -67,8 +72,54 @@ where
     pub fn scale_max_duty_by(&mut self, duty: u32) {
         self.timer.mr[3].write(|w| unsafe { w.bits(0xff * duty) });
     }
+
+    pub fn channels(&mut self) -> (PwmPin<'_, TIMER>, PwmPin<'_, TIMER>, PwmPin<'_, TIMER>) {
+        (
+            PwmPin {
+                timer: self,
+                channel: 0,
+            },
+            PwmPin {
+                timer: self,
+                channel: 1,
+            },
+            PwmPin {
+                timer: self,
+                channel: 2,
+            },
+        )
+    }
 }
 //pin: & Pin<impl PinId, state::Analog<direction::Input>>
+
+pub struct PwmPin<'timer, TIMER>
+where
+    TIMER: Ctimer<init_state::Enabled>,
+{
+    timer: &'timer Pwm<TIMER>,
+    channel: u8,
+}
+
+impl<'timer, TIMER> wg1::pwm::ErrorType for PwmPin<'timer, TIMER>
+where
+    TIMER: Ctimer<init_state::Enabled>,
+{
+    type Error = wg1::pwm::ErrorKind;
+}
+
+impl<'timer, TIMER> wg1::pwm::SetDutyCycle for PwmPin<'timer, TIMER>
+where
+    TIMER: Ctimer<init_state::Enabled>,
+{
+    fn max_duty_cycle(&self) -> u16 {
+        self.timer.timer.mr[3].read().bits() as _
+    }
+
+    fn set_duty_cycle(&mut self, duty: u16) -> Result<(), Self::Error> {
+        self.timer.timer.mr[self.channel as usize].write(|w| unsafe { w.bits(duty as u32) });
+        Ok(())
+    }
+}
 
 impl<TIMER> wg::Pwm for Pwm<TIMER>
 where

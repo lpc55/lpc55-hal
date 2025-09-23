@@ -4,7 +4,6 @@ use embedded_time::duration::Extensions;
 use crate::drivers::timer;
 use crate::peripherals::{anactrl, ctimer, pmc, syscon};
 use crate::raw;
-use crate::traits::wg::timer::CountDown;
 use crate::typestates::{
     init_state,
     usbhs_mode,

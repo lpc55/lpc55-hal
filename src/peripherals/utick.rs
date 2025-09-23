@@ -10,8 +10,9 @@
 // TODO: move this to drivers section,
 // possibly merge with ctimers when they're implemented
 
-use crate::traits::wg::timer;
+use crate::traits::{wg::timer, wg1};
 use core::convert::Infallible;
+use embedded_hal_027::timer::CountDown;
 use nb;
 use void::Void;
 
@@ -100,5 +101,11 @@ impl timer::CountDown for EnabledUtick {
 impl EnabledUtick {
     pub fn blocking_wait(&mut self) {
         while self.raw.stat.read().active().bit_is_set() {}
+    }
+}
+
+impl wg1::delay::DelayNs for EnabledUtick {
+    fn delay_ns(&mut self, ns: u32) {
+        self.start(ns.saturating_mul(1000));
     }
 }
