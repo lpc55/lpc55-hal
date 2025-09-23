@@ -44,15 +44,13 @@ where
     }
 }
 
-impl<TIMER> timer::CountDown for Timer<TIMER>
+impl<TIMER> Timer<TIMER>
 where
     TIMER: Ctimer<init_state::Enabled>,
 {
-    type Time = TimeUnits;
-
-    fn start<T>(&mut self, count: T)
+    pub(crate) fn start<T>(&mut self, count: T)
     where
-        T: Into<Self::Time>,
+        T: Into<TimeUnits>,
     {
         // Match should reset and stop timer, and generate interrupt.
         self.timer
@@ -74,7 +72,7 @@ where
             .write(|w| w.crst().clear_bit().cen().set_bit());
     }
 
-    fn wait(&mut self) -> nb::Result<(), Void> {
+    pub(crate) fn wait(&mut self) -> nb::Result<(), Void> {
         if self.timer.ir.read().mr0int().bit_is_set() {
             self.timer
                 .tcr
@@ -86,16 +84,42 @@ where
     }
 }
 
+impl<TIMER> Timer<TIMER>
+where
+    TIMER: Ctimer<init_state::Enabled>,
+{
+    pub(crate) fn cancel(&mut self) {
+        self.timer
+            .tcr
+            .write(|w| w.crst().set_bit().cen().clear_bit());
+        self.timer.ir.write(|w| w.mr0int().set_bit());
+    }
+}
+
+impl<TIMER> timer::CountDown for Timer<TIMER>
+where
+    TIMER: Ctimer<init_state::Enabled>,
+{
+    type Time = TimeUnits;
+
+    fn start<T>(&mut self, count: T)
+    where
+        T: Into<Self::Time>,
+    {
+        self.start(count);
+    }
+
+    fn wait(&mut self) -> nb::Result<(), Void> {
+        self.wait()
+    }
+}
+
 impl<TIMER> timer::Cancel for Timer<TIMER>
 where
     TIMER: Ctimer<init_state::Enabled>,
 {
     type Error = Infallible;
     fn cancel(&mut self) -> Result<(), Self::Error> {
-        self.timer
-            .tcr
-            .write(|w| w.crst().set_bit().cen().clear_bit());
-        self.timer.ir.write(|w| w.mr0int().set_bit());
-        Ok(())
+        Ok(self.cancel())
     }
 }

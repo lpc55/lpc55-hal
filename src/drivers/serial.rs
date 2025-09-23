@@ -222,6 +222,14 @@ where
     pub fn release(self) -> (USART, PINS) {
         (self.usart, self.pins)
     }
+
+    fn read_(&mut self) -> nb::Result<u8, Error> {
+        let mut rx: Rx<USART> = Rx {
+            addr: self.addr(),
+            _usart: PhantomData,
+        };
+        rx.read_()
+    }
 }
 
 impl<TX, RX, USART, PINS> serial::Read<u8> for Serial<TX, RX, USART, PINS>
@@ -234,18 +242,49 @@ where
     type Error = Error;
 
     fn read(&mut self) -> nb::Result<u8, Error> {
-        let mut rx: Rx<USART> = Rx {
-            addr: self.addr(),
-            _usart: PhantomData,
-        };
-        rx.read()
+        self.read_()
     }
 }
 
-impl<USART: Usart> serial::Read<u8> for Rx<USART> {
-    type Error = Error;
+impl embedded_io::Error for Error {
+    fn kind(&self) -> embedded_io::ErrorKind {
+        match self {
+            Self::Framing => embedded_io::ErrorKind::InvalidData,
+            Self::Noise => embedded_io::ErrorKind::InvalidData,
+            Self::Overrun => embedded_io::ErrorKind::OutOfMemory,
+            Self::Parity => embedded_io::ErrorKind::InvalidData,
+        }
+    }
+}
 
-    fn read(&mut self) -> nb::Result<u8, Error> {
+impl<TX, RX, USART, PINS> embedded_io::ErrorType for Serial<TX, RX, USART, PINS>
+where
+    TX: PinId,
+    RX: PinId,
+    USART: Usart,
+    PINS: UsartPins<TX, RX, USART>,
+{
+    type Error = Error;
+}
+
+impl<TX, RX, USART, PINS> embedded_io::Read for Serial<TX, RX, USART, PINS>
+where
+    TX: PinId,
+    RX: PinId,
+    USART: Usart,
+    PINS: UsartPins<TX, RX, USART>,
+{
+    fn read(&mut self, buf: &mut [u8]) -> Result<usize, Error> {
+        let len = buf.len();
+        for el in buf {
+            *el = nb::block!(self.read_())?;
+        }
+        Ok(len)
+    }
+}
+
+impl<USART: Usart> Rx<USART> {
+    fn read_(&mut self) -> nb::Result<u8, Error> {
         let fifostat = self.fifostat.read();
 
         if fifostat.rxnotempty().bit() {
@@ -277,6 +316,13 @@ impl<USART: Usart> serial::Read<u8> for Rx<USART> {
             // cortex_m_semihosting::hprintln!("not rxnotempty").ok();
             Err(nb::Error::WouldBlock)
         }
+    }
+}
+
+impl<USART: Usart> serial::Read<u8> for Rx<USART> {
+    type Error = Error;
+    fn read(&mut self) -> nb::Result<u8, Self::Error> {
+        self.read_()
     }
 }
 
