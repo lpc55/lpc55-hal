@@ -6,12 +6,12 @@ extern crate panic_halt;
 use core::{convert::TryFrom, fmt::Write};
 use cortex_m_rt::entry;
 
-use lpc55_hal as hal;
+use lpc55_hal::{self as hal, drivers::pins::Level};
 
 use hal::{
     drivers::{Pins, SpiMaster},
     time::{Hertz, RateExtensions},
-    traits::wg::spi::{Mode, Phase, Polarity},
+    traits::wg1::spi::{Mode, Phase, Polarity},
     typestates::pin::flexcomm::{NoCs, NoMiso},
 };
 
@@ -44,7 +44,6 @@ fn main() -> ! {
     let mosi = pins.pio0_26.into_spi8_mosi_pin(&mut iocon);
     // let miso = pins.pio1_3.into_spi8_miso_pin(&mut iocon);
     let miso = NoMiso;
-    // let cs = pins.pio1_1.into_spi8_cs_pin(&mut iocon);
     let cs = NoCs;
 
     // try this: currently no way to use SWCLK pin
@@ -63,6 +62,11 @@ fn main() -> ! {
         Hertz::try_from(100_u32.kHz()).unwrap(),
         spi_mode,
     );
+    let cs = pins
+        .pio1_1
+        .into_gpio_pin(&mut iocon, &mut gpio)
+        .into_output(Level::Low);
+    let spi = embedded_hal_bus::spi::ExclusiveDevice::new_no_delay(spi, cs).unwrap();
 
     let dc = pins
         .pio1_5
@@ -70,14 +74,13 @@ fn main() -> ! {
         .into_output_high();
 
     // OLED
-    let mut display: TerminalMode<_> = ssd1306::Builder::new()
-        .size(DisplaySize::Display128x32)
-        // .size(DisplaySize::Display70x40)  // <-- TODO
-        // .with_rotation(DisplayRotation::Rotate90)
-        .connect_spi(spi, dc)
-        .into();
+    let mut display = ssd1306::Ssd1306::new(
+        SPIInterface::new(spi, dc),
+        DisplaySize128x32,
+        DisplayRotation::Rotate0,
+    )
+    .into_terminal_mode();
 
-    display.init().unwrap();
     display.clear().ok();
 
     loop {

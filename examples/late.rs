@@ -26,8 +26,8 @@ mod app {
 
     #[local]
     struct LocalResources {
-        p: Producer<'static, u32, 4>,
-        c: Consumer<'static, u32, 4>,
+        p: Producer<'static, u32>,
+        c: Consumer<'static, u32>,
     }
 
     #[init]

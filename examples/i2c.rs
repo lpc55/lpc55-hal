@@ -46,12 +46,12 @@ fn main() -> ! {
     let i2c = I2cMaster::new(i2c, (scl, sda), Hertz::try_from(1_u32.MHz()).unwrap());
 
     // OLED
-    let mut display: TerminalMode<_> = ssd1306::Builder::new()
-        .size(DisplaySize::Display128x32)
-        // .size(DisplaySize::Display70x40)  // <-- TODO
-        .with_i2c_addr(0x3c)
-        .connect_i2c(i2c)
-        .into();
+    let mut display = ssd1306::Ssd1306::new(
+        ssd1306::I2CDisplayInterface::new(i2c),
+        ssd1306::size::DisplaySize128x32,
+        DisplayRotation::Rotate0,
+    )
+    .into_terminal_mode();
 
     display.init().ok();
     display.clear().ok();
