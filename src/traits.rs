@@ -10,7 +10,6 @@ pub use digest;
 // entire library, in particular not just traits and types.
 // Would be worth being more explicit.
 pub use embedded_hal as wg1;
-pub use embedded_hal_027 as wg;
 
 // TODO: Add more as needed,
 // - internal

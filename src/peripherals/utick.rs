@@ -10,11 +10,7 @@
 // TODO: move this to drivers section,
 // possibly merge with ctimers when they're implemented
 
-use crate::traits::{wg::timer, wg1};
-use core::convert::Infallible;
-use embedded_hal_027::timer::CountDown;
-use nb;
-use void::Void;
+use crate::traits::wg1;
 
 use crate::{
     peripherals::syscon,
@@ -49,51 +45,19 @@ impl<State> Utick<State> {
             _state: init_state::Disabled,
         }
     }
-}
-
-// TODO: This does not feel like it belongs here.
-
-impl timer::Cancel for EnabledUtick {
-    type Error = Infallible;
-
-    fn cancel(&mut self) -> Result<(), Self::Error> {
-        // A value of 0 stops the timer.
-        self.raw.ctrl.write(|w| unsafe { w.delayval().bits(0) });
-        Ok(())
-    }
-}
-
-// TODO: also implement Periodic for UTICK
-impl timer::CountDown for EnabledUtick {
-    type Time = u32;
-
-    fn start<T>(&mut self, timeout: T)
-    where
-        T: Into<Self::Time>,
-    {
-        // The delay will be equal to DELAYVAL + 1 periods of the timer clock.
-        // The minimum usable value is 1, for a delay of 2 timer clocks. A value of 0 stops the timer.
-        let time = timeout.into();
+    pub fn start(&mut self, timeout_ms: u32) {
         // Maybe remove again? Empirically, nothing much happens when
         // writing 1 to `delayval`.
-        assert!(time >= 2);
+        assert!(timeout_ms >= 2);
         self.raw
             .ctrl
-            .write(|w| unsafe { w.delayval().bits(time - 1) });
+            .write(|w| unsafe { w.delayval().bits(timeout_ms - 1) });
         // So... this seems a bit unsafe (what if time is 2?)
         // But: without it, in --release builds the timer behaves erratically.
         // The UM says this on the topic: "Note that the Micro-tick Timer operates from a different
         // (typically slower) clock than the CPU and bus systems.  This means there may be a
         // synchronization delay when accessing Micro-tick Timer registers."
         while self.raw.stat.read().active().bit_is_clear() {}
-    }
-
-    fn wait(&mut self) -> nb::Result<(), Void> {
-        if self.raw.stat.read().active().bit_is_clear() {
-            return Ok(());
-        }
-
-        Err(nb::Error::WouldBlock)
     }
 }
 
@@ -107,5 +71,6 @@ impl EnabledUtick {
 impl wg1::delay::DelayNs for EnabledUtick {
     fn delay_ns(&mut self, ns: u32) {
         self.start(ns.saturating_mul(1000));
+        self.blocking_wait();
     }
 }

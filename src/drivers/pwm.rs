@@ -1,9 +1,4 @@
-use crate::{
-    peripherals::ctimer::Ctimer,
-    time::Microseconds,
-    traits::{wg, wg1},
-    typestates::init_state,
-};
+use crate::{peripherals::ctimer::Ctimer, traits::wg1, typestates::init_state};
 
 pub struct Pwm<TIMER>
 where
@@ -118,72 +113,5 @@ where
     fn set_duty_cycle(&mut self, duty: u16) -> Result<(), Self::Error> {
         self.timer.timer.mr[self.channel as usize].write(|w| unsafe { w.bits(duty as u32) });
         Ok(())
-    }
-}
-
-impl<TIMER> wg::Pwm for Pwm<TIMER>
-where
-    TIMER: Ctimer<init_state::Enabled>,
-{
-    type Channel = u8;
-    type Time = Microseconds;
-    type Duty = u16;
-
-    fn enable(&mut self, channel: Self::Channel) {
-        match channel {
-            0..=2 => {}
-            _ => {
-                panic!("Cannot use channel outside 0-2 for PWM.");
-            }
-        }
-    }
-
-    fn disable(&mut self, channel: Self::Channel) {
-        match channel {
-            0 => {
-                self.timer
-                    .mcr
-                    .modify(|_, w| w.mr0i().clear_bit().mr0r().clear_bit().mr0s().clear_bit());
-                self.timer.pwmc.modify(|_, w| w.pwmen0().clear_bit());
-            }
-            1 => {
-                self.timer
-                    .mcr
-                    .modify(|_, w| w.mr1i().clear_bit().mr1r().clear_bit().mr1s().clear_bit());
-                self.timer.pwmc.modify(|_, w| w.pwmen1().clear_bit());
-            }
-            2 => {
-                self.timer
-                    .mcr
-                    .modify(|_, w| w.mr2i().clear_bit().mr2r().clear_bit().mr2s().clear_bit());
-                self.timer.pwmc.modify(|_, w| w.pwmen2().clear_bit());
-            }
-            _ => {
-                panic!("Cannot use channel outside 0-2 for PWM.");
-            }
-        }
-    }
-
-    fn get_period(&self) -> Self::Time {
-        Microseconds(1_000_000 / self.get_max_duty() as u32)
-    }
-
-    fn set_period<P>(&mut self, _period: P)
-    where
-        P: Into<Self::Time>,
-    {
-        panic!("Currently period is fixed.");
-    }
-
-    fn get_duty(&self, channel: Self::Channel) -> Self::Duty {
-        self.timer.mr[channel as usize].read().bits() as Self::Duty
-    }
-
-    fn get_max_duty(&self) -> Self::Duty {
-        self.timer.mr[3].read().bits() as Self::Duty
-    }
-
-    fn set_duty(&mut self, channel: Self::Channel, duty: Self::Duty) {
-        self.timer.mr[channel as usize].write(|w| unsafe { w.bits(duty as u32) });
     }
 }

@@ -1,10 +1,8 @@
-use core::fmt;
 use core::marker::PhantomData;
 use core::ops::Deref;
 
 use crate::{
     time::Hertz,
-    traits::wg::serial,
     typestates::pin::{
         flexcomm::{
             // Trait marking USART peripherals and pins
@@ -232,20 +230,6 @@ where
     }
 }
 
-impl<TX, RX, USART, PINS> serial::Read<u8> for Serial<TX, RX, USART, PINS>
-where
-    TX: PinId,
-    RX: PinId,
-    USART: Usart,
-    PINS: UsartPins<TX, RX, USART>,
-{
-    type Error = Error;
-
-    fn read(&mut self) -> nb::Result<u8, Error> {
-        self.read_()
-    }
-}
-
 impl embedded_io::Error for Error {
     fn kind(&self) -> embedded_io::ErrorKind {
         match self {
@@ -283,6 +267,60 @@ where
     }
 }
 
+impl<USART: Usart> embedded_io::ErrorType for Tx<USART> {
+    type Error = Error;
+}
+
+impl<USART: Usart> embedded_io::ErrorType for Rx<USART> {
+    type Error = Error;
+}
+
+impl<USART: Usart> embedded_io::Write for Tx<USART> {
+    fn flush(&mut self) -> Result<(), Self::Error> {
+        while !self.stat.read().txidle().bit() {}
+        Ok(())
+    }
+    fn write(&mut self, buf: &[u8]) -> Result<usize, Self::Error> {
+        for byte in buf {
+            while !self.fifostat.read().txnotfull().bit() {}
+            // TODO: figure out if we need to perform an 8-bit write
+            // This would not be possible via svd2rust API, and need some acrobatics
+            self.fifowr.write(|w| unsafe { w.bits(*byte as u32) });
+        }
+        Ok(buf.len())
+    }
+}
+
+impl<TX, RX, USART, PINS> embedded_io::Write for Serial<TX, RX, USART, PINS>
+where
+    TX: PinId,
+    RX: PinId,
+    USART: Usart,
+    PINS: UsartPins<TX, RX, USART>,
+{
+    fn flush(&mut self) -> Result<(), Self::Error> {
+        while !self.usart.stat.read().txidle().bit() {}
+        Ok(())
+    }
+    fn write(&mut self, buf: &[u8]) -> Result<usize, Self::Error> {
+        for byte in buf {
+            while !self.usart.fifostat.read().txnotfull().bit() {}
+            // TODO: figure out if we need to perform an 8-bit write
+            // This would not be possible via svd2rust API, and need some acrobatics
+            self.usart.fifowr.write(|w| unsafe { w.bits(*byte as u32) });
+        }
+        Ok(buf.len())
+    }
+}
+impl<USART: Usart> embedded_io::Read for Rx<USART> {
+    fn read(&mut self, buf: &mut [u8]) -> Result<usize, Self::Error> {
+        let len = buf.len();
+        for b in buf {
+            *b = nb::block!(self.read_())?;
+        }
+        Ok(len)
+    }
+}
 impl<USART: Usart> Rx<USART> {
     fn read_(&mut self) -> nb::Result<u8, Error> {
         let fifostat = self.fifostat.read();
@@ -316,77 +354,5 @@ impl<USART: Usart> Rx<USART> {
             // cortex_m_semihosting::hprintln!("not rxnotempty").ok();
             Err(nb::Error::WouldBlock)
         }
-    }
-}
-
-impl<USART: Usart> serial::Read<u8> for Rx<USART> {
-    type Error = Error;
-    fn read(&mut self) -> nb::Result<u8, Self::Error> {
-        self.read_()
-    }
-}
-
-impl<TX, RX, USART, PINS> serial::Write<u8> for Serial<TX, RX, USART, PINS>
-where
-    TX: PinId,
-    RX: PinId,
-    USART: Usart,
-    PINS: UsartPins<TX, RX, USART>,
-{
-    type Error = Error;
-
-    fn flush(&mut self) -> nb::Result<(), Self::Error> {
-        let mut tx: Tx<USART> = Tx {
-            addr: self.addr(),
-            _usart: PhantomData,
-        };
-        tx.flush()
-    }
-
-    fn write(&mut self, byte: u8) -> nb::Result<(), Self::Error> {
-        let mut tx: Tx<USART> = Tx {
-            addr: self.addr(),
-            _usart: PhantomData,
-        };
-        tx.write(byte)
-    }
-}
-
-impl<USART: Usart> serial::Write<u8> for Tx<USART> {
-    type Error = Error;
-
-    fn flush(&mut self) -> nb::Result<(), Self::Error> {
-        if self.stat.read().txidle().bit() {
-            Ok(())
-        } else {
-            Err(nb::Error::WouldBlock)
-        }
-    }
-
-    fn write(&mut self, byte: u8) -> nb::Result<(), Self::Error> {
-        if self.fifostat.read().txnotfull().bit() {
-            // TODO: figure out if we need to perform an 8-bit write
-            // This would not be possible via svd2rust API, and need some acrobatics
-            self.fifowr.write(|w| unsafe { w.bits(byte as u32) });
-
-            Ok(())
-        } else {
-            Err(nb::Error::WouldBlock)
-        }
-    }
-}
-
-impl<USART: Usart> fmt::Write for Tx<USART>
-where
-    Tx<USART>: serial::Write<u8>,
-{
-    fn write_str(&mut self, s: &str) -> fmt::Result {
-        use crate::traits::wg::serial::Write;
-        let _ = s
-            .as_bytes()
-            .iter()
-            .map(|c| nb::block!(self.write(*c)))
-            .last();
-        Ok(())
     }
 }

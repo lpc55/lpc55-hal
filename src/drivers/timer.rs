@@ -1,16 +1,12 @@
-use core::convert::Infallible;
-
 use nb;
 use void::Void;
 
-use crate::{
-    peripherals::ctimer::Ctimer, time::Microseconds, traits::wg::timer, typestates::init_state,
-};
+use crate::{peripherals::ctimer::Ctimer, time::Microseconds, typestates::init_state};
 
 /// Return the current time elapsed for the timer.
 /// If the timer has not started or stopped, this unit may not be accurate.
-pub trait Elapsed: timer::CountDown {
-    fn elapsed(&self) -> Self::Time;
+pub trait Elapsed {
+    fn elapsed(&self) -> Microseconds;
 }
 
 pub struct Timer<TIMER>
@@ -48,7 +44,7 @@ impl<TIMER> Timer<TIMER>
 where
     TIMER: Ctimer<init_state::Enabled>,
 {
-    pub(crate) fn start<T>(&mut self, count: T)
+    pub fn start<T>(&mut self, count: T)
     where
         T: Into<TimeUnits>,
     {
@@ -72,7 +68,7 @@ where
             .write(|w| w.crst().clear_bit().cen().set_bit());
     }
 
-    pub(crate) fn wait(&mut self) -> nb::Result<(), Void> {
+    pub fn wait(&mut self) -> nb::Result<(), Void> {
         if self.timer.ir.read().mr0int().bit_is_set() {
             self.timer
                 .tcr
@@ -88,39 +84,10 @@ impl<TIMER> Timer<TIMER>
 where
     TIMER: Ctimer<init_state::Enabled>,
 {
-    pub(crate) fn cancel(&mut self) {
+    pub fn cancel(&mut self) {
         self.timer
             .tcr
             .write(|w| w.crst().set_bit().cen().clear_bit());
         self.timer.ir.write(|w| w.mr0int().set_bit());
-    }
-}
-
-impl<TIMER> timer::CountDown for Timer<TIMER>
-where
-    TIMER: Ctimer<init_state::Enabled>,
-{
-    type Time = TimeUnits;
-
-    fn start<T>(&mut self, count: T)
-    where
-        T: Into<Self::Time>,
-    {
-        self.start(count);
-    }
-
-    fn wait(&mut self) -> nb::Result<(), Void> {
-        self.wait()
-    }
-}
-
-impl<TIMER> timer::Cancel for Timer<TIMER>
-where
-    TIMER: Ctimer<init_state::Enabled>,
-{
-    type Error = Infallible;
-    fn cancel(&mut self) -> Result<(), Self::Error> {
-        self.cancel();
-        Ok(())
     }
 }

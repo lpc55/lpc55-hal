@@ -6,6 +6,7 @@ extern crate panic_semihosting;
 use cortex_m_rt::entry;
 // use core::fmt::Write;
 
+use embedded_io::{Read, Write};
 use hal::prelude::*;
 use lpc55_hal as hal;
 
@@ -13,7 +14,6 @@ use hal::drivers::{Pins, Serial};
 
 #[allow(unused_imports)]
 use cortex_m_semihosting::{dbg, hprintln};
-use nb::block;
 
 #[entry]
 fn main() -> ! {
@@ -54,16 +54,18 @@ fn main() -> ! {
 
     // The `block!` macro makes an operation block until it finishes
 
-    block!(tx.write(sent)).ok();
+    tx.write(&[sent]).ok();
     hprintln!("sent");
 
-    block!(tx.flush()).ok();
+    tx.flush().ok();
     hprintln!("flushed");
 
-    let received = block!(rx.read()).unwrap();
+    let mut buf = [0];
+    let received = rx.read(&mut buf).unwrap();
     hprintln!("received");
 
-    assert_eq!(received, sent);
+    assert_eq!(received, 1);
+    assert_eq!(buf, [sent]);
     hprintln!("equal");
 
     loop {

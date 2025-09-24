@@ -1,7 +1,6 @@
 use embedded_hal::i2c::{NoAcknowledgeSource, Operation};
 
 use crate::time::Hertz;
-use crate::traits::wg::blocking::i2c::{Read, Write, WriteRead};
 use crate::traits::wg1::i2c::{Error as ErrorTrait, ErrorType, I2c as I2cTrait};
 use crate::typestates::pin::{
     flexcomm::{
@@ -304,48 +303,6 @@ where
 
         // Reading to an empty buffer is a noop
         Ok(())
-    }
-}
-
-impl<PIO1, PIO2, I2C, PINS> Write for I2cMaster<PIO1, PIO2, I2C, PINS>
-where
-    PIO1: PinId,
-    PIO2: PinId,
-    I2C: I2c,
-    PINS: I2cPins<PIO1, PIO2, I2C>,
-{
-    type Error = Error;
-
-    fn write(&mut self, addr: u8, bytes: &[u8]) -> Result<()> {
-        <Self as I2cTrait>::write(self, addr, bytes)
-    }
-}
-
-impl<PIO1, PIO2, I2C, PINS> Read for I2cMaster<PIO1, PIO2, I2C, PINS>
-where
-    PIO1: PinId,
-    PIO2: PinId,
-    I2C: I2c,
-    PINS: I2cPins<PIO1, PIO2, I2C>,
-{
-    type Error = Error;
-
-    fn read(&mut self, addr: u8, buffer: &mut [u8]) -> Result<()> {
-        <Self as I2cTrait>::read(self, addr, buffer)
-    }
-}
-
-impl<PIO1, PIO2, I2C, PINS> WriteRead for I2cMaster<PIO1, PIO2, I2C, PINS>
-where
-    PIO1: PinId,
-    PIO2: PinId,
-    I2C: I2c,
-    PINS: I2cPins<PIO1, PIO2, I2C>,
-{
-    type Error = Error;
-
-    fn write_read(&mut self, addr: u8, bytes: &[u8], buffer: &mut [u8]) -> Result<()> {
-        <Self as I2cTrait>::write_read(self, addr, bytes, buffer)
     }
 }
 
