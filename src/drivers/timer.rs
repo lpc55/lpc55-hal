@@ -120,6 +120,7 @@ where
 {
     type Error = Infallible;
     fn cancel(&mut self) -> Result<(), Self::Error> {
-        Ok(self.cancel())
+        self.cancel();
+        Ok(())
     }
 }

@@ -23,7 +23,7 @@ fn sin(x: f32) -> f32 {
     let mut fact = 1f32;
     for i in 0..5 {
         res += pow / fact;
-        pow *= -1f32 * x * x;
+        pow *= -x * x;
         fact *= ((2 * (i + 1)) * (2 * (i + 1) + 1)) as f32;
     }
 
