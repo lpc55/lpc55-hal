@@ -6,8 +6,8 @@ use cortex_m::asm;
 use cortex_m_rt::entry;
 use cortex_m_semihosting::dbg;
 
-use hal::traits::rand_core::RngCore;
 use lpc55_hal as hal;
+use rand_core09::RngCore;
 
 #[entry]
 fn main() -> ! {

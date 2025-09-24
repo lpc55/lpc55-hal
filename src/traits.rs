@@ -12,8 +12,6 @@ pub use digest;
 pub use embedded_hal as wg1;
 pub use embedded_hal_027 as wg;
 
-pub use rand_core;
-
 // TODO: Add more as needed,
 // - internal
 // - specific (CASPER, PUF, etc.)
