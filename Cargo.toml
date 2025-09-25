@@ -43,8 +43,8 @@ rtic = { package = "cortex-m-rtic", version = "1" }
 cortex-m-semihosting = "0.5"
 heapless = "0.9"
 panic-halt  = "1"
-panic-semihosting = { version = "0.5", features = ["jlink-quirks"] }
-rtt-target = { version = "0.3", features = ["cortex-m"] }
+panic-semihosting = { version = "0.6", features = ["jlink-quirks"] }
+rtt-target = { version = "0.6" }
 sha2 = { version = "0.10", default-features = false }
 ssd1306 = "0.10"
 sha-1 = { version = "0.10", default-features = false }
