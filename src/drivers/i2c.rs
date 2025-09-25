@@ -353,7 +353,7 @@ where
                 }
             }
 
-            let [ref mut new_current, ref mut new_rem @ ..] = rem else {
+            let Some((new_current, new_rem)) = rem.split_first_mut() else {
                 // No operations left
                 self.stop()?;
                 return Ok(());
