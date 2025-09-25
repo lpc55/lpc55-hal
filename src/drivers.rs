@@ -49,3 +49,5 @@ pub use timer::Timer;
 
 pub mod touch;
 pub use touch::TouchSensor;
+
+pub mod delay;

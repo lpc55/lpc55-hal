@@ -1,4 +1,5 @@
-use crate::traits::wg::digital::v2::{toggleable, InputPin, OutputPin, StatefulOutputPin};
+use crate::drivers::pins::direction::Direction;
+use crate::traits::wg1::digital;
 
 use crate::typestates::{
     pin::{
@@ -31,52 +32,52 @@ reg_cluster!(PIN, PIN, raw::GPIO, pin);
 reg_cluster!(SET, SET, raw::GPIO, set);
 reg_cluster!(CLR, CLR, raw::GPIO, clr);
 
-impl<T> OutputPin for Pin<T, state::Gpio<direction::Output>>
+impl<T, D> digital::ErrorType for Pin<T, state::Gpio<D>>
+where
+    T: PinId,
+    D: Direction,
+{
+    type Error = core::convert::Infallible;
+}
+
+impl<T> digital::OutputPin for Pin<T, state::Gpio<direction::Output>>
 where
     T: PinId,
 {
-    type Error = core::convert::Infallible;
-
-    /// Set the pin output to HIGH
-    fn set_high(&mut self) -> Result<(), Self::Error> {
-        self.state.set[T::PORT].write(|w| unsafe { w.setp().bits(T::MASK) });
-        Ok(())
-    }
-
-    /// Set the pin output to LOW
     fn set_low(&mut self) -> Result<(), Self::Error> {
         self.state.clr[T::PORT].write(|w| unsafe { w.clrp().bits(T::MASK) });
         Ok(())
     }
+
+    fn set_high(&mut self) -> Result<(), Self::Error> {
+        self.state.set[T::PORT].write(|w| unsafe { w.setp().bits(T::MASK) });
+        Ok(())
+    }
 }
 
-impl<T> StatefulOutputPin for Pin<T, state::Gpio<direction::Output>>
+impl<T> digital::StatefulOutputPin for Pin<T, state::Gpio<direction::Output>>
 where
     T: PinId,
 {
-    fn is_set_high(&self) -> Result<bool, Self::Error> {
+    fn is_set_high(&mut self) -> Result<bool, Self::Error> {
         Ok(self.state.pin[T::PORT].read().port().bits() & T::MASK == T::MASK)
     }
 
-    fn is_set_low(&self) -> Result<bool, Self::Error> {
+    fn is_set_low(&mut self) -> Result<bool, Self::Error> {
         Ok(!self.state.pin[T::PORT].read().port().bits() & T::MASK == T::MASK)
     }
 }
 
-impl<T: PinId> toggleable::Default for Pin<T, state::Gpio<direction::Output>> {}
-
-impl<T> InputPin for Pin<T, state::Gpio<direction::Input>>
+impl<T> digital::InputPin for Pin<T, state::Gpio<direction::Input>>
 where
     T: PinId,
 {
-    type Error = core::convert::Infallible;
-
-    fn is_high(&self) -> Result<bool, Self::Error> {
+    fn is_high(&mut self) -> Result<bool, Self::Error> {
         // Ok(self.state.b[T::OFFSET].b_.read().pbyte())
         Ok(self.state.pin[T::PORT].read().port().bits() & T::MASK == T::MASK)
     }
 
-    fn is_low(&self) -> Result<bool, Self::Error> {
+    fn is_low(&mut self) -> Result<bool, Self::Error> {
         // Ok(!self.state.b.b_[T::OFFSET].read().pbyte())
         Ok(!self.state.pin[T::PORT].read().port().bits() & T::MASK == T::MASK)
     }

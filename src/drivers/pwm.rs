@@ -1,4 +1,4 @@
-use crate::{peripherals::ctimer::Ctimer, time::Microseconds, traits::wg, typestates::init_state};
+use crate::{peripherals::ctimer::Ctimer, traits::wg1, typestates::init_state};
 
 pub struct Pwm<TIMER>
 where
@@ -67,72 +67,51 @@ where
     pub fn scale_max_duty_by(&mut self, duty: u32) {
         self.timer.mr[3].write(|w| unsafe { w.bits(0xff * duty) });
     }
+
+    pub fn channels(&mut self) -> (PwmPin<'_, TIMER>, PwmPin<'_, TIMER>, PwmPin<'_, TIMER>) {
+        (
+            PwmPin {
+                timer: self,
+                channel: 0,
+            },
+            PwmPin {
+                timer: self,
+                channel: 1,
+            },
+            PwmPin {
+                timer: self,
+                channel: 2,
+            },
+        )
+    }
 }
 //pin: & Pin<impl PinId, state::Analog<direction::Input>>
 
-impl<TIMER> wg::Pwm for Pwm<TIMER>
+pub struct PwmPin<'timer, TIMER>
 where
     TIMER: Ctimer<init_state::Enabled>,
 {
-    type Channel = u8;
-    type Time = Microseconds;
-    type Duty = u16;
+    timer: &'timer Pwm<TIMER>,
+    channel: u8,
+}
 
-    fn enable(&mut self, channel: Self::Channel) {
-        match channel {
-            0..=2 => {}
-            _ => {
-                panic!("Cannot use channel outside 0-2 for PWM.");
-            }
-        }
+impl<'timer, TIMER> wg1::pwm::ErrorType for PwmPin<'timer, TIMER>
+where
+    TIMER: Ctimer<init_state::Enabled>,
+{
+    type Error = wg1::pwm::ErrorKind;
+}
+
+impl<'timer, TIMER> wg1::pwm::SetDutyCycle for PwmPin<'timer, TIMER>
+where
+    TIMER: Ctimer<init_state::Enabled>,
+{
+    fn max_duty_cycle(&self) -> u16 {
+        self.timer.timer.mr[3].read().bits() as _
     }
 
-    fn disable(&mut self, channel: Self::Channel) {
-        match channel {
-            0 => {
-                self.timer
-                    .mcr
-                    .modify(|_, w| w.mr0i().clear_bit().mr0r().clear_bit().mr0s().clear_bit());
-                self.timer.pwmc.modify(|_, w| w.pwmen0().clear_bit());
-            }
-            1 => {
-                self.timer
-                    .mcr
-                    .modify(|_, w| w.mr1i().clear_bit().mr1r().clear_bit().mr1s().clear_bit());
-                self.timer.pwmc.modify(|_, w| w.pwmen1().clear_bit());
-            }
-            2 => {
-                self.timer
-                    .mcr
-                    .modify(|_, w| w.mr2i().clear_bit().mr2r().clear_bit().mr2s().clear_bit());
-                self.timer.pwmc.modify(|_, w| w.pwmen2().clear_bit());
-            }
-            _ => {
-                panic!("Cannot use channel outside 0-2 for PWM.");
-            }
-        }
-    }
-
-    fn get_period(&self) -> Self::Time {
-        Microseconds(1_000_000 / self.get_max_duty() as u32)
-    }
-
-    fn set_period<P>(&mut self, _period: P)
-    where
-        P: Into<Self::Time>,
-    {
-        panic!("Currently period is fixed.");
-    }
-
-    fn get_duty(&self, channel: Self::Channel) -> Self::Duty {
-        self.timer.mr[channel as usize].read().bits() as Self::Duty
-    }
-
-    fn get_max_duty(&self) -> Self::Duty {
-        self.timer.mr[3].read().bits() as Self::Duty
-    }
-
-    fn set_duty(&mut self, channel: Self::Channel, duty: Self::Duty) {
-        self.timer.mr[channel as usize].write(|w| unsafe { w.bits(duty as u32) });
+    fn set_duty_cycle(&mut self, duty: u16) -> Result<(), Self::Error> {
+        self.timer.timer.mr[self.channel as usize].write(|w| unsafe { w.bits(duty as u32) });
+        Ok(())
     }
 }

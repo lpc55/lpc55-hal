@@ -1,49 +1,55 @@
-use crate::traits::{rand_core, wg::blocking::rng};
-
-use crate::typestates::init_state;
-
-use crate::Rng;
-
 #[derive(Debug)]
 pub enum Error {}
 
-impl rng::Read for Rng<init_state::Enabled> {
-    type Error = Error;
+#[cfg(feature = "rand-core-06")]
+mod rand06 {
+    use crate::typestates::init_state;
+    use crate::Rng;
 
-    fn read(&mut self, buffer: &mut [u8]) -> Result<(), Self::Error> {
-        let mut i = 0usize;
-        while i < buffer.len() {
-            // get 4 bytes
-            let random_word: u32 = self.get_random_u32();
-            let bytes: [u8; 4] = random_word.to_ne_bytes();
+    use rand_core06::RngCore;
 
-            // copy to buffer as needed
-            let n = core::cmp::min(4, buffer.len() - i);
-            buffer[i..i + n].copy_from_slice(&bytes[..n]);
-            i += n;
+    impl RngCore for Rng<init_state::Enabled> {
+        fn next_u32(&mut self) -> u32 {
+            self.get_random_u32()
         }
 
-        Ok(())
+        fn next_u64(&mut self) -> u64 {
+            rand_core06::impls::next_u64_via_u32(self)
+        }
+
+        fn fill_bytes(&mut self, dest: &mut [u8]) {
+            rand_core06::impls::fill_bytes_via_next(self, dest)
+        }
+
+        fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), rand_core06::Error> {
+            self.fill_bytes(dest);
+            Ok(())
+        }
     }
+
+    impl rand_core06::CryptoRng for Rng<init_state::Enabled> {}
 }
 
-impl rand_core::RngCore for Rng<init_state::Enabled> {
-    fn next_u32(&mut self) -> u32 {
-        self.get_random_u32()
+#[cfg(feature = "rand-core-09")]
+mod rand09 {
+    use crate::typestates::init_state;
+    use crate::Rng;
+
+    use rand_core09::RngCore;
+
+    impl RngCore for Rng<init_state::Enabled> {
+        fn next_u32(&mut self) -> u32 {
+            self.get_random_u32()
+        }
+
+        fn next_u64(&mut self) -> u64 {
+            rand_core09::impls::next_u64_via_u32(self)
+        }
+
+        fn fill_bytes(&mut self, dest: &mut [u8]) {
+            rand_core09::impls::fill_bytes_via_next(self, dest)
+        }
     }
 
-    fn next_u64(&mut self) -> u64 {
-        rand_core::impls::next_u64_via_u32(self)
-    }
-
-    fn fill_bytes(&mut self, dest: &mut [u8]) {
-        rand_core::impls::fill_bytes_via_next(self, dest)
-    }
-
-    fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), rand_core::Error> {
-        self.fill_bytes(dest);
-        Ok(())
-    }
+    impl rand_core09::CryptoRng for Rng<init_state::Enabled> {}
 }
-
-impl rand_core::CryptoRng for Rng<init_state::Enabled> {}

@@ -11,6 +11,7 @@ use core::f32;
 
 use cortex_m_rt::entry;
 
+use embedded_hal::pwm::SetDutyCycle;
 use hal::drivers::{Pins, Pwm, Timer};
 use hal::prelude::*;
 pub use hal::typestates::pin::state;
@@ -23,7 +24,7 @@ fn sin(x: f32) -> f32 {
     let mut fact = 1f32;
     for i in 0..5 {
         res += pow / fact;
-        pow *= -1f32 * x * x;
+        pow *= -x * x;
         fact *= ((2 * (i + 1)) * (2 * (i + 1) + 1)) as f32;
     }
 
@@ -69,22 +70,21 @@ fn main() -> ! {
     let green = pins.pio0_5.into_match_output(&mut iocon);
     let blue = pins.pio1_19.into_match_output(&mut iocon);
 
+    pwm.scale_max_duty_by(10);
+    let (mut green_pwm, mut blue_pwm, mut red_pwm) = pwm.channels();
+    green_pwm.set_duty_cycle(0).unwrap();
+    red_pwm.set_duty_cycle(0).unwrap();
+    blue_pwm.set_duty_cycle(0).unwrap();
     // 0 = 100% high voltage / off
     // 128 = 50% high/low voltage
     // 255 = 0% high voltage/ fully on
-    pwm.set_duty(green.get_channel(), 0);
-    pwm.set_duty(red.get_channel(), 0);
-    pwm.set_duty(blue.get_channel(), 0);
-    pwm.enable(green.get_channel());
-    pwm.enable(red.get_channel());
-    pwm.enable(blue.get_channel());
 
+    print_type_of(&red);
+    print_type_of(&green);
     print_type_of(&blue);
 
     let mut duties = [0f32, 30f32, 60f32];
     let increments = [0.3f32, 0.2f32, 0.1f32];
-
-    pwm.scale_max_duty_by(10);
 
     loop {
         delay_timer.start(5_000.microseconds());
@@ -103,14 +103,10 @@ fn main() -> ! {
             match i {
                 0 => {
                     // need to tune down red some
-                    pwm.set_duty(red.get_channel(), duty as u16);
+                    red_pwm.set_duty_cycle(duty).unwrap()
                 }
-                1 => {
-                    pwm.set_duty(green.get_channel(), duty * 2);
-                }
-                2 => {
-                    pwm.set_duty(blue.get_channel(), duty * 2);
-                }
+                1 => green_pwm.set_duty_cycle(duty * 2).unwrap(),
+                2 => blue_pwm.set_duty_cycle(duty * 2).unwrap(),
                 _ => {}
             }
         }

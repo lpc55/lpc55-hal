@@ -7,8 +7,6 @@ extern crate panic_semihosting; // 4004 bytes
 use cortex_m_rt::entry;
 use cortex_m_semihosting::heprintln;
 
-use hal::traits::wg::timer::Cancel;
-
 use hal::{
     drivers::{timer::Elapsed, Timer},
     prelude::*,
@@ -57,7 +55,7 @@ fn main() -> ! {
         delay_cycles(10_000_000);
 
         let us = timer.elapsed().0;
-        timer.cancel().ok();
+        timer.cancel();
 
         heprintln!("{} MHz", 10_000_000 / us);
     }

@@ -1,7 +1,6 @@
 use core::ops::{Deref, DerefMut};
 use embedded_time::duration::Extensions;
 
-use crate::traits::wg::timer::CountDown;
 use crate::{
     drivers::{pins, timer, timer::Elapsed, Pin},
     peripherals::{ctimer, dma::Dma},
