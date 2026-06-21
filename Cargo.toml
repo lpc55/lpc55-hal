@@ -11,7 +11,7 @@ keywords = ["no-std", "cortex-m", "nxp", "lpc", "embedded-hal-impl"]
 categories = ["embedded", "no-std"]
 authors = ["Nicolas Stalder <n@stalder.io>", "Conor Patrick <conorpp94@gmail.com>", "Hanno Braun <hanno@braun-robotics.com>"]
 build = "build.rs"
-rust-version = "1.74"
+rust-version = "1.79"
 
 [package.metadata.docs.rs]
 targets = []

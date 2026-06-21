@@ -391,86 +391,61 @@ pub mod littlefs_params {
 }
 
 #[cfg(feature = "littlefs")]
-#[macro_export]
-macro_rules! littlefs2_filesystem {
-    ($Name:ident: (
-        $BASE_OFFSET:expr
-    )) => {
-        littlefs2_filesystem!(
-            $Name: (
-                $BASE_OFFSET,
-                //     631.5KB
-                ((631 * 1024 + 512) - $BASE_OFFSET) / 512
-            )
-        );
-    };
-    ($Name:ident: (
-        $BASE_OFFSET:expr,
-        $BLOCK_COUNT:expr
-    )) => {
-        //
-        // Compile time assertion that $BASE_OFFSET is 512 byte aligned.
-        const _ZERO_SIZED_CHECK: usize = ((core::mem::size_of::<[u8; ($BASE_OFFSET % 512)]>() == 0) as usize) - 1;
-        // Compile time assertion that flash region does NOT spill over the 631.5KB boundary.
-        const _OVERFLOW_SIZE_CHECK: usize = ((
-            core::mem::size_of::<[u8; (($BASE_OFFSET + $BLOCK_COUNT * 512) <= (631 * 1024 + 512)) as usize]>() == 1) as usize) - 1;
+pub struct Storage<const BASE_OFFSET: usize, const BLOCK_COUNT: usize> {
+    flash_gordon: FlashGordon,
+}
 
-        pub struct $Name {
-            flash_gordon: $crate::drivers::flash::FlashGordon
+#[cfg(feature = "littlefs")]
+impl<const BASE_OFFSET: usize, const BLOCK_COUNT: usize> Storage<BASE_OFFSET, BLOCK_COUNT> {
+    pub fn new(flash_gordon: FlashGordon) -> Self {
+        const {
+            assert!(
+                BASE_OFFSET.is_multiple_of(littlefs_params::BLOCK_SIZE),
+                "BASE_OFFSET must be a multiple of the block size"
+            );
+            assert!(
+                (BASE_OFFSET + BLOCK_COUNT * 512) <= (631 * 1024 + 512),
+                "Filesystem must not overflow flash boundary"
+            );
         }
-
-        impl $Name {
-            const BASE_OFFSET: usize = $BASE_OFFSET;
-
-            pub fn new (flash_gordon: $crate::drivers::flash::FlashGordon) -> Self {
-                Self { flash_gordon }
-            }
-        }
-
-        impl littlefs2::driver::Storage for $Name {
-            const READ_SIZE: usize = $crate::drivers::flash::littlefs_params::READ_SIZE;
-            const WRITE_SIZE: usize = $crate::drivers::flash::littlefs_params::WRITE_SIZE;
-            const BLOCK_SIZE: usize = $crate::drivers::flash::littlefs_params::BLOCK_SIZE;
-
-            const BLOCK_COUNT: usize = $BLOCK_COUNT;
-            const BLOCK_CYCLES: isize = $crate::drivers::flash::littlefs_params::BLOCK_CYCLES;
-
-            type CACHE_SIZE = $crate::drivers::flash::littlefs_params::CACHE_SIZE;
-            type LOOKAHEAD_SIZE = $crate::drivers::flash::littlefs_params::LOOKAHEAD_SIZE;
-
-
-            fn read(&mut self, off: usize, buf: &mut [u8]) -> littlefs2::io::Result<usize> {
-                <$crate::drivers::flash::FlashGordon as $crate::traits::flash::Read<$crate::drivers::flash::U16>>
-                    ::read(&self.flash_gordon, Self::BASE_OFFSET + off, buf);
-                Ok(buf.len())
-            }
-
-            fn write(&mut self, off: usize, data: &[u8]) -> littlefs2::io::Result<usize> {
-                let ret = <$crate::drivers::flash::FlashGordon as $crate::traits::flash::WriteErase<$crate::drivers::flash::U512, $crate::drivers::flash::U512>>
-                    ::write(&mut self.flash_gordon, Self::BASE_OFFSET + off, data);
-                ret
-                    .map(|_| data.len())
-                    .map_err(|_| littlefs2::io::Error::IO)
-            }
-
-            fn erase(&mut self, off: usize, len: usize) -> littlefs2::io::Result<usize> {
-                let first_page = (Self::BASE_OFFSET + off) / 512;
-                let pages = len / 512;
-                for i in 0..pages {
-                    <$crate::drivers::flash::FlashGordon as $crate::traits::flash::WriteErase<$crate::drivers::flash::U512, $crate::drivers::flash::U512>>
-                        ::erase_page(&mut self.flash_gordon, first_page + i)
-                        .map_err(|_| littlefs2::io::Error::IO)?;
-                }
-                Ok(512 * len)
-            }
-
-        }
-    //
+        Self { flash_gordon }
     }
 }
 
-// Example implementations using 0x8_0000 boundary to separate code and data.
-// This leaves 128KB for data and is covered by the last prince region (region 2).
-// ```
-// littlefs2_filesystem!(FilesystemGordon: (0x8_0000));
-// ```
+#[cfg(feature = "littlefs")]
+impl<const BASE_OFFSET: usize, const BLOCK_COUNT: usize> littlefs2::driver::Storage
+    for Storage<BASE_OFFSET, BLOCK_COUNT>
+{
+    const READ_SIZE: usize = littlefs_params::READ_SIZE;
+    const WRITE_SIZE: usize = littlefs_params::WRITE_SIZE;
+    const BLOCK_SIZE: usize = littlefs_params::BLOCK_SIZE;
+
+    const BLOCK_COUNT: usize = BLOCK_COUNT;
+    const BLOCK_CYCLES: isize = littlefs_params::BLOCK_CYCLES;
+
+    type CACHE_SIZE = littlefs_params::CACHE_SIZE;
+    type LOOKAHEAD_SIZE = littlefs_params::LOOKAHEAD_SIZE;
+
+    fn read(&mut self, off: usize, buf: &mut [u8]) -> littlefs2::io::Result<usize> {
+        self.flash_gordon.read(BASE_OFFSET + off, buf);
+        Ok(buf.len())
+    }
+
+    fn write(&mut self, off: usize, data: &[u8]) -> littlefs2::io::Result<usize> {
+        self.flash_gordon
+            .write(BASE_OFFSET + off, data)
+            .map(|_| data.len())
+            .map_err(|_| littlefs2::io::Error::IO)
+    }
+
+    fn erase(&mut self, off: usize, len: usize) -> littlefs2::io::Result<usize> {
+        let first_page = (BASE_OFFSET + off) / littlefs_params::BLOCK_SIZE;
+        let pages = len / littlefs_params::BLOCK_SIZE;
+        for i in 0..pages {
+            self.flash_gordon
+                .erase_page(first_page + i)
+                .map_err(|_| littlefs2::io::Error::IO)?;
+        }
+        Ok(littlefs_params::BLOCK_SIZE * len)
+    }
+}
