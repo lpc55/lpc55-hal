@@ -9,6 +9,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - Remove `littlefs2_prince_filesystem!` macro because the implementation did not correctly determine the PRINCE regions to enable.
   Users should replace it with a custom implementation using the appropriate PRINCE regions for their configuration.
 - Replace `littlefs2_filesystem!` macro with `Storage` struct.
+- Rename `littlefs` feature to `littlefs2-v0.7`.
 
 ## [v0.5.0](https://github.com/lpc55/lpc55-hal/releases/tag/0.5.0) - 2026-03-20
 

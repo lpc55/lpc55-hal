@@ -375,7 +375,7 @@ pub enum FlashCommands {
     ReportEcc = 0xD,
 }
 
-#[cfg(feature = "littlefs")]
+#[cfg(feature = "littlefs2-v0.7")]
 #[allow(non_camel_case_types)]
 pub mod littlefs_params {
     use super::*;
@@ -390,17 +390,17 @@ pub mod littlefs_params {
     pub type LOOKAHEAD_SIZE = U8;
 }
 
-#[cfg(feature = "littlefs")]
+#[cfg(feature = "littlefs2-v0.7")]
 pub struct Storage<const BASE_OFFSET: usize, const BLOCK_COUNT: usize> {
     flash_gordon: FlashGordon,
 }
 
-#[cfg(feature = "littlefs")]
+#[cfg(feature = "littlefs2-v0.7")]
 impl<const BASE_OFFSET: usize, const BLOCK_COUNT: usize> Storage<BASE_OFFSET, BLOCK_COUNT> {
     pub fn new(flash_gordon: FlashGordon) -> Self {
         const {
             assert!(
-                BASE_OFFSET.is_multiple_of(littlefs_params::BLOCK_SIZE),
+                BASE_OFFSET % littlefs_params::BLOCK_SIZE == 0,
                 "BASE_OFFSET must be a multiple of the block size"
             );
             assert!(
@@ -412,8 +412,8 @@ impl<const BASE_OFFSET: usize, const BLOCK_COUNT: usize> Storage<BASE_OFFSET, BL
     }
 }
 
-#[cfg(feature = "littlefs")]
-impl<const BASE_OFFSET: usize, const BLOCK_COUNT: usize> littlefs2::driver::Storage
+#[cfg(feature = "littlefs2-v0.7")]
+impl<const BASE_OFFSET: usize, const BLOCK_COUNT: usize> littlefs2_v07::driver::Storage
     for Storage<BASE_OFFSET, BLOCK_COUNT>
 {
     const READ_SIZE: usize = littlefs_params::READ_SIZE;
@@ -426,25 +426,25 @@ impl<const BASE_OFFSET: usize, const BLOCK_COUNT: usize> littlefs2::driver::Stor
     type CACHE_SIZE = littlefs_params::CACHE_SIZE;
     type LOOKAHEAD_SIZE = littlefs_params::LOOKAHEAD_SIZE;
 
-    fn read(&mut self, off: usize, buf: &mut [u8]) -> littlefs2::io::Result<usize> {
+    fn read(&mut self, off: usize, buf: &mut [u8]) -> littlefs2_v07::io::Result<usize> {
         self.flash_gordon.read(BASE_OFFSET + off, buf);
         Ok(buf.len())
     }
 
-    fn write(&mut self, off: usize, data: &[u8]) -> littlefs2::io::Result<usize> {
+    fn write(&mut self, off: usize, data: &[u8]) -> littlefs2_v07::io::Result<usize> {
         self.flash_gordon
             .write(BASE_OFFSET + off, data)
             .map(|_| data.len())
-            .map_err(|_| littlefs2::io::Error::IO)
+            .map_err(|_| littlefs2_v07::io::Error::IO)
     }
 
-    fn erase(&mut self, off: usize, len: usize) -> littlefs2::io::Result<usize> {
+    fn erase(&mut self, off: usize, len: usize) -> littlefs2_v07::io::Result<usize> {
         let first_page = (BASE_OFFSET + off) / littlefs_params::BLOCK_SIZE;
         let pages = len / littlefs_params::BLOCK_SIZE;
         for i in 0..pages {
             self.flash_gordon
                 .erase_page(first_page + i)
-                .map_err(|_| littlefs2::io::Error::IO)?;
+                .map_err(|_| littlefs2_v07::io::Error::IO)?;
         }
         Ok(littlefs_params::BLOCK_SIZE * len)
     }
