@@ -35,6 +35,9 @@ jobs:
       - name: Build
         run: cargo build --release --verbose --target ${{ matrix.target }}
 
+      - name: Build with all features
+        run: cargo build --release --verbose --target ${{ matrix.target }} --all-features
+
       - name: Lint
         run: cargo clippy --release --verbose --target ${{ matrix.target }} -- -D warnings
 

@@ -10,6 +10,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
   Users should replace it with a custom implementation using the appropriate PRINCE regions for their configuration.
 - Replace `littlefs2_filesystem!` macro with `Storage` struct.
 - Rename `littlefs` feature to `littlefs2-v0.7`.
+- Add support for `littlefs2` v0.8 behind the `littlefs2-v0.8` feature.
 
 ## [v0.5.0](https://github.com/lpc55/lpc55-hal/releases/tag/0.5.0) - 2026-03-20
 

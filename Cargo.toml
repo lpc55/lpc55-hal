@@ -34,6 +34,7 @@ void = { version = "1", default-features = false }
 # optional dependencies
 # cortex-m-rtic = { version = "0.5", optional = true }
 littlefs2-v07 = { package = "littlefs2", version = "0.7", optional = true }
+littlefs2-v08 = { package = "littlefs2", version = "0.8", optional = true }
 
 [dev-dependencies]
 aes = "0.8"
@@ -56,6 +57,7 @@ rt = ["lpc55-pac/rt"]
 highspeed-usb-example = []
 
 "littlefs2-v0.7" = ["dep:littlefs2-v07"]
+"littlefs2-v0.8" = ["dep:littlefs2-v08"]
 
 [profile.release]
 codegen-units = 1

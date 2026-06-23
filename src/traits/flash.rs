@@ -24,7 +24,7 @@ pub enum Error {
 // }
 
 /// A type alias for the result of a Flash operation.
-pub type Result = core::result::Result<(), Error>;
+pub type Result<T = ()> = core::result::Result<T, Error>;
 
 // pub trait FlashOps: Locking + WriteErase + Read {}
 
