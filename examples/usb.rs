@@ -12,7 +12,8 @@ use hal::prelude::*;
 use lpc55_hal as hal;
 
 use hal::drivers::{pins, Timer, UsbBus};
-use usb_device::device::{UsbDeviceBuilder, UsbVidPid};
+use usb_device::device::{StringDescriptors, UsbDeviceBuilder, UsbVidPid};
+use usb_device::LangID;
 use usbd_serial::CdcAcmClass;
 
 #[entry]
@@ -73,13 +74,18 @@ fn main() -> ! {
 
     let mut cdc_acm = CdcAcmClass::new(&usb_bus, 8);
 
-    let mut usb_dev = UsbDeviceBuilder::new(&usb_bus, UsbVidPid(0x1209, 0xcc1d))
+    let strings = StringDescriptors::new(LangID::EN)
         .manufacturer("nickray")
         .product("Demo Demo Demo")
-        .serial_number("2019-10-10")
+        .serial_number("2019-10-10");
+
+    let mut usb_dev = UsbDeviceBuilder::new(&usb_bus, UsbVidPid(0x1209, 0xcc1d))
+        .strings(&[strings])
+        .unwrap()
         .device_release(0x0123)
         // Must be 64 bytes for HighSpeed
         .max_packet_size_0(64)
+        .unwrap()
         // .device_class(USB_CLASS_CDC)
         .build();
 

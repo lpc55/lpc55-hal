@@ -27,7 +27,7 @@ generic-array = "1.0.0"
 lpc55-pac = "0.5"
 nb = "1"
 rand_core = "0.6"
-usb-device = "0.2"
+usb-device = "0.3.2"
 vcell = "0.1"
 void = { version = "1", default-features = false }
 
@@ -48,7 +48,7 @@ rtt-target = { version = "0.3", features = ["cortex-m"] }
 sha2 = { version = "0.10", default-features = false }
 ssd1306 = "0.3"
 sha-1 = { version = "0.10", default-features = false }
-usbd-serial = "0.1"
+usbd-serial = "0.2"
 
 [features]
 default = ["rt"]

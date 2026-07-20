@@ -11,8 +11,9 @@ use hal::prelude::*;
 use lpc55_hal as hal;
 
 use hal::drivers::{pins, Timer, UsbBus};
-use usb_device::device::{UsbDeviceBuilder, UsbVidPid};
+use usb_device::device::{StringDescriptors, UsbDeviceBuilder, UsbVidPid};
 use usb_device::test_class::TestClass;
+use usb_device::LangID;
 
 #[entry]
 fn main() -> ! {
@@ -67,11 +68,16 @@ fn main() -> ! {
     const SERIAL_NUMBER: &str = "TestClass Serial";
 
     let mut test = TestClass::new(&usb_bus);
-    let mut usb_dev = UsbDeviceBuilder::new(&usb_bus, UsbVidPid(VID, PID))
+    let strings = StringDescriptors::new(LangID::EN)
         .manufacturer(MANUFACTURER)
         .product(PRODUCT)
-        .serial_number(SERIAL_NUMBER)
+        .serial_number(SERIAL_NUMBER);
+
+    let mut usb_dev = UsbDeviceBuilder::new(&usb_bus, UsbVidPid(VID, PID))
+        .strings(&[strings])
+        .unwrap()
         .max_packet_size_0(64)
+        .unwrap()
         .build();
 
     loop {

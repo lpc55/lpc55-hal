@@ -186,7 +186,7 @@ where
         };
 
         // no support for Isochronous endpoints
-        debug_assert!(ep_type != EndpointType::Isochronous);
+        debug_assert!(!matches!(ep_type, EndpointType::Isochronous { .. }));
 
         // clear all the interrupts
         usb.intstat.write(|w| unsafe { w.bits(!0) });
