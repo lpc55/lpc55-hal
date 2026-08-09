@@ -375,25 +375,22 @@ pins!(
     pio1_31, Pio1_31, 1, 31, PinType::D, state::Unused, state::Unused;
 );
 
+// ADC0_n is a pin name, not a register index: CMDL.ADCH selects the channel pair
+// and CMDL.CTYPE the side, with ADC0_n and ADC0_(n+8) the A and B sides of pair n.
+// Only these 10 pins have an ADC input; ACMP0 pins are not among them.
 analog_pins!(
-    pio0_0 , Pio0_0 , 0,  0, PinType::A, state::Unused, state::Unused, 0u8;     // A = 0, B = 1, ...
-    pio0_9 , Pio0_9 , 0,  9, PinType::A, state::Unused, state::Unused, 1u8;
-    pio0_10, Pio0_10, 0, 10, PinType::A, state::Unused, state::Unused, 1u8;
+    pio0_23, Pio0_23, 0, 23, PinType::A, state::Unused, state::Unused, 0u8;   // pair 0 A
+    pio0_10, Pio0_10, 0, 10, PinType::A, state::Unused, state::Unused, 1u8;   // pair 1 A
+    pio0_15, Pio0_15, 0, 15, PinType::A, state::Unused, state::Unused, 2u8;   // pair 2 A
+    pio0_31, Pio0_31, 0, 31, PinType::A, state::Unused, state::Unused, 3u8;   // pair 3 A
+    pio1_8 , Pio1_8 , 1,  8, PinType::A, state::Unused, state::Unused, 4u8;   // pair 4 A
+    pio0_16, Pio0_16, 0, 16, PinType::A, state::Unused, state::Unused, 8u8;   // pair 0 B
     pio0_11, Pio0_11, 0, 11, PinType::A, state::Special<function::SWCLK>,
-        state::Special{ _function: function::SWCLK {} }, 9u8;
+        state::Special{ _function: function::SWCLK {} }, 9u8;                 // pair 1 B
     pio0_12, Pio0_12, 0, 12, PinType::A, state::Special<function::SWDIO>,
-        state::Special{ _function: function::SWDIO {} }, 10u8;
-    pio0_15, Pio0_15, 0, 15, PinType::A, state::Unused, state::Unused, 2u8;
-    pio0_16, Pio0_16, 0, 16, PinType::A, state::Unused, state::Unused, 8u8;
-    pio0_18, Pio0_18, 0, 18, PinType::A, state::Unused, state::Unused, 2u8;
-    pio0_23, Pio0_23, 0, 23, PinType::A, state::Unused, state::Unused, 0u8;
-    pio0_31, Pio0_31, 0, 31, PinType::A, state::Unused, state::Unused, 3u8;
-
-    pio1_0 , Pio1_0 , 1,  0, PinType::A, state::Unused, state::Unused, 11u8;
-    pio1_8 , Pio1_8 , 1,  8, PinType::A, state::Unused, state::Unused, 4u8;
-    pio1_9 , Pio1_9 , 1,  9, PinType::A, state::Unused, state::Unused, 12u8;
-    pio1_14, Pio1_14, 1, 14, PinType::A, state::Unused, state::Unused, 3u8;
-    pio1_19, Pio1_19, 1, 19, PinType::A, state::Unused, state::Unused, 0xffu8;   // ACMP_ref
+        state::Special{ _function: function::SWDIO {} }, 10u8;                // pair 2 B
+    pio1_0 , Pio1_0 , 1,  0, PinType::A, state::Unused, state::Unused, 11u8;  // pair 3 B
+    pio1_9 , Pio1_9 , 1,  9, PinType::A, state::Unused, state::Unused, 12u8;  // pair 4 B
 );
 
 ctimer_match_output_pins!(
