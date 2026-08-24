@@ -7,6 +7,12 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 -
 
+## [v0.7.0](https://github.com/lpc55/lpc55-hal/releases/tag/0.7.0) - 2026-08-24
+
+- Update `usb-device` to v0.3
+  - `drivers::UsbBus` now implements the 0.3 `UsbBus` trait.
+- Bump MSRV to 1.85 and move to edition 2024.
+
 ## [v0.6.0](https://github.com/lpc55/lpc55-hal/releases/tag/0.6.0) - 2026-06-23
 
 - Bump MSRV to 1.79
