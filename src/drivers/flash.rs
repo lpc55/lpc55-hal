@@ -8,8 +8,8 @@ use crate::{
 };
 
 pub use generic_array::{
-    typenum::{U16, U512, U8},
     GenericArray,
+    typenum::{U8, U16, U512},
 };
 
 // one physical word of Flash consists of 128 bits (or 4 u32, or 16 bytes)

@@ -18,7 +18,7 @@ use void::Void;
 use crate::{
     peripherals::syscon,
     raw,
-    typestates::{init_state, ClocksSupportUtickToken},
+    typestates::{ClocksSupportUtickToken, init_state},
 };
 
 crate::wrap_stateful_peripheral!(Utick, UTICK0);

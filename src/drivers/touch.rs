@@ -3,12 +3,11 @@ use embedded_time::duration::Extensions;
 
 use crate::traits::wg::timer::CountDown;
 use crate::{
-    drivers::{pins, timer, timer::Elapsed, Pin},
+    drivers::{Pin, pins, timer, timer::Elapsed},
     peripherals::{ctimer, dma::Dma},
     typestates::{
-        init_state,
-        pin::{function, gpio::direction, state, PinId},
-        ClocksSupportTouchToken,
+        ClocksSupportTouchToken, init_state,
+        pin::{PinId, function, gpio::direction, state},
     },
 };
 

@@ -6,12 +6,12 @@ use crate::{
     time::Hertz,
     traits::wg::serial,
     typestates::pin::{
+        PinId,
         flexcomm::{
             // Trait marking USART peripherals and pins
             Usart,
             UsartPins,
         },
-        PinId,
     },
 };
 

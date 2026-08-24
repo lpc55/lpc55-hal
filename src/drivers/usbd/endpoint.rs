@@ -4,7 +4,7 @@ use core::marker::PhantomData;
 
 use cortex_m::interrupt::{CriticalSection, Mutex};
 
-use usb_device::{endpoint::EndpointType, Result, UsbError};
+use usb_device::{Result, UsbError, endpoint::EndpointType};
 
 use crate::traits::usb::Usb;
 use crate::typestates::init_state;

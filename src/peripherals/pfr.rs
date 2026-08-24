@@ -249,11 +249,7 @@ impl<State> Pfr<State> {
         }
     }
     fn check_error(err: u32) -> Result<(), u32> {
-        if err == 0 {
-            Ok(())
-        } else {
-            Err(err)
-        }
+        if err == 0 { Ok(()) } else { Err(err) }
     }
 }
 

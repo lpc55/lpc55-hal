@@ -2,7 +2,7 @@
 #![no_std]
 
 extern crate panic_semihosting; // 4004 bytes
-                                // extern crate panic_halt; // 672 bytes
+// extern crate panic_halt; // 672 bytes
 
 #[macro_use(block)]
 extern crate nb;
@@ -13,8 +13,8 @@ use cortex_m_rt::entry;
 
 use hal::drivers::pins::Level;
 use hal::drivers::{
-    touch::{profile_touch_sensing, ButtonPins, Edge, TouchSensor, TouchSensorChannel},
     Pins, Timer,
+    touch::{ButtonPins, Edge, TouchSensor, TouchSensorChannel, profile_touch_sensing},
 };
 use hal::prelude::*;
 pub use hal::typestates::pin::state;

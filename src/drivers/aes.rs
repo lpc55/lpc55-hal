@@ -1,14 +1,14 @@
 use core::convert::TryInto;
 
-use crate::traits::aligned::{Aligned, A4};
+use crate::traits::aligned::{A4, Aligned};
 
 use crate::{
     peripherals::hashcrypt::Hashcrypt,
     traits::{
         cipher::{Block, BlockCipher, BlockDecrypt, BlockEncrypt},
         digest::generic_array::{
-            typenum::{U1, U16, U24, U32},
             GenericArray,
+            typenum::{U1, U16, U24, U32},
         },
     },
     typestates::init_state::Enabled,

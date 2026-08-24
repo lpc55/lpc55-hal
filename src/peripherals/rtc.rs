@@ -1,7 +1,7 @@
 use crate::{
     peripherals::syscon::Syscon,
     raw,
-    typestates::{init_state, ClocksSupport32KhzFroToken},
+    typestates::{ClocksSupport32KhzFroToken, init_state},
 };
 use core::time::Duration;
 

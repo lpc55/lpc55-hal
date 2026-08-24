@@ -12,7 +12,7 @@ use crate::{
     },
 };
 
-pub use crate::typestates::pin::gpio::{direction, Level};
+pub use crate::typestates::pin::gpio::{Level, direction};
 
 // Implements GPIO pins
 pub mod gpio;

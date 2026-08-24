@@ -23,14 +23,14 @@ use cortex_m::interrupt::{self, Mutex};
 pub use usb_device::{Result, UsbError};
 
 use usb_device::{
+    UsbDirection,
     bus::{PollResult, UsbBusAllocator},
     endpoint::{EndpointAddress, EndpointType},
-    UsbDirection,
 };
 
 use crate::traits::usb::Usb;
 use crate::typestates::init_state;
-use crate::{drivers::pins::PinId, typestates::pin, Pin};
+use crate::{Pin, drivers::pins::PinId, typestates::pin};
 
 pub trait Usb0VbusPin: Send {}
 impl<P> Usb0VbusPin for Pin<P, pin::state::Special<pin::function::USB0_VBUS>> where P: PinId + Send {}

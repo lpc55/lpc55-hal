@@ -4,7 +4,7 @@ use crate::{
     raw,
     typestates::{
         init_state,
-        pin::{gpio::direction, state, PinId},
+        pin::{PinId, gpio::direction, state},
     },
 };
 use core::ops::Deref;
@@ -44,10 +44,12 @@ impl Adc {
     /// # Safety
     ///
     /// Must only be called once for the entire duration of the program
-    pub unsafe fn steal() -> Self { unsafe {
-        // seems a little wastefule to steal the full peripherals but ok..
-        Self::new(raw::Peripherals::steal().ADC0)
-    }}
+    pub unsafe fn steal() -> Self {
+        unsafe {
+            // seems a little wastefule to steal the full peripherals but ok..
+            Self::new(raw::Peripherals::steal().ADC0)
+        }
+    }
 }
 
 impl<State> Adc<State> {

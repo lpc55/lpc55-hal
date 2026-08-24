@@ -3,7 +3,7 @@ use core::{cmp::min, slice};
 use usb_device::{Result, UsbError};
 use vcell::VolatileCell;
 
-use super::constants::{UsbAccessType, EP_MEM_ADDR, EP_MEM_SIZE, EP_REGISTERS_SIZE};
+use super::constants::{EP_MEM_ADDR, EP_MEM_SIZE, EP_REGISTERS_SIZE, UsbAccessType};
 
 // The USB FS peripheral is flexible about which SRAM to use.
 // - On the one hand, the USB HS has no access to regular SRAM, and

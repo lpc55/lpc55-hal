@@ -1,11 +1,11 @@
 use crate::peripherals::{anactrl, pmc, syscon};
 use crate::raw;
 use crate::typestates::{
-    init_state,
-    usbfs_mode,
     // ValidUsbClockToken,
     // Fro96MHzEnabledToken,
     ClocksSupportUsbfsToken,
+    init_state,
+    usbfs_mode,
 };
 use core::ops::Deref;
 

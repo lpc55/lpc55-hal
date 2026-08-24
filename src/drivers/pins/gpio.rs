@@ -1,9 +1,10 @@
-use crate::traits::wg::digital::v2::{toggleable, InputPin, OutputPin, StatefulOutputPin};
+use crate::traits::wg::digital::v2::{InputPin, OutputPin, StatefulOutputPin, toggleable};
 
 use crate::typestates::{
     pin::{
-        gpio::{direction, Level},
-        state, PinId,
+        PinId,
+        gpio::{Level, direction},
+        state,
     },
     reg_proxy::RegClusterProxy,
 };

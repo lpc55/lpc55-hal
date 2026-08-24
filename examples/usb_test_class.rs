@@ -10,10 +10,10 @@ use hal::prelude::*;
 #[allow(unused_imports)]
 use lpc55_hal as hal;
 
-use hal::drivers::{pins, Timer, UsbBus};
+use hal::drivers::{Timer, UsbBus, pins};
+use usb_device::LangID;
 use usb_device::device::{StringDescriptors, UsbDeviceBuilder, UsbVidPid};
 use usb_device::test_class::TestClass;
-use usb_device::LangID;
 
 #[entry]
 fn main() -> ! {

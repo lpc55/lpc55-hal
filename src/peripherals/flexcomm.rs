@@ -4,9 +4,8 @@ use crate::{
     peripherals::syscon,
     raw,
     typestates::{
-        init_state,
+        ClocksSupportFlexcommToken, init_state,
         pin::flexcomm::{I2c, I2s, Spi, Usart},
-        ClocksSupportFlexcommToken,
     },
 };
 
@@ -287,14 +286,30 @@ macro_rules! flexcomm {
     };
 }
 
-flexcomm!(Flexcomm0, I2c0, I2s0, Spi0, Usart0, FLEXCOMM0, I2C0, I2S0, SPI0, USART0, fcclksel0);
-flexcomm!(Flexcomm1, I2c1, I2s1, Spi1, Usart1, FLEXCOMM1, I2C1, I2S1, SPI1, USART1, fcclksel1);
-flexcomm!(Flexcomm2, I2c2, I2s2, Spi2, Usart2, FLEXCOMM2, I2C2, I2S2, SPI2, USART2, fcclksel2);
-flexcomm!(Flexcomm3, I2c3, I2s3, Spi3, Usart3, FLEXCOMM3, I2C3, I2S3, SPI3, USART3, fcclksel3);
-flexcomm!(Flexcomm4, I2c4, I2s4, Spi4, Usart4, FLEXCOMM4, I2C4, I2S4, SPI4, USART4, fcclksel4);
-flexcomm!(Flexcomm5, I2c5, I2s5, Spi5, Usart5, FLEXCOMM5, I2C5, I2S5, SPI5, USART5, fcclksel5);
-flexcomm!(Flexcomm6, I2c6, I2s6, Spi6, Usart6, FLEXCOMM6, I2C6, I2S6, SPI6, USART6, fcclksel6);
-flexcomm!(Flexcomm7, I2c7, I2s7, Spi7, Usart7, FLEXCOMM7, I2C7, I2S7, SPI7, USART7, fcclksel7);
+flexcomm!(
+    Flexcomm0, I2c0, I2s0, Spi0, Usart0, FLEXCOMM0, I2C0, I2S0, SPI0, USART0, fcclksel0
+);
+flexcomm!(
+    Flexcomm1, I2c1, I2s1, Spi1, Usart1, FLEXCOMM1, I2C1, I2S1, SPI1, USART1, fcclksel1
+);
+flexcomm!(
+    Flexcomm2, I2c2, I2s2, Spi2, Usart2, FLEXCOMM2, I2C2, I2S2, SPI2, USART2, fcclksel2
+);
+flexcomm!(
+    Flexcomm3, I2c3, I2s3, Spi3, Usart3, FLEXCOMM3, I2C3, I2S3, SPI3, USART3, fcclksel3
+);
+flexcomm!(
+    Flexcomm4, I2c4, I2s4, Spi4, Usart4, FLEXCOMM4, I2C4, I2S4, SPI4, USART4, fcclksel4
+);
+flexcomm!(
+    Flexcomm5, I2c5, I2s5, Spi5, Usart5, FLEXCOMM5, I2C5, I2S5, SPI5, USART5, fcclksel5
+);
+flexcomm!(
+    Flexcomm6, I2c6, I2s6, Spi6, Usart6, FLEXCOMM6, I2C6, I2S6, SPI6, USART6, fcclksel6
+);
+flexcomm!(
+    Flexcomm7, I2c7, I2s7, Spi7, Usart7, FLEXCOMM7, I2C7, I2S7, SPI7, USART7, fcclksel7
+);
 
 pub struct Flexcomm8<State = init_state::Unknown> {
     pub(crate) raw_fc: raw::FLEXCOMM8,

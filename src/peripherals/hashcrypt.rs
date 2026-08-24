@@ -1,7 +1,7 @@
 use crate::traits::digest::generic_array::GenericArray;
 
 use crate::{
-    drivers::{aes, Aes, AesKey, Sha1, Sha256},
+    drivers::{Aes, AesKey, Sha1, Sha256, aes},
     peripherals::syscon,
     raw,
     typestates::init_state,

@@ -10,13 +10,13 @@ use core::marker::PhantomData;
 use crate::time::Hertz;
 pub use crate::traits::wg::spi::{FullDuplex, Mode, Phase, Polarity};
 use crate::typestates::pin::{
+    PinId,
     flexcomm::{
         ChipSelect,
         // Trait marking I2C peripherals and pins
         Spi,
         SpiPins,
     },
-    PinId,
 };
 
 pub mod prelude {

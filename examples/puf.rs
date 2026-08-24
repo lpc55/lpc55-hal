@@ -4,7 +4,7 @@
 use core::convert::TryInto;
 
 extern crate panic_semihosting; // 4004 bytes
-                                // extern crate panic_halt; // 672 bytes
+// extern crate panic_halt; // 672 bytes
 
 use cortex_m_rt::entry;
 use cortex_m_semihosting::dbg;

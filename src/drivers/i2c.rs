@@ -1,12 +1,12 @@
 use crate::time::Hertz;
 use crate::traits::wg::blocking::i2c::{Read, Write, WriteRead};
 use crate::typestates::pin::{
+    PinId,
     flexcomm::{
         // Trait marking I2C peripherals and pins
         I2c,
         I2cPins,
     },
-    PinId,
 };
 use core::cmp::min;
 use core::marker::PhantomData;

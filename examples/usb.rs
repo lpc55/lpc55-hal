@@ -11,9 +11,9 @@ use hal::prelude::*;
 #[allow(unused_imports)]
 use lpc55_hal as hal;
 
-use hal::drivers::{pins, Timer, UsbBus};
-use usb_device::device::{StringDescriptors, UsbDeviceBuilder, UsbVidPid};
+use hal::drivers::{Timer, UsbBus, pins};
 use usb_device::LangID;
+use usb_device::device::{StringDescriptors, UsbDeviceBuilder, UsbVidPid};
 use usbd_serial::CdcAcmClass;
 
 #[entry]

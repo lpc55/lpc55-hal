@@ -2,7 +2,7 @@
 #![no_std]
 /// Simple example to measure the core clock frequency
 extern crate panic_semihosting; // 4004 bytes
-                                // extern crate panic_halt; // 672 bytes
+// extern crate panic_halt; // 672 bytes
 
 use cortex_m_rt::entry;
 use cortex_m_semihosting::heprintln;
@@ -10,7 +10,7 @@ use cortex_m_semihosting::heprintln;
 use hal::traits::wg::timer::Cancel;
 
 use hal::{
-    drivers::{timer::Elapsed, Timer},
+    drivers::{Timer, timer::Elapsed},
     prelude::*,
 };
 use lpc55_hal as hal;

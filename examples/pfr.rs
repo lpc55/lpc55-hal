@@ -2,7 +2,7 @@
 #![no_std]
 /// Simple example to measure the core clock frequency
 extern crate panic_semihosting; // 4004 bytes
-                                // extern crate panic_halt; // 672 bytes
+// extern crate panic_halt; // 672 bytes
 
 use cortex_m_rt::entry;
 use cortex_m_semihosting::{heprint, heprintln};
@@ -74,7 +74,9 @@ fn main() -> ! {
     cfpa.customer_data[0] = ((1 + (cfpa.customer_data[0] as u16)) & 0xff) as u8;
     pfr.write_cfpa(&cfpa).unwrap();
 
-    heprintln!("Rerun this program and check that Version, firmware versions, and custom data byte all increment.");
+    heprintln!(
+        "Rerun this program and check that Version, firmware versions, and custom data byte all increment."
+    );
 
     let cmpa = pfr.read_cmpa().unwrap();
     heprintln!("\r\nCMPA:");

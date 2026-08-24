@@ -1,6 +1,6 @@
 use core::marker::PhantomData;
 
-use crate::traits::aligned::{Aligned, A4};
+use crate::traits::aligned::{A4, Aligned};
 use block_buffer::{BlockBuffer, Eager};
 use digest::{FixedOutput, Output, OutputSizeUser};
 
@@ -8,8 +8,8 @@ use crate::{
     peripherals::hashcrypt::Hashcrypt,
     traits::{
         digest::generic_array::{
-            typenum::{U20, U32, U64},
             GenericArray,
+            typenum::{U20, U32, U64},
         },
         digest::{Update /*, Reset*/},
     },

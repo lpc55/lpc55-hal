@@ -9,7 +9,6 @@ use core::{cmp::min, convert::TryFrom};
 use embedded_time::rate::Extensions;
 
 use crate::typestates::{
-    main_clock::MainClock,
     ClocksSupport1MhzFroToken,
     ClocksSupport32KhzFroToken,
     // clock_state,
@@ -18,6 +17,7 @@ use crate::typestates::{
     ClocksSupportUsbfsToken,
     ClocksSupportUsbhsToken,
     ClocksSupportUtickToken,
+    main_clock::MainClock,
 };
 use crate::{
     peripherals::{anactrl::Anactrl, pmc::Pmc, syscon::Syscon},

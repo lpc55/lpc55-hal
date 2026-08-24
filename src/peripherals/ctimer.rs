@@ -1,7 +1,7 @@
 use crate::{
     peripherals::syscon::Syscon,
     raw,
-    typestates::{init_state, ClocksSupport1MhzFroToken},
+    typestates::{ClocksSupport1MhzFroToken, init_state},
 };
 use core::ops::Deref;
 

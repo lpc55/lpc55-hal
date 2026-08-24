@@ -4,7 +4,7 @@ use crate::{
     raw,
     typestates::{
         init_state,
-        pin::{gpio::direction, state, PinId},
+        pin::{PinId, gpio::direction, state},
     },
 };
 use core::ops::Deref;

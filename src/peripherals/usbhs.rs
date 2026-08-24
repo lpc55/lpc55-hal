@@ -6,11 +6,11 @@ use crate::peripherals::{anactrl, ctimer, pmc, syscon};
 use crate::raw;
 use crate::traits::wg::timer::CountDown;
 use crate::typestates::{
-    init_state,
-    usbhs_mode,
     // ValidUsbClockToken,
     // Fro96MHzEnabledToken,
     ClocksSupportUsbhsToken,
+    init_state,
+    usbhs_mode,
 };
 
 use crate::traits::usb::{Usb, UsbSpeed};

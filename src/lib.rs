@@ -318,9 +318,9 @@ impl Peripherals {
     ///
     /// Steals peripherals, must not be used if one of the peripherals
     /// is already owned
-    pub unsafe fn steal() -> Self { unsafe {
-        Self::from((raw::Peripherals::steal(), raw::CorePeripherals::steal()))
-    }}
+    pub unsafe fn steal() -> Self {
+        unsafe { Self::from((raw::Peripherals::steal(), raw::CorePeripherals::steal())) }
+    }
 }
 
 pub fn enable_cycle_counter() {
