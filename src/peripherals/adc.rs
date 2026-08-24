@@ -44,10 +44,10 @@ impl Adc {
     /// # Safety
     ///
     /// Must only be called once for the entire duration of the program
-    pub unsafe fn steal() -> Self {
+    pub unsafe fn steal() -> Self { unsafe {
         // seems a little wastefule to steal the full peripherals but ok..
         Self::new(raw::Peripherals::steal().ADC0)
-    }
+    }}
 }
 
 impl<State> Adc<State> {

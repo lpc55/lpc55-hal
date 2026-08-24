@@ -84,13 +84,13 @@ pub fn attach() -> Option<Instance> {
 ///
 /// Steals the registers instance, must not be called if
 /// the registers are owned somewhere
-pub unsafe fn steal() -> Instance {
+pub unsafe fn steal() -> Instance { unsafe {
     ENDPOINT_REGISTERS_ATTACHED = true;
     Instance {
         addr: EP_MEM_ADDR as u32,
         _marker: PhantomData,
     }
-}
+}}
 
 // NOTE: It would be cleaner to use this approach, since the rule
 // for access are different for control vs non-control, and SETUP

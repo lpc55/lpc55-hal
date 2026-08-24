@@ -53,10 +53,10 @@ macro_rules! wrap_always_on_peripheral {
             /// # Safety
             ///
             /// Must only be called once for the entire duration of the program
-            pub unsafe fn steal() -> Self {
+            pub unsafe fn steal() -> Self { unsafe {
                 // seems a little wastefule to steal the full peripherals but ok..
                 Self::new(raw::Peripherals::steal().$pac_name)
-            }
+            }}
 
             pub fn release(self) -> raw::$pac_name {
                 self.raw
@@ -90,10 +90,10 @@ macro_rules! wrap_stateful_peripheral {
             /// # Safety
             ///
             /// Must only be called once for the entire duration of the program
-            pub unsafe fn steal() -> Self {
+            pub unsafe fn steal() -> Self { unsafe {
                 // seems a little wastefule to steal the full peripherals but ok..
                 Self::new(raw::Peripherals::steal().$pac_name)
-            }
+            }}
         }
 
         impl<State> $hal_name<State> {

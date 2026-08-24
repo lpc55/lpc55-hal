@@ -318,13 +318,14 @@ impl Peripherals {
     ///
     /// Steals peripherals, must not be used if one of the peripherals
     /// is already owned
-    pub unsafe fn steal() -> Self {
+    pub unsafe fn steal() -> Self { unsafe {
         Self::from((raw::Peripherals::steal(), raw::CorePeripherals::steal()))
-    }
+    }}
 }
 
 pub fn enable_cycle_counter() {
-    unsafe { &mut raw::CorePeripherals::steal().DWT }.enable_cycle_counter();
+    let mut core = unsafe { raw::CorePeripherals::steal() };
+    core.DWT.enable_cycle_counter();
 }
 
 pub fn get_cycle_count() -> u32 {

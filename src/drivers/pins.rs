@@ -121,13 +121,13 @@ macro_rules! pins {
             /// # Safety
             ///
             /// Steals the PIN, must not be called if the PIN is already owned
-            pub unsafe fn steal() -> Self {
+            pub unsafe fn steal() -> Self { unsafe {
                 Self {
                     $(
                         $field: $pin::steal(),
                     )*
                 }
-            }
+            }}
         }
 
 
@@ -191,13 +191,13 @@ macro_rules! pins {
                 /// # Safety
                 ///
                 /// Steals the PIN, must not be called if the PIN is already owned
-                pub unsafe fn steal() -> Pin<Self, $default_state_ty> {
+                pub unsafe fn steal() -> Pin<Self, $default_state_ty> { unsafe {
                     PIN_TAKEN[$port][$number] = true;
                     Pin {
                         id: Self(()),
                         state: $default_state_val,
                     }
-                }
+                }}
             }
 
             impl PinId for $pin {

@@ -68,7 +68,7 @@ impl Syscon {
     /// # Safety
     ///
     /// Steals the syscon, must not be called if Syscon is owned
-    pub unsafe fn reset_all_noncritical_peripherals() -> Syscon {
+    pub unsafe fn reset_all_noncritical_peripherals() -> Syscon { unsafe {
         let syscon = Syscon::steal().release();
         syscon.presetctrl0.write(|w| {
             w
@@ -195,7 +195,7 @@ impl Syscon {
         syscon.presetctrl2.write(|w| w.bits(0x0));
 
         Syscon::from(syscon)
-    }
+    }}
 }
 
 /// TODO: do this systematically

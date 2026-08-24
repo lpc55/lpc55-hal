@@ -82,10 +82,12 @@ fn main() -> ! {
 
     loop {
         for c in 97..123 {
-            let _ = display.write_str(unsafe { core::str::from_utf8_unchecked(&[c]) });
+            let buf = [c];
+            let _ = display.write_str(unsafe { core::str::from_utf8_unchecked(&buf) });
         }
         for c in 65..91 {
-            let _ = display.write_str(unsafe { core::str::from_utf8_unchecked(&[c]) });
+            let buf = [c];
+            let _ = display.write_str(unsafe { core::str::from_utf8_unchecked(&buf) });
         }
     }
 }

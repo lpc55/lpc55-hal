@@ -58,7 +58,8 @@ fn main() -> ! {
 
     loop {
         for c in (97..123).chain(65..91) {
-            if let Err(_err) = display.write_str(unsafe { core::str::from_utf8_unchecked(&[c]) }) {
+            let buf = [c];
+            if let Err(_err) = display.write_str(unsafe { core::str::from_utf8_unchecked(&buf) }) {
                 // use cortex_m_semihosting::hprintln;
                 // hprintln!("error {}, resetting display", err);
                 // display.init().unwrap();

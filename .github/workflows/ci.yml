@@ -56,7 +56,7 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
-          toolchain: "1.79"
+          toolchain: "1.85"
           override: true
 
       - name: Build
