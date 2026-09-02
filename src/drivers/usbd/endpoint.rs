@@ -1,3 +1,4 @@
+use core::cell::Cell;
 use core::cmp::min;
 
 use core::marker::PhantomData;
@@ -6,7 +7,7 @@ use cortex_m::interrupt::{CriticalSection, Mutex};
 
 use usb_device::{Result, UsbError, endpoint::EndpointType};
 
-use crate::traits::usb::Usb;
+use crate::traits::usb::{Usb, UsbSpeed};
 use crate::typestates::init_state;
 
 use super::{
@@ -21,6 +22,9 @@ where
     out_buf: Option<Mutex<EndpointBuffer>>,
     setup_buf: Option<Mutex<EndpointBuffer>>,
     in_buf: Option<Mutex<EndpointBuffer>>,
+    // TR is one-shot and is consumed when each direction is first armed.
+    out_toggle_reset: Mutex<Cell<bool>>,
+    in_toggle_reset: Mutex<Cell<bool>>,
     ep_type: Option<EndpointType>,
     index: u8,
     pub(crate) _marker: PhantomData<USB>,
@@ -36,6 +40,8 @@ where
             out_buf: None,
             setup_buf: None,
             in_buf: None,
+            out_toggle_reset: Mutex::new(Cell::new(false)),
+            in_toggle_reset: Mutex::new(Cell::new(false)),
             ep_type: None,
             index,
             _marker: PhantomData,
@@ -80,6 +86,7 @@ where
         let addroff = self.buf_addroff(buf);
         let len = buf.capacity() as u16;
         let i = self.index as usize;
+        let toggle_reset = self.out_toggle_reset.borrow(cs).replace(false);
 
         epl.eps[i].ep_out[0].modify(|_, w| {
             w.nbytes::<USB>()
@@ -92,6 +99,8 @@ where
                 .enabled() // technically, marked as R (for reserved?) for EP0
                 .s()
                 .not_stalled()
+                .tr()
+                .bit(toggle_reset)
         });
     }
 
@@ -192,6 +201,46 @@ where
         usb.intstat.write(|w| unsafe { w.bits(!0) });
         debug_assert!(usb.intstat.read().bits() == 0);
 
+        if self.index != 0 {
+            // The high-speed controller uses these bits to distinguish bulk
+            // endpoints from periodic endpoints and to initialize their data
+            // toggle.  Leaving the reset values here makes interrupt OUT
+            // transfers fail as soon as the device enumerates at high speed.
+            let (endpoint_type, toggle_value) = match (USB::SPEED, ep_type) {
+                (UsbSpeed::HighSpeed, EndpointType::Interrupt) => (true, true),
+                (_, EndpointType::Isochronous) => (true, false),
+                _ => (false, false),
+            };
+            let i = self.index as usize;
+
+            if self.is_out_buf_set() {
+                self.out_toggle_reset.borrow(cs).set(true);
+                epl.eps[i].ep_out[0].modify(|_, w| {
+                    w.d()
+                        .disabled()
+                        .t()
+                        .bit(endpoint_type)
+                        .rftv()
+                        .bit(toggle_value)
+                        .tr()
+                        .bit(false)
+                });
+            }
+            if self.is_in_buf_set() {
+                self.in_toggle_reset.borrow(cs).set(true);
+                epl.eps[i].ep_in[0].modify(|_, w| {
+                    w.d()
+                        .disabled()
+                        .t()
+                        .bit(endpoint_type)
+                        .rftv()
+                        .bit(toggle_value)
+                        .tr()
+                        .bit(false)
+                });
+            }
+        }
+
         self.reset_out_buf(cs, epl);
         if self.index == 0 {
             self.reset_setup_buf(cs, epl);
@@ -238,6 +287,7 @@ where
                 return Err(UsbError::WouldBlock);
             }
             in_buf.write(buf);
+            let toggle_reset = self.in_toggle_reset.borrow(cs).replace(false);
             epl.eps[i].ep_in[0].modify(|_, w| {
                 w.nbytes::<USB>()
                     .bits(buf.len() as u16)
@@ -247,6 +297,8 @@ where
                     .enabled()
                     .s()
                     .not_stalled()
+                    .tr()
+                    .bit(toggle_reset)
                     .a()
                     .active()
             });
@@ -296,12 +348,15 @@ where
             unsafe { usb.intstat.write(|w| w.bits(ep_out_mask)) };
 
             // self.reset_out_buf(cs, epl);
+            let toggle_reset = self.out_toggle_reset.borrow(cs).replace(false);
             epl.eps[i].ep_out[0].modify(
                 |_, w| {
                     w.nbytes::<USB>()
                         .bits(out_buf.capacity() as u16)
                         .addroff::<USB>()
                         .bits(self.buf_addroff(out_buf))
+                        .tr()
+                        .bit(toggle_reset)
                         .a()
                         .active()
                 }, // .d().enabled()
