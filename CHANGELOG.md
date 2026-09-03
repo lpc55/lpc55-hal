@@ -5,7 +5,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
--
+- `Iocon`: Add GPIO mode configuration
 
 ## [v0.7.0](https://github.com/lpc55/lpc55-hal/releases/tag/0.7.0) - 2026-08-24
 
