@@ -335,6 +335,34 @@ pub mod epr {
         }
     }
 
+    pub struct _RFTVW<'a> {
+        w: &'a mut W,
+    }
+    impl<'a> _RFTVW<'a> {
+        #[inline]
+        pub fn bit(self, value: bool) -> &'a mut W {
+            const MASK: bool = true;
+            const OFFSET: u8 = 27;
+            self.w.bits &= !((MASK as u32) << OFFSET);
+            self.w.bits |= ((value & MASK) as u32) << OFFSET;
+            self.w
+        }
+    }
+
+    pub struct _TRW<'a> {
+        w: &'a mut W,
+    }
+    impl<'a> _TRW<'a> {
+        #[inline]
+        pub fn bit(self, value: bool) -> &'a mut W {
+            const MASK: bool = true;
+            const OFFSET: u8 = 28;
+            self.w.bits &= !((MASK as u32) << OFFSET);
+            self.w.bits |= ((value & MASK) as u32) << OFFSET;
+            self.w
+        }
+    }
+
     #[derive(Clone, Copy, Debug, PartialEq)]
     pub enum SR {
         NotStalled,
@@ -706,16 +734,16 @@ pub mod epr {
         pub fn t(&mut self) -> _TW<'_> {
             _TW { w: self }
         }
-        // #[doc = "Bit 27 - Rate Feedback mode / Toggle Value"]
-        // #[inline]
-        // pub fn rftv(&self) -> _RFTVW {
-        //     _RFTVW { w: self }
-        // }
-        // #[doc = "Bit 28 - Toggle reset"]
-        // #[inline]
-        // pub fn tr(&self) -> _TRW {
-        //     _TRW { w: self }
-        // }
+        #[doc = "Bit 27 - Rate Feedback mode / Toggle Value"]
+        #[inline]
+        pub fn rftv(&mut self) -> _RFTVW<'_> {
+            _RFTVW { w: self }
+        }
+        #[doc = "Bit 28 - Toggle reset"]
+        #[inline]
+        pub fn tr(&mut self) -> _TRW<'_> {
+            _TRW { w: self }
+        }
         #[doc = "Bit 29 - Stall"]
         #[inline]
         pub fn s(&mut self) -> _SW<'_> {
