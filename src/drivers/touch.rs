@@ -140,9 +140,9 @@ where
 
         adc.cmdl3.write(|w| unsafe {
             w.adch()
-                .bits(buttons.0.state.channel)
+                .bits(buttons.0.state.channel & 7) // channel pair
                 .ctype()
-                .ctype_0() // A-side single ended
+                .bits(buttons.0.state.channel >> 3) // 0 = A side, 1 = B side
                 .mode()
                 .mode_0() // standard 12-bit resolution
         });
@@ -162,9 +162,9 @@ where
 
         adc.cmdl4.write(|w| unsafe {
             w.adch()
-                .bits(buttons.1.state.channel)
+                .bits(buttons.1.state.channel & 7) // channel pair
                 .ctype()
-                .ctype_0()
+                .bits(buttons.1.state.channel >> 3) // 0 = A side, 1 = B side
                 .mode()
                 .mode_0()
         });
@@ -183,9 +183,9 @@ where
 
         adc.cmdl5.write(|w| unsafe {
             w.adch()
-                .bits(buttons.2.state.channel)
+                .bits(buttons.2.state.channel & 7) // channel pair
                 .ctype()
-                .ctype_0()
+                .bits(buttons.2.state.channel >> 3) // 0 = A side, 1 = B side
                 .mode()
                 .mode_0()
         });
@@ -384,7 +384,7 @@ where
             {
                 #[allow(clippy::needless_range_loop)]
                 for i in 0..(40 - AVERAGES) {
-                    if filtered[i] > self.threshold[(5 - bufsel) as usize] {
+                    if filtered[i] > self.threshold[(bufsel - 3) as usize] {
                         streak += 1;
                         if streak > self.confidence {
                             return TouchResult {
@@ -399,7 +399,7 @@ where
             {
                 #[allow(clippy::needless_range_loop)]
                 for i in 0..(40 - AVERAGES) {
-                    if filtered[i] < self.threshold[(5 - bufsel) as usize] {
+                    if filtered[i] < self.threshold[(bufsel - 3) as usize] {
                         streak += 1;
                         if streak > self.confidence {
                             return TouchResult {
